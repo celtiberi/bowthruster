@@ -19,14 +19,16 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.append(str(REPO_ROOT))
 from scripts import bend_gate  # noqa: E402
 
-CANONICAL_LAWS_22C = WORKSPACE_MODEL_CIRCUITS / "docs" / "specs" / "whiteboard_22c" / "LAWS.bend"
+CANONICAL_LAWS_22C = WORKSPACE_MODEL_CIRCUITS / "laws" / "bend_wb_22c" / "LAWS.bend"
 
 
 def _resolve_spec_laws_bend() -> Path:
+    if CANONICAL_LAWS_22C.is_file():
+        return CANONICAL_LAWS_22C
     for p in sys.path:
-        cand = Path(p) / "docs" / "specs" / "whiteboard_22c" / "LAWS.bend"
-        if cand.is_file():
-            return cand
+        for rel in ("laws/bend_wb_22c/LAWS.bend", "docs/specs/whiteboard_22c/LAWS.bend"):
+            if (cand := Path(p) / rel).is_file():
+                return cand
     return CANONICAL_LAWS_22C
 
 

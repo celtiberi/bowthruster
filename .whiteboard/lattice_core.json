@@ -1501,9 +1501,9 @@
       "created_turn": 16,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/rewriter.py#L211-L400"
+        "file": "lattice/whiteboard/rewriter.py#L211-L401"
       },
-      "file": "lattice/whiteboard/rewriter.py#L211-L400",
+      "file": "lattice/whiteboard/rewriter.py#L211-L401",
       "id": "interface_whiteboard_fuse_table_attributes",
       "inputs": [
         "graph",
@@ -1935,9 +1935,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/read_engine.py#L408-L493"
+        "file": "lattice/whiteboard/read_engine.py#L408-L491"
       },
-      "file": "lattice/whiteboard/read_engine.py#L408-L493",
+      "file": "lattice/whiteboard/read_engine.py#L408-L491",
       "id": "interface_whiteboard_slice_lattice",
       "inputs": [
         "graph",
@@ -1991,9 +1991,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/mutations.py#L135-L168"
+        "file": "lattice/whiteboard/mutations.py#L137-L170"
       },
-      "file": "lattice/whiteboard/mutations.py#L135-L168",
+      "file": "lattice/whiteboard/mutations.py#L137-L170",
       "id": "interface_whiteboard_transition_component_build_status",
       "inputs": [
         "graph",
@@ -2448,7 +2448,7 @@
         "file_hashes": {
           "lattice/regiment/__init__.py": "51ed764b25109489",
           "lattice/regiment/intake_packet.py": "c5bdc2d8008fb855",
-          "lattice/regiment/markdown_tables.py": "9b4f06a32dccc124"
+          "lattice/regiment/markdown_tables.py": "882e6e296869665d"
         },
         "files": [
           "lattice/regiment/__init__.py",
@@ -2473,7 +2473,7 @@
       "file_hashes": {
         "lattice/regiment/__init__.py": "51ed764b25109489",
         "lattice/regiment/intake_packet.py": "c5bdc2d8008fb855",
-        "lattice/regiment/markdown_tables.py": "9b4f06a32dccc124"
+        "lattice/regiment/markdown_tables.py": "882e6e296869665d"
       },
       "files": [
         "lattice/regiment/__init__.py",
@@ -2597,7 +2597,7 @@
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
           "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-          "lattice/the_executive/gate.py": "a707990d9bc53e5c",
+          "lattice/the_executive/gate.py": "ba11dddbc6398e1c",
           "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
           "lattice/the_executive/preflight.py": "5be08f3f57952191",
           "lattice/the_executive/voice.py": "5fb44eaba9171d58"
@@ -2628,7 +2628,7 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-        "lattice/the_executive/gate.py": "a707990d9bc53e5c",
+        "lattice/the_executive/gate.py": "ba11dddbc6398e1c",
         "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
         "lattice/the_executive/preflight.py": "5be08f3f57952191",
         "lattice/the_executive/voice.py": "5fb44eaba9171d58"
@@ -2768,10 +2768,10 @@
           "lattice/whiteboard/__init__.py": "b2f8f6dc53be6844",
           "lattice/whiteboard/frustration.py": "15531d66350e0fd1",
           "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
-          "lattice/whiteboard/linker.py": "b186b8f0fcde09ca",
-          "lattice/whiteboard/mutations.py": "ebf6c304e22f9d7a",
-          "lattice/whiteboard/read_engine.py": "975539da1332f22a",
-          "lattice/whiteboard/rewriter.py": "5f64ed04906bd833",
+          "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
+          "lattice/whiteboard/mutations.py": "41a72335950cd737",
+          "lattice/whiteboard/read_engine.py": "006b48fd7a1d9f86",
+          "lattice/whiteboard/rewriter.py": "d23258b838777950",
           "lattice/whiteboard/schema.py": "2094567fa1041c95"
         },
         "files": [
@@ -2804,10 +2804,10 @@
         "lattice/whiteboard/__init__.py": "b2f8f6dc53be6844",
         "lattice/whiteboard/frustration.py": "15531d66350e0fd1",
         "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
-        "lattice/whiteboard/linker.py": "b186b8f0fcde09ca",
-        "lattice/whiteboard/mutations.py": "ebf6c304e22f9d7a",
-        "lattice/whiteboard/read_engine.py": "975539da1332f22a",
-        "lattice/whiteboard/rewriter.py": "5f64ed04906bd833",
+        "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
+        "lattice/whiteboard/mutations.py": "41a72335950cd737",
+        "lattice/whiteboard/read_engine.py": "006b48fd7a1d9f86",
+        "lattice/whiteboard/rewriter.py": "d23258b838777950",
         "lattice/whiteboard/schema.py": "2094567fa1041c95"
       },
       "files": [

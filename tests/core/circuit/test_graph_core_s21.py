@@ -31,7 +31,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 BEND_GATE = REPO_ROOT / "scripts" / "bend_gate.py"
-SPEC_LAWS_BEND = REPO_ROOT / "ModelCircuits" / "docs" / "specs" / "graph_core" / "LAWS.bend"
+SPEC_LAWS_BEND = Path(__file__).resolve().parents[3] / "laws" / "bend_graph_core" / "LAWS.bend"
 
 
 def _resolve_spec_laws_bend() -> Path:

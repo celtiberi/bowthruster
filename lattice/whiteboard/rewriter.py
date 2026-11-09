@@ -260,11 +260,12 @@ def fuse_table_attributes(
                 src, tgt = _resolve_or_register_scope(graph, raw_src, create=True), _resolve_or_register_scope(graph, raw_tgt, create=True)
                 for sid in (src, tgt):
                     if sid not in fused_scopes: fused_scopes.append(sid)
+                raw_fnm = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("flow", "id", "name"))).strip().strip("\"`'*").strip()
                 raw_pay = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("payload", "data", "artifact", "message", "flow"))).strip().strip("\"`'*").strip()
                 pay = None if raw_pay.lower() in ("", "none", "-", "—", "n/a", "null") else raw_pay
                 raw_cond = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("condition", "when", "guard"))).strip().strip("\"`'*").strip()
                 cond = None if raw_cond.lower() in ("", "none", "-", "—", "n/a", "null") else raw_cond
-                upsert_flow_edge(graph, src, tgt, payload=pay, condition=cond, text=f"{src} -> {tgt}" + (f" ({pay})" if pay else ""), current_turn=int(turn_index))
+                upsert_flow_edge(graph, src, tgt, payload=pay, condition=cond, text=f"{src} -> {tgt}" + (f" ({pay})" if pay else ""), dimensions={"flow_name": raw_fnm} if raw_fnm and raw_fnm != raw_pay else None, current_turn=int(turn_index))
             continue
 
         if is_rule_t and "component" not in norm_headers[:1]:
@@ -486,15 +487,10 @@ def resolve_mcu_scopes_and_refs(graph: dict[str, Any], parsed_mcu: dict[str, Any
                 or (parsed_mcu.get("type") in ("PROHIBITION", "OBLIGATION", "BOUND", "FACT") and not target_prop and not bound_val_str and not is_flow_endpoint)
             )
             is_hex_digest = len(ref_str) >= 6 and any(c.isdigit() for c in ref_str) and all(c in "0123456789abcdef" for c in ref_low)
-            if (
-                should_register_as_scope(False, is_flow_endpoint, is_explicit_component, is_bound_or_payload_val)
-                and not is_bound_or_payload_val and len(ref_str) >= 3
-                and not any(ch in ref_str for ch in (".", "*", "<", ">", ":", " ", "-")) and not is_hex_digest
-            ):
+            if should_register_as_scope(False, is_flow_endpoint, is_explicit_component, is_bound_or_payload_val) and not is_bound_or_payload_val and len(ref_str) >= 3 and not any(ch in ref_str for ch in (".", "*", "<", ">", ":", " ", "-")) and not is_hex_digest:
                 ref_scope_id = _resolve_or_register_scope(graph, ref_str, create=True)
             else:
                 continue
         if ref_scope_id and ref_scope_id in scopes and ref_scope_id != primary_scope and ref_scope_id not in resolved_refs:
             resolved_refs.append(ref_scope_id)
-
     return primary_scope, resolved_refs

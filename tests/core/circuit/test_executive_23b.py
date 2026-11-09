@@ -31,7 +31,7 @@ from typing import Any
 WORKSPACE_ROOT = Path(__file__).resolve().parents[4]
 MODEL_CIRCUITS = WORKSPACE_ROOT / "ModelCircuits"
 BEND_GATE_PY = WORKSPACE_ROOT / "scripts" / "bend_gate.py"
-SPEC_23B_LAWS = MODEL_CIRCUITS / "docs" / "specs" / "executive_23b" / "LAWS.bend"
+SPEC_23B_LAWS = Path(__file__).resolve().parents[3] / "laws" / "bend_exec_23b" / "LAWS.bend"
 NODE_BIN = shutil.which("node") or "node"
 MAX_23B_LINES = 500
 

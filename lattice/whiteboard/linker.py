@@ -317,7 +317,7 @@ def classify_and_apply_delta(
         conds = [restore_ascii_dots(str(c)).strip() for c in parsed_mcu.get("conditions", []) if str(c).strip()]
         cond_val = lpayload.get("condition") or ("; ".join(conds) if conds else None)
         dims = dict(lpayload.get("dimensions") or {}) if isinstance(lpayload.get("dimensions"), dict) else {}
-        for d_key in ("owner", "stage"):
+        for d_key in ("owner", "stage", "flow_name"):
             d_val = lpayload.get(d_key) or parsed_mcu.get(d_key)
             if d_val is not None:
                 dims.setdefault(d_key, str(d_val).strip())

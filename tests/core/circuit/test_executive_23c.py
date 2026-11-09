@@ -62,7 +62,7 @@ def _locate_bend_exec_23c_dir() -> Path:
 
 
 def _locate_spec_laws_bend() -> Path:
-    spec_cand = WORKSPACE_LATTICE / "docs" / "specs" / "executive_23c" / "LAWS.bend"
+    spec_cand = WORKSPACE_LATTICE / "laws" / "bend_exec_23c" / "LAWS.bend"
     if spec_cand.is_file():
         return spec_cand
     for entry in sys.path:
@@ -71,7 +71,7 @@ def _locate_spec_laws_bend() -> Path:
         cand = Path(entry) / "docs" / "specs" / "executive_23c" / "LAWS.bend"
         if cand.is_file():
             return cand
-    return REPO_ROOT / "ModelCircuits" / "docs" / "specs" / "executive_23c" / "LAWS.bend"
+    return spec_cand
 
 
 def _import_exec_23c() -> tuple[Any, Any, Any, Any, Any]:

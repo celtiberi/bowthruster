@@ -279,64 +279,35 @@ def verify_skeleton_coding_roundtrip(lattice_fixture: dict[str, Any] | None = No
     wp_bundle = WB.compile_work_packets(graph, force=False)
     packets = wp_bundle["packets"]
     all_have_skeleton = all(
-        isinstance(p.get("python_skeleton"), str)
-        and bool(p["python_skeleton"].strip())
-        and p.get("is_skeleton_complete") is True
-        and isinstance(p.get("laws_skeleton"), str)
+        isinstance(p.get("python_skeleton"), str) and bool(p["python_skeleton"].strip())
+        and p.get("is_skeleton_complete") is True and isinstance(p.get("laws_skeleton"), str)
         for p in packets
     )
 
     target_file = "ModelCircuits/eng2/whiteboard/ingest.py"
-    cg_ok = EXEC_GATE.verify_ast_call_graph_skeleton(
-        graph,
-        {"staged_files": [{"path": target_file, "content": stub_src, "missing_skeleton_stubs": 0}]},
-    )
-    gate_ok = EXEC_GATE.evaluate_git_commit_gate(
-        graph,
-        {"staged_files": [{"path": target_file, "content": stub_src, "missing_skeleton_stubs": 0}], "bend_proofs_ok": True, "contracts_ok": True},
-    )
+    cg_ok = EXEC_GATE.verify_ast_call_graph_skeleton(graph, {"staged_files": [{"path": target_file, "content": stub_src, "missing_skeleton_stubs": 0}]})
+    gate_ok = EXEC_GATE.evaluate_git_commit_gate(graph, {"staged_files": [{"path": target_file, "content": stub_src, "missing_skeleton_stubs": 0}], "bend_proofs_ok": True, "contracts_ok": True})
 
     disconnected_src = (
         stub_src.replace("_law_is_python_skeleton_complete = is_python_skeleton_complete(True, True, True)", "_law_is_python_skeleton_complete = True")
         .replace("_law_python_skeleton_completeness_law = python_skeleton_completeness_law(True, True, True)", "_law_python_skeleton_completeness_law = True")
     )
-    cg_bad = EXEC_GATE.verify_ast_call_graph_skeleton(
-        graph,
-        {"staged_files": [{"path": target_file, "content": disconnected_src, "missing_skeleton_stubs": 0}]},
-    )
-    gate_bad = EXEC_GATE.evaluate_git_commit_gate(
-        graph,
-        {"staged_files": [{"path": target_file, "content": disconnected_src, "missing_skeleton_stubs": 0}], "bend_proofs_ok": True, "contracts_ok": True},
-    )
+    cg_bad = EXEC_GATE.verify_ast_call_graph_skeleton(graph, {"staged_files": [{"path": target_file, "content": disconnected_src, "missing_skeleton_stubs": 0}]})
+    gate_bad = EXEC_GATE.evaluate_git_commit_gate(graph, {"staged_files": [{"path": target_file, "content": disconnected_src, "missing_skeleton_stubs": 0}], "bend_proofs_ok": True, "contracts_ok": True})
 
     passed = bool(
-        parity_witness
-        and law_witness
-        and "PythonSkeletonStub" in class_names
-        and "is_python_skeleton_complete" in fn_names
-        and "compile_python_skeleton" in fn_names
-        and "# MUST CALL:" in stub_src
-        and all_have_skeleton
-        and cg_ok["is_valid"] is True
-        and cg_ok["disconnected_law_functions"] == 0
-        and gate_ok["allowed"] is True
-        and gate_ok["decision"] == "ALLOW_COMMIT"
-        and cg_bad["is_valid"] is False
-        and cg_bad["disconnected_law_functions"] >= 1
-        and gate_bad["allowed"] is False
-        and gate_bad["decision"] == "REJECT_COMMIT"
-        and gate_bad["contracts_ok"] is False
+        parity_witness and law_witness and "PythonSkeletonStub" in class_names
+        and "is_python_skeleton_complete" in fn_names and "compile_python_skeleton" in fn_names
+        and "# MUST CALL:" in stub_src and all_have_skeleton
+        and cg_ok["is_valid"] is True and cg_ok["disconnected_law_functions"] == 0
+        and gate_ok["allowed"] is True and gate_ok["decision"] == "ALLOW_COMMIT"
+        and cg_bad["is_valid"] is False and cg_bad["disconnected_law_functions"] >= 1
+        and gate_bad["allowed"] is False and gate_bad["decision"] == "REJECT_COMMIT" and gate_bad["contracts_ok"] is False
     )
     return QaSkeletonReport(
-        passed=passed,
-        truth_table_mismatches=0,
-        compiled_skeleton=stub_src,
-        packets_count=len(packets),
-        all_packets_have_skeleton=all_have_skeleton,
-        call_graph_ok=cg_ok,
-        call_graph_bad=cg_bad,
-        gate_ok=dict(gate_ok),
-        gate_bad=dict(gate_bad),
+        passed=passed, truth_table_mismatches=0, compiled_skeleton=stub_src,
+        packets_count=len(packets), all_packets_have_skeleton=all_have_skeleton,
+        call_graph_ok=cg_ok, call_graph_bad=cg_bad, gate_ok=dict(gate_ok), gate_bad=dict(gate_bad),
     )
 
 
@@ -428,11 +399,35 @@ def verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report):
     return {"is_valid": ok, "disconnected_law_functions": 0}
 """
         rep_trans = EXEC_GATE.verify_ast_call_graph_skeleton(
-            graph,
-            {"staged_files": [{"path": target_path, "content": transitive_src, "disconnected_law_functions": 0}]},
+            graph, {"staged_files": [{"path": target_path, "content": transitive_src, "disconnected_law_functions": 0}]},
         )
-        self.assertTrue(rep_trans["is_valid"])
-        self.assertEqual(rep_trans["disconnected_law_functions"], 0)
+        self.assertEqual((rep_trans["is_valid"], rep_trans["disconnected_law_functions"]), (True, 0))
+
+        g_mf = WB.create_empty_context_graph()
+        WB.upsert_flow_edge(g_mf, "comp_a", "comp_b", payload="FrameBatch", condition="mode == draft", current_turn=1)
+        WB.upsert_flow_edge(g_mf, "comp_a", "comp_b", payload="FrameBatch", condition="mode == strict", current_turn=2)
+        self.assertEqual((len(g_mf["flows"]), g_mf["flows"][0]["condition"]), (1, "mode == strict"))
+
+        g_mf["scopes"]["comp_a"] = {"id": "comp_a", "kind": "COMPONENT", "files": ["pkg/iface.py", "pkg/helper.py"], "rules": []}
+        g_mf["lattice_artifacts"] = [
+            {"id": "i_render", "kind": "INTERFACE", "name": "render_frames", "scope": "comp_a", "file": "pkg/iface.py"},
+            {"id": "l_append", "kind": "LAW", "name": "append_frame_law", "scope": "comp_a", "lhs": "MOD._append_frame(lines, frame)", "rhs": "True{}"},
+        ]
+        mf_ok = EXEC_GATE.verify_ast_call_graph_skeleton(
+            g_mf,
+            {"staged_files": [
+                {"path": "pkg/iface.py", "content": "def render_frames(lines, frame):\n    _append_frame(lines, frame)\n    return lines\n"},
+                {"path": "pkg/helper.py", "content": "def _append_frame(lines, frame):\n    lines.append(frame)\n"},
+            ]},
+        )
+        mf_const = EXEC_GATE.verify_ast_call_graph_skeleton(
+            g_mf,
+            {"staged_files": [
+                {"path": "pkg/iface.py", "content": "def render_frames(lines, frame):\n    _append_frame(True, True)\n    return lines\n"},
+                {"path": "pkg/helper.py", "content": "def _append_frame(lines, frame):\n    lines.append(frame)\n"},
+            ]},
+        )
+        self.assertEqual((mf_ok["is_valid"], mf_ok["disconnected_law_functions"], mf_const["is_valid"], mf_const["disconnected_law_functions"]), (True, 0, False, 1))
 
         disconnected_cg = EXEC_GATE.verify_ast_call_graph_skeleton(
             graph,

@@ -454,10 +454,8 @@ def slice_lattice(
                 if _node_matches_slice_dims(r, r_kinds, scopes, alias_idx, sid=str(r.get("scope") or sid), **dim_kw):
                     active_rules.append(copy.deepcopy(r))
 
-    active_flows = [
-        copy.deepcopy(fl) for fl in graph.get("flows", [])
-        if isinstance(fl, dict) and _node_matches_slice_dims(fl, {"FLOW", str(fl.get("kind") or "FLOW").strip().upper()}, scopes, alias_idx, sid=str(fl.get("source") or ""), **dim_kw)
-    ]
+    raw_flows = [copy.deepcopy(fl) for fl in graph.get("flows", []) if isinstance(fl, dict) and _node_matches_slice_dims(fl, {"FLOW", str(fl.get("kind") or "FLOW").strip().upper()}, scopes, alias_idx, sid=str(fl.get("source") or ""), **dim_kw)]
+    active_flows = list({(str(fl.get("source") or ""), str(fl.get("target") or ""), str(fl.get("payload") or fl.get("condition") or "")): fl for fl in raw_flows}.values())
     active_artifacts = [
         copy.deepcopy(art) for art in graph.get("lattice_artifacts", [])
         if isinstance(art, dict) and _node_matches_slice_dims(art, {str(art.get("kind") or "SCHEMA").strip().upper(), "ARTIFACT"}, scopes, alias_idx, sid=str(art.get("scope_id") or art.get("scope") or ""), **dim_kw)

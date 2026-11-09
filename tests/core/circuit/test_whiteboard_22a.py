@@ -33,14 +33,16 @@ from lattice.graph_core import SQLiteGraphStore
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 BEND_GATE = REPO_ROOT / "scripts" / "bend_gate.py"
-SPEC_LAWS_BEND = REPO_ROOT / "ModelCircuits" / "docs" / "specs" / "whiteboard_22a" / "LAWS.bend"
+SPEC_LAWS_BEND = Path(__file__).resolve().parents[3] / "laws" / "bend_wb_22a" / "LAWS.bend"
 
 
 def _resolve_spec_laws_bend() -> Path:
+    if SPEC_LAWS_BEND.is_file():
+        return SPEC_LAWS_BEND
     for entry in sys.path:
-        cand = Path(entry) / "docs" / "specs" / "whiteboard_22a" / "LAWS.bend"
-        if cand.is_file():
-            return cand
+        for rel in ("laws/bend_wb_22a/LAWS.bend", "docs/specs/whiteboard_22a/LAWS.bend"):
+            if (cand := Path(entry) / rel).is_file():
+                return cand
     return SPEC_LAWS_BEND
 
 

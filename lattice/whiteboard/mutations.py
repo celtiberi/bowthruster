@@ -67,13 +67,15 @@ def upsert_flow_edge(
         raise ValueError(f"source and target must be non-empty strings, got source={source!r}, target={target!r}")
     src_sid, tgt_sid = source.strip(), target.strip()
     src_scope, tgt_scope = _ensure_scope_node_nosync(graph, src_sid), _ensure_scope_node_nosync(graph, tgt_sid)
-    cond_val, text_val = _clean_opt_str(condition), restore_ascii_dots(str(text or "")).strip()
-
+    cond_val, text_val, pay_val = _clean_opt_str(condition), restore_ascii_dots(str(text or "")).strip(), _clean_opt_str(payload)
+    fnm = _clean_opt_str((dimensions or {}).get("flow_name")) if isinstance(dimensions, dict) else None
     flows = graph.setdefault("flows", [])
-    entry = next((f for f in flows if isinstance(f, dict) and (f.get("source"), f.get("target"), f.get("condition")) == (src_sid, tgt_sid, cond_val)), None)
+    entry = next((f for f in flows if isinstance(f, dict) and (f.get("source"), f.get("target")) == (src_sid, tgt_sid) and ((pay_val is not None and _clean_opt_str(f.get("payload")) == pay_val) or (fnm is not None and _clean_opt_str((f.get("dimensions") or {}).get("flow_name")) == fnm) or (pay_val is None and f.get("condition") == cond_val))), None)
     if entry is None:
         entry = FlowEntry({"id": f"flow_{len(flows) + 1}", "kind": "FLOW", "source": src_sid, "target": tgt_sid, "condition": cond_val, "created_turn": int(current_turn)})
         flows.append(entry)
+    elif cond_val is not None:
+        entry["condition"] = cond_val
     for key, val in (("payload", payload), ("action", action)):
         if val is not None:
             entry[key] = _clean_opt_str(val)

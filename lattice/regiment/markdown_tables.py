@@ -260,6 +260,7 @@ def build_mcus_from_tables_and_flows(
             tgt = str(srow.get("target") or srow.get("to") or srow.get("recipient") or "").strip()
             if not src or not tgt:
                 continue
+            fnm = str(srow.get("flow") or srow.get("id") or srow.get("name") or "").strip() or None
             pay = str(srow.get("payload") or srow.get("object") or srow.get("data") or "").strip() or None
             cond = str(srow.get("condition") or srow.get("when") or "").strip() or None
             txt = f"The {src} component sends {pay or 'data'} to {tgt}."
@@ -272,7 +273,7 @@ def build_mcus_from_tables_and_flows(
                 "conditions": [cond] if cond else [], "is_exception": False, "superseded_literals": [],
                 "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
                 "lattice_kind": "FLOW",
-                "lattice_payload": {"source": src, "target": tgt, "payload": pay, "condition": cond, "summary": txt},
+                "lattice_payload": {"source": src, "target": tgt, "payload": pay, "condition": cond, "summary": txt, **({"flow_name": fnm} if fnm and fnm != pay else {})},
             })
             next_id += 1
         elif t_kind == "RULE":

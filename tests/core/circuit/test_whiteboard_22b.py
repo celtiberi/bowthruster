@@ -33,16 +33,16 @@ from typing import Any
 WORKSPACE_LATTICE = Path(__file__).resolve().parents[3]
 REPO_ROOT = Path(__file__).resolve().parents[4]
 BEND_GATE = WORKSPACE_LATTICE / "laws" / "bend_gate.py" if (WORKSPACE_LATTICE / "laws" / "bend_gate.py").is_file() else REPO_ROOT / "scripts" / "bend_gate.py"
-SPEC_LAWS_BEND = WORKSPACE_LATTICE / "docs" / "specs" / "whiteboard_22b" / "LAWS.bend"
+SPEC_LAWS_BEND = WORKSPACE_LATTICE / "laws" / "bend_wb_22b" / "LAWS.bend"
 
 
 def _resolve_spec_laws_bend() -> Path:
     if SPEC_LAWS_BEND.is_file():
         return SPEC_LAWS_BEND
     for entry in sys.path:
-        cand = Path(entry) / "docs" / "specs" / "whiteboard_22b" / "LAWS.bend"
-        if cand.is_file():
-            return cand
+        for rel in ("laws/bend_wb_22b/LAWS.bend", "docs/specs/whiteboard_22b/LAWS.bend"):
+            if (cand := Path(entry) / rel).is_file():
+                return cand
     return SPEC_LAWS_BEND
 
 

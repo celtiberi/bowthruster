@@ -163,7 +163,7 @@ def _collect_fn_calls(node: ast.AST, law_fns: set[str]) -> set[str]:
         if isinstance(ch, ast.Assign) and all(isinstance(t, ast.Name) and t.id == "_" for e in ch.targets for t in (e.elts if isinstance(e, (ast.Tuple, ast.List)) else [e])): continue
         if isinstance(ch, ast.AnnAssign) and isinstance(ch.target, ast.Name) and ch.target.id == "_": continue
         if isinstance(ch, ast.Expr):
-            calls.update(fn for s in ast.walk(ch.value) if isinstance(s, ast.Call) and (fn := (s.func.id if isinstance(s.func, ast.Name) else (s.func.attr if isinstance(s.func, ast.Attribute) else ""))) and fn not in law_fns)
+            calls.update(fn for s in ast.walk(ch.value) if isinstance(s, ast.Call) and (fn := (s.func.id if isinstance(s.func, ast.Name) else (s.func.attr if isinstance(s.func, ast.Attribute) else ""))) and (fn not in law_fns or any(not isinstance(a, ast.Constant) for a in [*s.args, *(kw.value for kw in s.keywords)])))
             continue
         if isinstance(ch, ast.Call) and (fn := (ch.func.id if isinstance(ch.func, ast.Name) else (ch.func.attr if isinstance(ch.func, ast.Attribute) else ""))): calls.add(fn)
         calls.update(_collect_fn_calls(ch, law_fns))
@@ -323,15 +323,15 @@ def verify_ast_call_graph_skeleton(whiteboard_graph: dict[str, Any] | None, stag
                 if (dp := (proj_root / sfp) if (proj_root / sfp).is_file() else (Path(sfp) if Path(sfp).is_file() else None)) is not None:
                     cg_files.append({"path": sfp, "source": dp.read_text(encoding="utf-8", errors="ignore")})
         checked_scopes.append(sid)
-        defined_fns, merged_cg = set(), {}
+        iface_names, sc_fcnt = [str(a.get("name") or a.get("id") or "").strip() for a in ifaces], len(_extract_scope_files(scopes.get(sid) or {}))
+        defined_fns, merged_cg, sib_roots = set(), {}, set()
         cpath = str(cg_files[0].get("path") or cg_files[0].get("file") or next(iter(iface_files), "")).strip()
         for cf in cg_files:
             _, dfns, cg = _parse_file_call_graph(cf, law_fn_set)
             defined_fns |= dfns
-            for k, v in cg.items():
-                merged_cg.setdefault(k, set()).update(v)
-        iface_names = [str(a.get("name") or a.get("id") or "").strip() for a in ifaces]
-        reachable, queue = set(), [fn for fn in iface_names if fn in defined_fns]
+            if (len(cg_files) > 1 or sc_fcnt > 1) and not (dfns & set(iface_names)): sib_roots.update(fn for fn in dfns if not fn.startswith("_") and fn not in law_fn_set)
+            for k, v in cg.items(): merged_cg.setdefault(k, set()).update(v)
+        reachable, queue = set(), [fn for fn in iface_names if fn in defined_fns] + sorted(sib_roots)
         visited = set(queue)
         while queue:
             for callee in merged_cg.get(queue.pop(0), set()):
@@ -339,7 +339,7 @@ def verify_ast_call_graph_skeleton(whiteboard_graph: dict[str, Any] | None, stag
                 if callee not in visited and callee in merged_cg:
                     visited.add(callee)
                     queue.append(callee)
-        iface_def = bool(iface_names) and all(fn in defined_fns for fn in iface_names)
+        iface_def = bool(iface_names) and (all(fn in defined_fns for fn in iface_names) or bool(sib_roots) or (sc_fcnt > 1 and any(fn in defined_fns for fn in iface_names)))
         for law_art, lfn in laws:
             law_id, lfn_def = str(law_art.get("name") or law_art.get("id") or lfn).strip(), (lfn in defined_fns)
             calls_law = (lfn in reachable or lfn in iface_names) if lfn_def else True
@@ -443,8 +443,8 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
 
     for art in (a for a in artifacts if str(a.get("kind") or "").upper() in ("INTERFACE", "SCHEMA")):
         akind, asid, aname, afile = str(art.get("kind") or "").upper(), str(art.get("scope") or "").strip(), str(art.get("name") or art.get("id") or "").strip(), str(art.get("file") or "").strip()
-        req_inputs = [str(x).split(":", 1)[0].split("=", 1)[0].strip().lstrip("*") for x in (art.get("inputs") or art.get("in") or art.get("fields") or []) if str(x).strip()]
-        cand_cfiles = [f for f in staged_files if (afile and _paths_match(str(f.get("path") or ""), afile))] or modified_scope_files.get(asid, [])
+        req_inputs, sc_files = [str(x).split(":", 1)[0].split("=", 1)[0].strip().lstrip("*") for x in (art.get("inputs") or art.get("in") or art.get("fields") or []) if str(x).strip()], _extract_scope_files(scopes.get(asid) or {})
+        cand_cfiles = [f for f in staged_files if (afile and _paths_match(str(f.get("path") or ""), afile))] or ([] if (afile and len(sc_files) > 1) else modified_scope_files.get(asid, []))
         for cf in cand_cfiles:
             cpath, removed = str(cf.get("path") or afile or "").strip(), {str(x).strip() for x in (cf.get("removed_symbols") or []) if str(x).strip()}
             if aname and aname in removed:
@@ -453,7 +453,7 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
             (fn_names, fn_params), (cls_names, cls_fields) = _normalize_symbol_map(cf.get("ast_functions")), _normalize_symbol_map(cf.get("ast_classes") if "ast_classes" in cf else cf.get("ast_schemas"))
             all_names = fn_names | cls_names
             if (akind == "INTERFACE" and has_fn_ast) or (akind == "SCHEMA" and (has_cls_ast or has_fn_ast)):
-                if aname not in all_names and (afile or len(cand_cfiles) == 1):
+                if aname not in all_names and ((afile and (_paths_match(cpath, afile) or len(sc_files) <= 1)) or (len(cand_cfiles) == 1 and len(sc_files) <= 1)):
                     contracts_ok = False; violations.append({"kind": "CONTRACT_VIOLATION", "scope": asid, "path": cpath, "description": f"Required {akind} '{aname}' missing from {cpath}"})
                 elif akind == "INTERFACE" and req_inputs and aname in fn_params and not any(k in fn_params[aname] for k in ("kwargs", "args")) and (missing_in := [inp for inp in req_inputs if inp not in fn_params[aname]]):
                     contracts_ok = False; violations.append({"kind": "CONTRACT_VIOLATION", "scope": asid, "path": cpath, "description": f"INTERFACE '{aname}' in {cpath} missing required inputs: {missing_in}"})
