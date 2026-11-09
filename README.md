@@ -1,31 +1,33 @@
 # Lattice
 
-**Stop AI coding agents from grepping your entire repo, forgetting your rules, and silently breaking downstream modules.**
+**Give your AI coding agent a live map of your codebase, 1-shot code lookup, and a 50ms pre-commit gate—with zero manual bookkeeping.**
 
-**Lattice** (`lattice-mcp`) is a `< 50ms`, zero-LLM **architecture graph, 1-shot AST code slicer, and formal pre-commit verification gate** for AI coding agents (Claude Code, Cursor, Antigravity, Windsurf). Instead of reading dozens of files to make a 10-line change, your agent pulls a `< 2 KB` slice containing the exact function code, private helper call tree, formal invariants, and upstream/downstream data-flow contracts—and verifies every commit against your architecture before it lands.
+When you use an AI coding agent (Claude Code, Cursor, Antigravity, Windsurf) on a growing project, three things start going wrong:
+1. **It burns time and tokens hunting through files:** To make a 15-line change, the agent greps across the repo and reads dozens of files—filling its context window with noise before it writes a single line of code.
+2. **Fixing one thing breaks another:** It forgets a business rule you explained earlier, or changes a function in one file without realizing three downstream modules depend on it.
+3. **Architecture docs rot immediately:** Nobody has time to keep markdown specs in sync with code by hand.
 
-> **Zero Manual Bookkeeping:** You don't write specs or run queries by hand. Connect `lattice-mcp` and paste this to your AI:  
+**Lattice (`lattice-mcp`) fixes all three.** It is a fast (`< 50ms`), deterministic MCP server (zero LLMs, zero API keys) that your AI operates directly to keep your codebase's architecture, rules, and Git history in lockstep:
+
+- **1-Shot Code Slicing Instead of Repo Grepping:** Instead of reading whole files, your agent queries Lattice for a function or feature and gets back a `< 2 KB` slice containing the exact `#L<start>-L<end>` source code, the private helpers it calls, and its upstream/downstream contracts in a single call.
+- **Rules That Can't Be Silently Dropped:** Important invariants and module contracts are registered on the Lattice board instead of buried in chat history. Before a commit lands, Lattice checks your code's AST and formal invariants in **~50ms**—blocking the commit if an invariant was bypassed or an unrelated module was edited by mistake.
+- **Automatic Blast-Radius Tracking:** When your agent changes an upstream data structure or interface, Lattice automatically marks the affected downstream modules **`STALE`** so the agent knows exactly what else needs updating and which tests to run.
+- **Works Across Languages & Repos:** Supports Python, TypeScript/JavaScript, Go, Rust, C/C++, Java, Kotlin, C#, Swift, and Ruby—and automatically discovers the right board across multiple repositories from a single global MCP config.
+
+> **Try it in 60 seconds (you don't write specs or run queries by hand):**  
+> Connect `lattice-mcp` to your AI coding agent and paste this prompt:  
 > *`"Call lattice_readme(section='readme') and explain to me in plain English how Lattice would change how we build and maintain this repository — then map this codebase onto a Lattice board."`*
 
 ---
 
-## Part 1: What Lattice Does for You
+## Part 1: How Daily Work Changes with Lattice
 
-When you use AI coding agents on a growing codebase, four things usually go wrong:
-1. **Architecture docs rot immediately:** Prose markdown specs drift out of sync with the code as soon as the next commit lands.
-2. **Agents "rabbit-hole" through the repo:** To make a 20-line change, an agent greps and reads 30 files, burning tens of thousands of tokens and polluting its context window with unrelated code.
-3. **Old and new rules silently conflict:** Standard vector RAG and agent memory stores append every instruction they hear. When a rule changes on Turn 12, the Turn 2 rule stays in memory and the agent writes contradictory code.
-4. **Upstream edits silently break downstream callers:** Nobody knows the exact blast radius of a contract change without running slow, full-repository test suites.
-
-**How Lattice changes your workflow:**
-- **Your architecture is a live, verified circuit (`.whiteboard/<board>.json`):** Every component (`@ COMPONENT`), data flow (`> FLOW`), public entrypoint (`$ INTERFACE`), data model (`# SCHEMA`), and boolean invariant (`% LAW`) is stored in a SQLite-backed constraint graph. A board cannot unlock work packets until it reaches **`PROVEN_COMPLETE`** (`0` structural gaps, `0` contradictory bounds, and passing **Bend 2** formal proofs).
-- **100% deterministic, `< 50ms` per turn (`0` LLMs, `0` API keys, `0 GB` local model weights):** Because AI coding agents generate structured Markdown pipe tables effortlessly, every Lattice operation (`lattice_readme`, `lattice_atlas`, `lattice_slice`, `lattice_packets`, `lattice_turn`, `lattice_git_sync`, `lattice_status`, `lattice_logs`) runs deterministically in milliseconds using pure Python, SQLite, Python `ast`, and Bend 2.
-- **Your agent sees a compact 1-line-per-component map (`lattice_atlas`) and pulls `< 2 KB` component + code slices (`lattice_slice`) in one shot:** Instead of grepping the entire repo blindly, the agent views a high-level topology of components and flows (~15–20 tokens per component, partitionable into multiple domain boards for large systems) and calls `lattice_slice(board="...", query="<symbol>", include_code=True)` to get the owning `@ COMPONENT` contracts, `calls=[_helper#L<start>-L<end>]` call trees, on-the-fly `@ AST_SYMBOL` resolution (including private `_helper` functions), and the exact `#L<start>-L<end>` source code in a single call.
-- **AI Memory (`lattice.ai_memory`) traces causal pipelines without utility-hub noise:** When searching for related components, Lattice's directed spreading-activation index follows multi-hop `> FLOW` pipelines (`F1 = 0.989`) while treating shared utilities (`types.py`, `db.py`) as 1-hop contract sinks so it never pulls in 95% of the repo by accident.
-- **Self-Contained WorkPackets with Git Baseline Pointers (`lattice_packets`):** For every `STALE` or `READY` component, Lattice emits its `baseline_commit_sha` (so the agent can run `git diff <baseline_commit_sha>` to see exact file/code changes), a formal `LAWS.bend` proof file (`laws_skeleton`), and an `ast.parse`-verified Python stub (`python_skeleton`) with `# Spec:` docstrings and `# MUST CALL` anchors.
-- **50ms Pre-Commit Gate & Automatic Blast-Radius Cascade (`lattice_git_sync`):**
-  - **Before commit (`mode="pre"`):** Verifies in ~50ms that no file belonging to a `VERIFIED` component was modified without running `lattice_turn` first to mark it `STALE` (`verified_scope_edit_guard_law`), all declared files exist on disk, Python `ast.parse` source signatures match the board's `# SCHEMA` and `$ INTERFACE` contracts, `> FLOW` payload schemas align (`flow_schema_checked`), every `$ INTERFACE` calls its `% LAW` helpers in the static call graph without discarding return values (`_ = law(...)`), Bend 2 formal proofs hold (`bend_proofs_ok`), no deleted files or broken local imports (including dynamic `importlib.import_module` / `__import__`) are referenced, optional file-size limits (`max_file_lines`) pass, and any unregistered public functions/classes are reported in `unregistered_public_symbols`.
-  - **After commit (`mode="post"`):** Stamps the Git commit SHA and pruned file hashes onto the board, auto-heals renamed file paths (`git mv`), refreshes AST `#L<start>-L<end>` symbol line ranges on all `# SCHEMA` and `$ INTERFACE` artifacts and `ai_memory` `external_links`, and cascades **`STALE`** downstream along directed `> FLOW` edges whenever an upstream contract changes.
+| Without Lattice | With Lattice (`lattice-mcp`) |
+| :--- | :--- |
+| Agent greps and reads 20+ files (`30,000+` tokens) to find the 30 lines it needs to edit. | Agent calls `lattice_slice(..., include_code=True)` once and gets the `< 2 KB` contract + exact `#L<start>-L<end>` code lines immediately. |
+| A 2-line bugfix in one module accidentally edits a neighboring verified file or drops an existing rule. | Lattice's **50ms pre-commit gate** (`lattice_git_sync`) verifies AST signatures, call-graph rules, and file boundaries before the commit can land. |
+| Changing a shared type or API leaves downstream callers broken until a slow full-repo test run fails. | Lattice traces directed data flows (`> FLOW`) and marks only the impacted downstream components **`STALE`** so the agent updates them and runs only their tests. |
+| Architecture diagrams and `README` specs drift out of date after a few commits. | On every commit, Lattice stamps the Git SHA, auto-heals renamed files (`git mv`), and refreshes `#L<start>-L<end>` line numbers automatically. |
 
 ---
 
