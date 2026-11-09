@@ -377,7 +377,7 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             shutil.rmtree(Path("/tmp/whiteboard_sessions/sib_board"), ignore_errors=True)
         restored_cli_root = (
             CLI.REPO_ROOT == orig_cli_root and all(not r.get("isError") for r in par_turns) and {f"par_comp_{i}" for i in range(4)} <= par_scopes
-            and "- * CHARTER [sib_board]: Widget engine" in str(r_spec.get("atlas_schematic"))
+            and "- @ CHARTER [sib_board]: Widget engine" in str(r_spec.get("atlas_schematic"))
             and "[why: Isolates worker 0]" in str(r_spec.get("atlas_schematic"))
             and "## 1. Project Charter & Purpose" in str(r_spec.get("atlas_spec"))
             and "**Why It Exists (`Rationale`):** Isolates worker 0" in str(r_spec.get("atlas_spec"))

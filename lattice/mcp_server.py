@@ -244,8 +244,9 @@ def _resolve_project_root(board: str, project_root: str | None = None, message: 
     return REPO_ROOT
 
 
-def _format_tool_result(payload: dict[str, Any], *, is_error: bool = False, text: str | None = None) -> tuple[dict[str, Any], int]:
-    out_txt = str(text) if text is not None else json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False)
+def _format_tool_result(payload: dict[str, Any], *, is_error: bool = False, text: str | None = None, fence: bool = True) -> tuple[dict[str, Any], int]:
+    raw = str(text) if text is not None else json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False)
+    out_txt = (f"```{'text' if text is not None else 'json'}\n{raw}\n```" if fence and not raw.lstrip().startswith("```") else raw)
     res = McpToolCallResult(content=[{"type": "text", "text": out_txt}], isError=bool(is_error), structuredContent=payload)
     return {"content": res.content, "isError": res.isError, "structuredContent": res.structuredContent}, len(out_txt.encode("utf-8"))
 
@@ -280,7 +281,7 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
                 if not (is_skills_section_routed(is_sk, bool(doc.get("skills"))) and skills_section_routing_law(is_sk, bool(doc.get("skills")))):
                     raise ValueError(f"skills_section_routing_law violated for section={sec!r}")
                 doc_txt = doc.get("quickstart") if sec == "readme" else (doc.get("readme") if sec == "full_readme" else (doc.get("guide") if sec == "guide" else ((doc.get("skills") or {}).get("lattice") if sec in ("skill", "skills", "change", "navigate", "qa") else None)))
-                resp, nbytes = _format_tool_result(doc, text=doc_txt)
+                resp, nbytes = _format_tool_result(doc, text=doc_txt, fence=(doc_txt is None))
                 record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
                 return resp
 
@@ -299,7 +300,7 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
                 resp, nbytes = _format_tool_result({
                     "boards": list(boards_dict.keys()), "atlas_mounted": view.get("atlas_mounted"), "atlas_schematic": view.get("atlas_schematic"),
                     "atlas_metrics": view.get("atlas_metrics"), **({"atlas_mermaid": view.get("atlas_mermaid")} if args.get("mermaid") else {}), **({"atlas_spec": view.get("atlas_spec")} if args.get("spec") else {}),
-                }, text=atlas_txt)
+                }, text=atlas_txt, fence=not bool(args.get("spec")))
                 record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
                 return resp
 
@@ -331,7 +332,8 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
                 }
                 raw_cv = (view.get("compact_view") or view.get("text") or "[EMPTY_SLICE]") + (f"\n[MARKED STALE]: {stale_sids}" if stale_sids else "")
                 parts = raw_cv.split("\n[CODE ")
-                sl_txt = f"```text\n{parts[0]}\n```" + "".join(f"\n```python\n# [CODE {p}\n```" for p in parts[1:])
+                hdr_cv = "\n".join(("@ SCHEMA " + ln[9:] if ln.startswith("# SCHEMA ") else ("@ FLOW" + ln[6:] if ln.startswith("> FLOW") else ln)) for ln in parts[0].splitlines())
+                sl_txt = f"```text\n{hdr_cv}\n```" + "".join(f"\n```python\n# [CODE {p}\n```" for p in parts[1:])
                 resp, nbytes = _format_tool_result(payload, text=None if bool(args.get("include_raw", False)) else sl_txt)
                 record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", modified_scopes=stale_sids or None, response_bytes=nbytes)
                 return resp
@@ -443,11 +445,9 @@ def _hot_reload_if_changed() -> None:
             try: importlib.reload(cmod)
             except Exception: pass
         try:
-            self_mod = sys.modules.get("lattice.mcp_server")
-            m = importlib.reload(self_mod) if self_mod is not None else importlib.import_module("lattice.mcp_server")
-            m._LAST_MTIME = cur
-            main_mod = sys.modules.get("__main__")
-            for k in ("MCP_TOOLS", "KNOWN_TOOL_NAMES", "_hot_reload_if_changed", "_read_doc_resource", "_resolve_project_root", "_format_tool_result", "call_lattice_tool"):
+            m = importlib.reload(self_mod) if (self_mod := sys.modules.get("lattice.mcp_server")) is not None else importlib.import_module("lattice.mcp_server")
+            m._LAST_MTIME, main_mod = cur, sys.modules.get("__main__")
+            for k in ("MCP_TOOLS", "KNOWN_TOOL_NAMES", "_hot_reload_if_changed", "_read_doc_resource", "_resolve_project_root", "_format_tool_result", "call_lattice_tool", "handle_mcp_request"):
                 if hasattr(m, k):
                     globals()[k] = getattr(m, k)
                     if main_mod is not None: setattr(main_mod, k, getattr(m, k))

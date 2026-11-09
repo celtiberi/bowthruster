@@ -458,7 +458,7 @@ def render_lattice_atlas(
     schem_lines = [f"[LATTICE_ATLAS LOD0 boards={len(boards)} components={total_components} verified={verified_components}/{total_components} flows={total_flows} open_gaps={open_gaps}]"]
     for bname, board in boards:
         if ch := _extract_board_charter(bname, board):
-            schem_lines.append(f"- * CHARTER [{ch['name']}]: {ch['summary']}" + (f" (principles: {ch['principles']})" if ch["principles"] else ""))
+            schem_lines.append(f"- @ CHARTER [{ch['name']}]: {ch['summary']}" + (f" (principles: {ch['principles']})" if ch["principles"] else ""))
     mermaid_lines = ["flowchart LR"]
     for sid, c in components.items():
         deps_str, owner_str = ", ".join(c["depends_on"]), c["owner"] or "unassigned"
@@ -467,9 +467,9 @@ def render_lattice_atlas(
         mermaid_lines.append(f'  {sid}["{sid} ({c["build_status"]}, {owner_str})"]')
     for fl in flows:
         pay_tag = f" [{fl['payload']}]" if fl["payload"] else ""
-        schem_lines.append(f"- > FLOW {fl['source']} -> {fl['target']}{pay_tag}")
+        schem_lines.append(f"- @ FLOW {fl['source']} -> {fl['target']}{pay_tag}")
         mermaid_lines.append(f"  {fl['source']} -->|{fl['payload']}| {fl['target']}" if fl["payload"] else f"  {fl['source']} --> {fl['target']}")
-    schem_lines.append(f"- # METRICS total_components={total_components} verified_components={verified_components} total_flows={total_flows} open_gaps={open_gaps} hub_bottlenecks=[{', '.join(hub_bottlenecks)}]")
+    schem_lines.append(f"- @ METRICS total_components={total_components} verified_components={verified_components} total_flows={total_flows} open_gaps={open_gaps} hub_bottlenecks=[{', '.join(hub_bottlenecks)}]")
     atlas_schematic, atlas_mermaid = "\n".join(schem_lines), "\n".join(mermaid_lines)
     atlas_spec = _render_board_spec(boards, components, flows, atlas_metrics, atlas_mermaid)
     hw_edges = ", ".join(f"{fl['source']}->{fl['target']}" for fl in flows) or "none"

@@ -915,8 +915,8 @@
     },
     {
       "calls": [
-        "_format_tool_result#L247-L250",
-        "_hot_reload_if_changed#L428-L455",
+        "_format_tool_result#L247-L251",
+        "_hot_reload_if_changed#L430-L455",
         "_read_doc_resource#L215-L227",
         "_resolve_project_root#L230-L244"
       ],
@@ -924,12 +924,12 @@
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "lattice/mcp_server.py#L253-L424",
+        "file": "lattice/mcp_server.py#L254-L426",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "lattice/mcp_server.py#L253-L424",
+      "file": "lattice/mcp_server.py#L254-L426",
       "id": "interface_runtime_foundation_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -2517,7 +2517,7 @@
         "file_hashes": {
           "lattice/__init__.py": "837c54c33cd000b4",
           "lattice/cli.py": "adc27674321c2653",
-          "lattice/mcp_server.py": "0aa2632d1158f578",
+          "lattice/mcp_server.py": "a7ea24d7fd2a2145",
           "lattice/mcp_verifier.py": "a015087de6656801",
           "lattice/nlp.py": "bfdfb1a1a0687299",
           "lattice/types.py": "2172d10c1427d1b2"
@@ -2546,7 +2546,7 @@
       "file_hashes": {
         "lattice/__init__.py": "837c54c33cd000b4",
         "lattice/cli.py": "adc27674321c2653",
-        "lattice/mcp_server.py": "0aa2632d1158f578",
+        "lattice/mcp_server.py": "a7ea24d7fd2a2145",
         "lattice/mcp_verifier.py": "a015087de6656801",
         "lattice/nlp.py": "bfdfb1a1a0687299",
         "lattice/types.py": "2172d10c1427d1b2"
@@ -2684,7 +2684,7 @@
           "lattice/the_table/__init__.py": "d1d25d49b0f45310",
           "lattice/the_table/renderer.py": "456df3bffa847203",
           "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
-          "lattice/the_table/surface.py": "f5a8e646db0c5c25",
+          "lattice/the_table/surface.py": "9312740f6d458f28",
           "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
         },
         "files": [
@@ -2715,7 +2715,7 @@
         "lattice/the_table/__init__.py": "d1d25d49b0f45310",
         "lattice/the_table/renderer.py": "456df3bffa847203",
         "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
-        "lattice/the_table/surface.py": "f5a8e646db0c5c25",
+        "lattice/the_table/surface.py": "9312740f6d458f28",
         "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
       },
       "files": [
