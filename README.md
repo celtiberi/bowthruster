@@ -1,8 +1,12 @@
 # Lattice
 
-**Give your AI coding agent a live map of your codebase, 1-shot code lookup, and a 50ms pre-commit gate—with zero manual bookkeeping.**
+> **Built for AI Coding Agents — Not Manual Human Bookkeeping**  
+> Lattice (`lattice-mcp`) is a tool for **your AI coding agent** to operate directly, not another spec format for you to maintain by hand. You connect `lattice-mcp` to your agent (Claude Code, Cursor, Antigravity, Windsurf, etc.), and your AI builds the architecture map, pulls focused code slices, and verifies its own commits automatically.
+>
+> **Try it in 60 seconds:** Connect `lattice-mcp` and paste this to your AI:  
+> *`"Call lattice_readme(section='readme') and explain to me in plain English how Lattice would change how we build and maintain this repository — then map this codebase onto a Lattice board."`*
 
-When you use an AI coding agent (Claude Code, Cursor, Antigravity, Windsurf) on a growing project, three things start going wrong:
+When you use an AI coding agent on a growing project, three things start going wrong:
 1. **It burns time and tokens hunting through files:** To make a 15-line change, the agent greps across the repo and reads dozens of files—filling its context window with noise before it writes a single line of code.
 2. **Fixing one thing breaks another:** It forgets a business rule you explained earlier, or changes a function in one file without realizing three downstream modules depend on it.
 3. **Architecture docs rot immediately:** Nobody has time to keep markdown specs in sync with code by hand.
@@ -13,10 +17,6 @@ When you use an AI coding agent (Claude Code, Cursor, Antigravity, Windsurf) on 
 - **Rules That Can't Be Silently Dropped:** Important invariants and module contracts are registered on the Lattice board instead of buried in chat history. Before a commit lands, Lattice checks your code's AST and formal invariants in **~50ms**—blocking the commit if an invariant was bypassed or an unrelated module was edited by mistake.
 - **Automatic Blast-Radius Tracking:** When your agent changes an upstream data structure or interface, Lattice automatically marks the affected downstream modules **`STALE`** so the agent knows exactly what else needs updating and which tests to run.
 - **Works Across Languages & Repos:** Supports Python, TypeScript/JavaScript, Go, Rust, C/C++, Java, Kotlin, C#, Swift, and Ruby—and automatically discovers the right board across multiple repositories from a single global MCP config.
-
-> **Try it in 60 seconds (you don't write specs or run queries by hand):**  
-> Connect `lattice-mcp` to your AI coding agent and paste this prompt:  
-> *`"Call lattice_readme(section='readme') and explain to me in plain English how Lattice would change how we build and maintain this repository — then map this codebase onto a Lattice board."`*
 
 ---
 
