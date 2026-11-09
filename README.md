@@ -219,19 +219,17 @@ Behavioral unit tests alone leave internal program structure underdetermined ([*
 
 ### 3.2 `lattice.ai_memory`: Why Standard Vector RAG & GraphRAG Fail on Code, and How Directed Spreading Activation Works
 
-If you put a codebase into a naive graph and walk 2 undirected hops from `auth_service`, hop 1 hits a shared utility (`types.py` or `graph_core`), and hop 2 bounces out to **every module in the repository that imports `types.py`** (`94.7%` hub noise, $F_1 = 0.660$). Conversely, if you restrict retrieval to 1 hop, you miss 4-stage data pipelines (`gateway -> router -> auth -> token_store`).
+If you put a codebase into a naive dependency graph and walk 2 undirected hops from `auth_service`, hop 1 hits a shared utility (`types.py` or `graph_core`), and hop 2 bounces out to **every module in the repository that imports `types.py`** (`94.7%` hub noise). Conversely, if you restrict retrieval to 1 hop, you miss multi-stage data pipelines (`gateway -> router -> auth -> token_store`).
 
 `lattice.ai_memory` ([`hippocampal_index.py`](lattice/ai_memory/hippocampal_index.py) and [`uri_resolver.py`](lattice/ai_memory/uri_resolver.py)) solves this with three mechanisms:
 
 1. **Pointer-Only Storage & Git-Synchronized URIs (`pointer_only_storage_law`):**
    `ai_memory` never copies raw source files into a vector database. It stores concept nodes holding `uri://file/<path>#L<start>-L<end>` pointers. When files are renamed (`git mv`) or line ranges shift on commit, [`sync_git_diff_uris`](lattice/ai_memory/uri_resolver.py) automatically heals the pointers and refreshes AST line anchors.
-2. **Causal Edge-Type Separation (`Directed Multi-Cue Push`):**
-   - **Data-Flow Edges (`> FLOW`) & Scope Hierarchy:** Propagate activation both forward and backward up to `MAX_RECALL_HOPS = 6` ($\gamma = 0.85$, threshold $\epsilon = 0.04$), damped only by directional flow degree $1 / \sqrt{\deg_{\text{flow}}(u)}$.
-   - **Shared Utility Dependencies (`depends_on`):** Pulled **1 hop forward** (`caller -> utility`) into a **terminal contract sink** (`steiner_bridge_and_sink_isolation_law`: `can_propagate_from_node(is_contract_sink=True) == False`). You get the utility's interface contract without ever bouncing backward into unrelated callers.
-3. **Multi-Cue Steiner Bridge Intersection ($\beta = 0.85$):**
-   When a task mentions two or more components $(s_1, s_2)$ at opposite ends of a pipeline, `recall_concepts` propagates a forward wave $a^+(s_1, v)$ and a backward wave $a^-(s_2, v)$. Intermediate pipeline components where both waves meet receive a converging bridge boost:
-   $$a_{\text{total}}(v) = \min\!\left(1.0,\; a_{\text{base}}(v) + \beta \sum_{s_1 < s_2} \max\!\left(\sqrt{a^+(s_1, v)\,a^-(s_2, v)},\; \sqrt{a^+(s_2, v)\,a^-(s_1, v)}\right)\right)$$
-   Across live boards and synthetic benchmarks ($N \in \{12, 30, 60\}$), this raises retrieval accuracy from **$F_1 = 0.660$ (`94.7%` hub noise)** on undirected 2-hop BFS to **$F_1 = 0.989$ (`100%` 5-hop bridge recall, `0.0%` hub noise)**.
+2. **Causal Edge-Type Separation (Data Flows vs. Shared Utilities):**
+   - **Data-Flow Edges (`> FLOW`) & Scope Hierarchy:** Propagate activation both forward and backward along the pipeline (up to 6 hops) so multi-step data paths stay connected.
+   - **Shared Utility Dependencies (`depends_on`):** Pulled **1 hop forward** (`caller -> utility`) into a **terminal contract sink** (`steiner_bridge_and_sink_isolation_law`). You get the utility's interface contract without ever bouncing backward into unrelated callers (`0%` hub noise).
+3. **Two-Ended Pipeline Bridge Recall:**
+   When a task mentions two components at opposite ends of a pipeline (e.g., `web_gateway` and `cursor_engine`), `recall_concepts` propagates a forward wave from the upstream component and a backward wave from the downstream component. The intermediate pipeline stages where both waves meet (such as `turn_pipeline` and `turn_brief`) automatically get boosted into the active context slice—surfacing the full connecting path across up to 5 hops without pulling in unrelated branches.
 
 ---
 
