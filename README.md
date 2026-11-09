@@ -1,12 +1,11 @@
 # Lattice
 
-> **Built for AI Coding Agents — Not Manual Human Bookkeeping**  
-> Lattice is an MCP toolset (`lattice-mcp`) designed for **your AI coding agent** to operate directly. You don't write pipe tables or run slice queries by hand — you connect `lattice-mcp` to your agent (Claude Code, Cursor, Antigravity, Windsurf, etc.) and let your AI maintain the architecture board, pull focused code slices, and verify its own commits.
->
-> **Want to see what Lattice would do for your project?** Connect `lattice-mcp` and paste this to your AI:  
-> *`"Call lattice_readme(section='readme') and explain to me in plain English how Lattice would change how we build and maintain this repository — then map this codebase onto a Lattice board."`*
+**Stop AI coding agents from grepping your entire repo, forgetting your rules, and silently breaking downstream modules.**
 
-**Lattice** is a **language-agnostic**, architecture-first software engineering engine, AI memory index, and formal verification gate (`lattice-mcp`). Whether your repository is written in **TypeScript/JavaScript, Go, Rust, C/C++, Java, Kotlin, C#, Swift, Ruby, Python, or a polyglot mix**, Lattice keeps your module boundaries, public interfaces, formal invariants, and Git history in lockstep so AI coding agents can build and modify large codebases without reading the entire repo or breaking downstream dependencies.
+**Lattice** (`lattice-mcp`) is a `< 50ms`, zero-LLM **architecture graph, 1-shot AST code slicer, and formal pre-commit verification gate** for AI coding agents (Claude Code, Cursor, Antigravity, Windsurf). Instead of reading dozens of files to make a 10-line change, your agent pulls a `< 2 KB` slice containing the exact function code, private helper call tree, formal invariants, and upstream/downstream data-flow contracts—and verifies every commit against your architecture before it lands.
+
+> **Zero Manual Bookkeeping:** You don't write specs or run queries by hand. Connect `lattice-mcp` and paste this to your AI:  
+> *`"Call lattice_readme(section='readme') and explain to me in plain English how Lattice would change how we build and maintain this repository — then map this codebase onto a Lattice board."`*
 
 ---
 

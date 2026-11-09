@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "lattice"
 version = "0.1.0"
-description = "Lattice: 100% Deterministic Markdown Pipe-Table Driven Neuro-Symbolic Cognitive Architecture (<50ms, Zero LLMs)"
+description = "Lattice (lattice-mcp): <50ms architecture graph, 1-shot AST code slicer, and formal pre-commit gate for AI coding agents (zero LLMs, zero API keys)."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
