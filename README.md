@@ -141,8 +141,20 @@ Pass the canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interf
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | token_valid_law | auth_service | backend | 1 | laws | has_sig: Bool, not_expired: Bool | MOD.is_token_valid(has_sig, not_expired) | Bool.and(has_sig, not_expired) | Spec 1 |
 | route_allow_law | api_gateway | backend | 1 | laws | token_ok: Bool, route_exists: Bool | MOD.can_route(token_ok, route_exists) | Bool.and(token_ok, route_exists) | Spec 1 |
+
+| Schema | Component | Fields | Owner | Stage | File | Spec |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| AuthToken | auth_service | user_id: str, expires_at: int | backend | 1 | src/auth.py:L10-L18 | Spec 1 |
+
+| Rule | Component | Type | Property | Op | Value | Condition |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| max_lines_rule | auth_service | BOUND | max_file_lines | <= | 500 | always |
+| retry_cap_rule | api_gateway | BOUND | MAX_RETRIES | <= | 3 | always |
+| no_requests_lib | api_gateway | PROHIBITION | requests | == | false | always |
 ```
-*(Optional tables: `| Schema | Component | Fields | Owner | Stage | File | Spec |` for data models, and `| Rule | Component | Type | Property | Op | Value | Condition |` for numeric/boolean bounds such as `| max_lines_rule | auth_service | BOUND | max_file_lines | <= | 500 | always |`. In Law tables, you can provide either `LHS` and `RHS` columns or a `Theorem` column written as `LHS == RHS`. **Anti-Tautology `% LAW` Rule:** Reserve `% LAW` for multi-variable boolean state machines, routing tables, or conservation invariants ($k \ge 2$ boolean inputs); never invent a 1-boolean identity law like `MOD.is_ok(x) == x` just to mark a component `STALE` for a bug fix — instead, update the affected `$ INTERFACE`, `# SCHEMA`, or `Rule` row.)*
+- **When to use `Rule` (`*`) vs. `Law` (`%`):**
+  - **`Rule` (`BOUND` / `PROHIBITION` / `OBLIGATION`):** Use for file line caps (`BOUND` on `max_file_lines`), module constant bounds (`BOUND` on an AST constant like `MAX_RETRIES <= 3`), banned imports (`PROHIBITION` on a module name like `requests` or `torch`, checked against AST `import` statements on `lattice_git_sync`), or component obligations (`OBLIGATION`, mounted in `lattice_slice`). Re-submitting the same `(Component, Property)` overwrites the old rule in place (`MARKOVIAN_OVERWRITE`), or attaches a conditional exception when `Condition` differs.
+  - **`Law` (`% LAW`):** Reserve for multi-variable boolean state machines, routing tables, or conservation invariants ($k \ge 2$ boolean inputs, or a `Theorem` column `LHS == RHS`) that are proven in Bend 2 and called by the component's `$ INTERFACE` in the AST call graph. Never invent a 1-boolean identity law (`MOD.is_ok(x) == x`) just to mark a component `STALE`—use `lattice_slice(..., mark_stale=True)` or update the `$ INTERFACE`, `# SCHEMA`, or `Rule` row instead.
 
 #### Step 3: Generate Skeletons (Greenfield) or Stamp the Baseline (Brownfield)
 - **For Greenfield components:** Call `lattice_packets(board="my_board", component="auth_service")` to get the component's `laws_skeleton` (`LAWS.bend`) and `python_skeleton` (typed Python stub with `# MUST CALL` anchors), implement the files, and run `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)`.
