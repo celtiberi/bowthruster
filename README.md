@@ -30,24 +30,9 @@ When you use an AI coding agent on a growing project, three things start going w
 
 ---
 
-## Quick Start (30 Seconds, Zero Dependencies)
+## Quick Start
 
-Lattice runs on stock `python3` using only the **Python 3.11+ standard library** (`json`, `sqlite3`, `ast`, `pathlib`, `hashlib`, `subprocess`).
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/celtiberi/lattice.git
-```
-*(Optional: run `python3 -m lattice.mcp_verifier` inside `lattice/` to verify the stdio JSON-RPC 2.0 server, or `pip install -e .` if you want the `lattice` and `lattice-mcp` CLI entrypoints on your `PATH`.)*
-
-### 2. Connect `lattice-mcp` to your AI coding agent
-
-- **Claude Code (one command):**
-  ```bash
-  claude mcp add lattice -e PYTHONPATH=/ABSOLUTE/PATH/TO/lattice -- python3 -m lattice.mcp_server
-  ```
-
-- **Standard MCP JSON Config (`.mcp.json`, `mcp_config.json`, Cursor, Antigravity, Windsurf):**
+- Standard MCP JSON Config 
   ```json
   {
     "mcpServers": {
@@ -61,10 +46,9 @@ git clone https://github.com/celtiberi/lattice.git
     }
   }
   ```
-  *(Optional env var: `LATTICE_PROJECT_ROOT` to pin a specific repo. If omitted, `lattice-mcp` automatically discovers the active repository from `.whiteboard/<board>.json` or the file paths passed to `lattice_turn`.)*
+  
 
-### 3. Paste these two prompts to your AI
-Once connected, open any new or existing repository and tell your agent:
+- Once connected, open any new or existing repository and tell your agent:
 1. **Map the codebase:**
    > *`"Call lattice_readme(section='readme') and map this repository onto a Lattice board with its Charter, component Roles/Why, Flows, Interfaces, and Laws."`*
 2. **Run an architectural audit:**
