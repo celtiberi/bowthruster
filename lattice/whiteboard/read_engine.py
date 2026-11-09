@@ -343,15 +343,16 @@ def _format_code_window(src_lines: list[str], s: int, e: int, q_sub: list[str]) 
     for tok in q_sub:
         if "-" in tok and all(p.lstrip("l").isdigit() for p in tok.split("-", 1)):
             ws, we = (max(1, min(len(src_lines), int(p.lstrip("l")))) for p in tok.split("-", 1))
-            return f"[WINDOW #L{ws}-L{we}]\n" + "\n".join(src_lines[ws - 1 : min(we, ws + 29)])
+            we_eff = min(we, ws + 139)
+            return f"[WINDOW #L{ws}-L{we_eff}]\n" + "\n".join(src_lines[ws - 1 : we_eff])
     if q_sub and (hit := next((i + 1 for i in range(max(0, s - 1), min(len(src_lines), e)) if any(k in src_lines[i].lower() for k in q_sub)), None)):
-        ws, we = max(s, hit - 2), min(e, max(s, hit - 2) + 25)
+        ws, we = max(s, hit - 5), min(e, max(s, hit - 5) + 90)
         return f"[WINDOW #L{ws}-L{we}]\n" + "\n".join(src_lines[ws - 1 : we])
     full_blk = "\n".join(src_lines[max(0, s - 1) : e])
-    if e - s + 1 <= 40 and len(full_blk) <= 1650: return full_blk
-    head = src_lines[max(0, s - 1) : s + 11]
-    lms = [f"#   L{i}: {st[:76]}" for i in range(s + 12, min(len(src_lines), e) + 1) if (st := src_lines[i - 1].strip()).startswith(("if ", "elif ", "else:", "for ", "while ", "try:", "except", "def ", "class "))][:16]
-    return "\n".join([*head, f"# ... [LANDMARKS #L{s + 12}-L{e} — pass query='<symbol> <keyword>' or '<symbol> <start>-<end>' for exact window]:", *lms])
+    if e - s + 1 <= 160 and len(full_blk) <= 13000: return full_blk
+    head = src_lines[max(0, s - 1) : min(e, s + 59)]
+    lms = [f"#   L{i}: {st[:76]}" for i in range(s + 60, min(len(src_lines), e) + 1) if (st := src_lines[i - 1].strip()).startswith(("if ", "elif ", "else:", "for ", "while ", "try:", "except", "def ", "class "))][:20]
+    return "\n".join([*head, f"# ... [LANDMARKS #L{s + 60}-L{e} — pass query='<symbol> <keyword>' or '<symbol> <start>-<end>' for exact window]:", *lms])
 
 
 _AST_SPAN_CACHE: dict[str, tuple[int, list[tuple[str, int, int]], list[str]]] = {}

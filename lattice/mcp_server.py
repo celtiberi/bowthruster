@@ -447,7 +447,7 @@ def _hot_reload_if_changed() -> None:
         try:
             m = importlib.reload(self_mod) if (self_mod := sys.modules.get("lattice.mcp_server")) is not None else importlib.import_module("lattice.mcp_server")
             m._LAST_MTIME, main_mod = cur, sys.modules.get("__main__")
-            for k in ("MCP_TOOLS", "KNOWN_TOOL_NAMES", "_hot_reload_if_changed", "_read_doc_resource", "_resolve_project_root", "_format_tool_result", "call_lattice_tool", "handle_mcp_request"):
+            for k in ("slice_lattice", "MCP_TOOLS", "KNOWN_TOOL_NAMES", "_hot_reload_if_changed", "_read_doc_resource", "_resolve_project_root", "_format_tool_result", "call_lattice_tool", "handle_mcp_request"):
                 if hasattr(m, k):
                     globals()[k] = getattr(m, k)
                     if main_mod is not None: setattr(main_mod, k, getattr(m, k))

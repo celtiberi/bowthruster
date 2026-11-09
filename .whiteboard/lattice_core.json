@@ -1930,14 +1930,14 @@
       "calls": [
         "_enrich_view_compact_lines#L35-L79",
         "_node_matches_slice_dims#L229-L339",
-        "_scan_ast_symbols_on_disk#L358-L405"
+        "_scan_ast_symbols_on_disk#L359-L406"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/read_engine.py#L408-L491"
+        "file": "lattice/whiteboard/read_engine.py#L409-L492"
       },
-      "file": "lattice/whiteboard/read_engine.py#L408-L491",
+      "file": "lattice/whiteboard/read_engine.py#L409-L492",
       "id": "interface_whiteboard_slice_lattice",
       "inputs": [
         "graph",
@@ -2517,7 +2517,7 @@
         "file_hashes": {
           "lattice/__init__.py": "837c54c33cd000b4",
           "lattice/cli.py": "7a70269e375279ca",
-          "lattice/mcp_server.py": "f08adc98cf37e119",
+          "lattice/mcp_server.py": "a9193495844e1bc7",
           "lattice/mcp_verifier.py": "a015087de6656801",
           "lattice/nlp.py": "bfdfb1a1a0687299",
           "lattice/types.py": "2172d10c1427d1b2"
@@ -2546,7 +2546,7 @@
       "file_hashes": {
         "lattice/__init__.py": "837c54c33cd000b4",
         "lattice/cli.py": "7a70269e375279ca",
-        "lattice/mcp_server.py": "f08adc98cf37e119",
+        "lattice/mcp_server.py": "a9193495844e1bc7",
         "lattice/mcp_verifier.py": "a015087de6656801",
         "lattice/nlp.py": "bfdfb1a1a0687299",
         "lattice/types.py": "2172d10c1427d1b2"
@@ -2770,7 +2770,7 @@
           "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
           "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
           "lattice/whiteboard/mutations.py": "41a72335950cd737",
-          "lattice/whiteboard/read_engine.py": "006b48fd7a1d9f86",
+          "lattice/whiteboard/read_engine.py": "912bd6313ada32bd",
           "lattice/whiteboard/rewriter.py": "d23258b838777950",
           "lattice/whiteboard/schema.py": "2094567fa1041c95"
         },
@@ -2806,7 +2806,7 @@
         "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
         "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
         "lattice/whiteboard/mutations.py": "41a72335950cd737",
-        "lattice/whiteboard/read_engine.py": "006b48fd7a1d9f86",
+        "lattice/whiteboard/read_engine.py": "912bd6313ada32bd",
         "lattice/whiteboard/rewriter.py": "d23258b838777950",
         "lattice/whiteboard/schema.py": "2094567fa1041c95"
       },
