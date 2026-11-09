@@ -58,7 +58,7 @@
       "access_turns": [
         1
       ],
-      "activation": -0.89588,
+      "activation": -1.683648,
       "id": "ambient_t1_m2",
       "text": "In regiment, LAWS.bend defines literal_conservation_law and partition_completeness_law for eng3 in stage 18.",
       "turn": 1
@@ -67,7 +67,7 @@
       "access_turns": [
         4
       ],
-      "activation": -0.549306,
+      "activation": -1.629048,
       "id": "ambient_t4_m3",
       "text": "The transition_component_build_status interface of whiteboard takes graph, component_id, and new_status.",
       "turn": 4
@@ -76,7 +76,7 @@
       "access_turns": [
         4
       ],
-      "activation": -0.549306,
+      "activation": -1.629048,
       "id": "ambient_t4_m4",
       "text": "The transition_component_build_status interface returns dict.",
       "turn": 4
@@ -85,7 +85,7 @@
       "access_turns": [
         7
       ],
-      "activation": 0.0,
+      "activation": -1.567747,
       "id": "ambient_t7_m1",
       "text": "The regiment module exposes the extract_structured_table_rows interface taking doc_tables and returning table_records.",
       "turn": 7
@@ -94,12 +94,27 @@
       "access_turns": [
         7
       ],
-      "activation": 0.0,
+      "activation": -1.567747,
       "id": "ambient_t7_m4",
       "text": "The whiteboard module exposes the compile_laws_bend interface taking scope_id and law_records and returning laws_bend_text.",
       "turn": 7
+    },
+    {
+      "access_turns": [
+        29,
+        30
+      ],
+      "activation": 0.693147,
+      "id": "ambient_t29_m1",
+      "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+      "turn": 30
     }
   ],
+  "charter": {
+    "name": "lattice_core",
+    "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+    "summary": "Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically."
+  },
   "external_links": {
     "ai_memory": [
       {
@@ -189,6 +204,12 @@
         "link_id": "link_regiment_3b5cc0a1e959",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/lattice/regiment/markdown_tables.py#L201-L238"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_regiment_f44ee27a7c86",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/regiment/markdown_tables.py#L204-L243"
       }
     ],
     "runtime_foundation": [
@@ -315,6 +336,12 @@
         "link_id": "link_the_table_7ed8f66cf2d1",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/lattice/the_table/workspace_sync.py#L226-L262"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_table_40f3e725ee41",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_table/surface.py#L443-L488"
       }
     ],
     "whiteboard": [
@@ -491,7 +518,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+  "last_commit_sha": "148a9a88649d282996d3e2bc8aefee7b5a80738e",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -652,7 +679,7 @@
       "stage": "Stages 15-18",
       "text": "Deterministic pipe-table and flow turn intake packet",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 2,
@@ -678,7 +705,7 @@
       "stage": "stage 22",
       "text": "Sliced nD Lattice context view",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -732,7 +759,7 @@
       "stage": "stage 21",
       "text": "Indexed ACID SQLite graph storage engine",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 5,
@@ -851,7 +878,7 @@
       "stage": "stage 25",
       "text": "Bounded conference-room working surface slot",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 8,
@@ -884,24 +911,25 @@
       "stage": "Stages 15-18",
       "text": "Compile deterministic Markdown pipe-table rows and flows into an IntakePacket",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
-        "_format_tool_result#L259-L262",
-        "_read_doc_resource#L227-L239",
-        "_resolve_project_root#L242-L256"
+        "_format_tool_result#L247-L250",
+        "_hot_reload_if_changed#L428-L455",
+        "_read_doc_resource#L215-L227",
+        "_resolve_project_root#L230-L244"
       ],
       "created_turn": 8,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "lattice/mcp_server.py#L265-L434",
+        "file": "lattice/mcp_server.py#L253-L424",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "lattice/mcp_server.py#L265-L434",
+      "file": "lattice/mcp_server.py#L253-L424",
       "id": "interface_runtime_foundation_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -919,7 +947,7 @@
       "stage": "28",
       "text": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
       "turn": 28,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "args": "has_name, board_nonempty",
@@ -1296,7 +1324,7 @@
       "stage": "stage 22",
       "text": "Emit AST-parseable Python stub with Spec docstrings on schemas, laws, and interfaces and # MUST CALL anchors",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -1326,7 +1354,7 @@
       "stage": "stage 22",
       "text": "Compile wave-ordered WorkPackets with baseline_commit_sha and synchronized status and build_status",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "args": "status_synced: Bool, spec_in_docstring: Bool",
@@ -1462,20 +1490,20 @@
     },
     {
       "calls": [
-        "_extract_canonical_and_aliases#L72-L89",
-        "_get_table_cell#L207-L215",
-        "_parse_list_cell#L101-L114",
-        "_parse_scalar_cell#L91-L99",
-        "_register_scope_aliases#L120-L127",
-        "_resolve_or_register_scope#L130-L149",
-        "_slugify_scope_id#L64-L70"
+        "_extract_canonical_and_aliases#L65-L82",
+        "_get_table_cell#L200-L208",
+        "_parse_list_cell#L94-L107",
+        "_parse_scalar_cell#L84-L92",
+        "_register_scope_aliases#L113-L120",
+        "_resolve_or_register_scope#L123-L142",
+        "_slugify_scope_id#L57-L63"
       ],
       "created_turn": 16,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/rewriter.py#L218-L393"
+        "file": "lattice/whiteboard/rewriter.py#L211-L400"
       },
-      "file": "lattice/whiteboard/rewriter.py#L218-L393",
+      "file": "lattice/whiteboard/rewriter.py#L211-L400",
       "id": "interface_whiteboard_fuse_table_attributes",
       "inputs": [
         "graph",
@@ -1493,7 +1521,7 @@
       "stage": "stage 22",
       "text": "Fuse Component, Flow, Interface, Law, Schema, and Rule Markdown pipe tables into the Whiteboard graph",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 17,
@@ -1518,7 +1546,7 @@
       "stage": "stage 25",
       "text": "Rendered conference-room working surface view",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 17,
@@ -1542,7 +1570,7 @@
       "stage": "stage 22",
       "text": "Living nD system lattice graph container",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 17,
@@ -1600,9 +1628,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/mcp_server.py#L52-L56"
+        "file": "lattice/mcp_server.py#L39-L43"
       },
-      "file": "lattice/mcp_server.py#L52-L56",
+      "file": "lattice/mcp_server.py#L39-L43",
       "id": "schema_runtime_foundation_mcpjsonrpcrequest",
       "inputs": [
         "method",
@@ -1618,7 +1646,7 @@
       "stage": "Stage 28",
       "text": "MCP JSON-RPC 2.0 request envelope",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -1650,7 +1678,7 @@
       "stage": "stage 21",
       "text": "Run damped activation propagation over graph_core",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -1681,7 +1709,7 @@
       "stage": "stage 21",
       "text": "Scan and rank graph_core nodes by lexical/IDF overlap",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -1778,16 +1806,18 @@
     },
     {
       "calls": [
-        "_collect_atlas_topology#L295-L422",
+        "_collect_atlas_topology#L245-L376",
         "_ensure_table_state_dict#L20-L42",
-        "_normalize_atlas_boards#L275-L292"
+        "_extract_board_charter#L379-L383",
+        "_normalize_atlas_boards#L225-L242",
+        "_render_board_spec#L386-L440"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/the_table/surface.py#L425-L470"
+        "file": "lattice/the_table/surface.py#L443-L488"
       },
-      "file": "lattice/the_table/surface.py#L425-L470",
+      "file": "lattice/the_table/surface.py#L443-L488",
       "id": "interface_the_table_render_lattice_atlas",
       "inputs": [
         "whiteboard_boards",
@@ -1806,7 +1836,7 @@
       "stage": "stage 25",
       "text": "Render multi-board LOD_0 topological Lattice Atlas",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -1835,7 +1865,7 @@
       "stage": "stage 25",
       "text": "Render active TableSlots into a bounded TableView",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -1868,7 +1898,7 @@
       "stage": "stage 25",
       "text": "Synchronize recalled ConceptFrames and ContextView into the_table",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 17,
@@ -1894,20 +1924,20 @@
       "stage": "stage 22",
       "text": "Ingest deterministic IntakePacket into the Whiteboard graph",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
         "_enrich_view_compact_lines#L35-L79",
-        "_node_matches_slice_dims#L229-L338",
-        "_scan_ast_symbols_on_disk#L357-L404"
+        "_node_matches_slice_dims#L229-L339",
+        "_scan_ast_symbols_on_disk#L358-L405"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/read_engine.py#L407-L492"
+        "file": "lattice/whiteboard/read_engine.py#L408-L493"
       },
-      "file": "lattice/whiteboard/read_engine.py#L407-L492",
+      "file": "lattice/whiteboard/read_engine.py#L408-L493",
       "id": "interface_whiteboard_slice_lattice",
       "inputs": [
         "graph",
@@ -1926,7 +1956,7 @@
       "stage": "stage 22",
       "text": "Slice the nD Lattice graph with focused artifact filtering on exact AST symbol queries",
       "turn": 26,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -1955,7 +1985,7 @@
       "stage": "stage 22",
       "text": "Compile Bend 2 law theorems into LAWS.bend skeleton",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 17,
@@ -1982,21 +2012,21 @@
       "stage": "stage 22",
       "text": "Transition a component scope between lifecycle build statuses",
       "turn": 18,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
-        "_classify_table_kind#L183-L198",
-        "_clean_cell_val#L94-L98",
-        "_norm_col_key#L88-L91",
-        "_split_list_cell#L101-L112"
+        "_classify_table_kind#L184-L201",
+        "_clean_cell_val#L95-L99",
+        "_norm_col_key#L89-L92",
+        "_split_list_cell#L102-L113"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/regiment/markdown_tables.py#L201-L238"
+        "file": "lattice/regiment/markdown_tables.py#L204-L243"
       },
-      "file": "lattice/regiment/markdown_tables.py#L201-L238",
+      "file": "lattice/regiment/markdown_tables.py#L204-L243",
       "id": "interface_regiment_extract_structured_table_rows",
       "inputs": [
         "doc_tables"
@@ -2013,7 +2043,7 @@
       "stage": "Stages 15-18",
       "text": "Extract normalized structured records from Markdown pipe tables",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -2140,7 +2170,7 @@
           "lattice/ai_memory/hippocampal_index.py",
           "lattice/ai_memory/cue_extractor.py"
         ],
-        "_table_role": "hippocampal_concept_index_and_uri_resolver",
+        "_table_role": "Hippocampal Concept Index & Git-Diff URI Auto-Healer",
         "depends_on": "graph_core",
         "file_hashes": {
           "lattice/ai_memory/__init__.py": "f7b966ac6fb65cac",
@@ -2157,9 +2187,10 @@
           "lattice/ai_memory/cue_extractor.py"
         ],
         "owner": "eng0",
-        "role": "hippocampal_concept_index_and_uri_resolver",
+        "role": "Hippocampal Concept Index & Git-Diff URI Auto-Healer",
         "stage": "stage 24",
-        "updated_turn": 17
+        "updated_turn": 30,
+        "why": "Resolves and auto-heals file#Lstart-Lend AST symbol pointers across git mv renames and line shifts while preventing dangling deleted URIs."
       },
       "build_status": "VERIFIED",
       "build_tag": null,
@@ -2191,21 +2222,27 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+      "last_commit_sha": "148a9a88649d282996d3e2bc8aefee7b5a80738e",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
-      "role": "hippocampal_concept_index_and_uri_resolver",
+      "role": "Hippocampal Concept Index & Git-Diff URI Auto-Healer",
       "rules": [],
       "stage": "stage 24",
       "status": "VERIFIED",
-      "updated_turn": 1
+      "updated_turn": 1,
+      "why": "Resolves and auto-heals file#Lstart-Lend AST symbol pointers across git mv renames and line shifts while preventing dangling deleted URIs."
     },
     "global_defaults": {
       "_meta": {},
       "aliases": [],
       "attributes": {
-        "lod1_synopsis": "In `global_defaults`, `regiment_nlp` != imported when Never import regiment_nlp, spacy, torch, or onnxruntime inside lattice."
+        "charter": {
+          "name": "lattice_core",
+          "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+          "summary": "Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically."
+        },
+        "lod1_synopsis": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500"
       },
       "build_status": "DRAFT",
       "build_tag": null,
@@ -2266,6 +2303,52 @@
           "turn": 17,
           "type": "PROHIBITION",
           "updated_turn": 17
+        },
+        {
+          "access_turns": [
+            29
+          ],
+          "bound_op": null,
+          "bound_val": null,
+          "conditions": [],
+          "created_turn": 29,
+          "exceptions": [],
+          "facet": "context_facts",
+          "id": "r_global_defaults_9",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults",
+          "target_prop": null,
+          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+          "turn": 29,
+          "type": "FACT",
+          "updated_turn": 29
+        },
+        {
+          "access_turns": [
+            30
+          ],
+          "bound_op": null,
+          "bound_val": null,
+          "conditions": [],
+          "created_turn": 30,
+          "exceptions": [],
+          "facet": "context_facts",
+          "id": "r_global_defaults_10",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults",
+          "target_prop": null,
+          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+          "turn": 30,
+          "type": "FACT",
+          "updated_turn": 30
         }
       ],
       "stage": null,
@@ -2283,12 +2366,12 @@
           "lattice/graph_core/formatting.py",
           "lattice/graph_core/propagation.py"
         ],
-        "_table_role": "shared_sqlite_and_activation_substrate",
-        "depends_on": "None",
+        "_table_role": "Shared SQLite & Spreading-Activation Graph Substrate",
+        "depends_on": "",
         "file_hashes": {
           "lattice/graph_core/__init__.py": "1ab860b33a0a5646",
           "lattice/graph_core/activation.py": "ff6ff5ce2e53310f",
-          "lattice/graph_core/formatting.py": "40cfd2570aec979b",
+          "lattice/graph_core/formatting.py": "1caab9ec98ab54d5",
           "lattice/graph_core/propagation.py": "6cc40ae7cbf800bf",
           "lattice/graph_core/sqlite_store.py": "6d1323280473c608"
         },
@@ -2300,9 +2383,10 @@
           "lattice/graph_core/propagation.py"
         ],
         "owner": "eng0",
-        "role": "shared_sqlite_and_activation_substrate",
+        "role": "Shared SQLite & Spreading-Activation Graph Substrate",
         "stage": "stage 21",
-        "updated_turn": 17
+        "updated_turn": 30,
+        "why": "Provides ACID-persisted, WAL-backed graph storage and sub-millisecond spreading-activation retrieval shared across the Whiteboard, Memory, and Table."
       },
       "build_status": "VERIFIED",
       "build_tag": null,
@@ -2314,7 +2398,7 @@
       "file_hashes": {
         "lattice/graph_core/__init__.py": "1ab860b33a0a5646",
         "lattice/graph_core/activation.py": "ff6ff5ce2e53310f",
-        "lattice/graph_core/formatting.py": "40cfd2570aec979b",
+        "lattice/graph_core/formatting.py": "1caab9ec98ab54d5",
         "lattice/graph_core/propagation.py": "6cc40ae7cbf800bf",
         "lattice/graph_core/sqlite_store.py": "6d1323280473c608"
       },
@@ -2335,15 +2419,16 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+      "last_commit_sha": "148a9a88649d282996d3e2bc8aefee7b5a80738e",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
-      "role": "shared_sqlite_and_activation_substrate",
+      "role": "Shared SQLite & Spreading-Activation Graph Substrate",
       "rules": [],
       "stage": "stage 21",
       "status": "VERIFIED",
-      "updated_turn": 1
+      "updated_turn": 1,
+      "why": "Provides ACID-persisted, WAL-backed graph storage and sub-millisecond spreading-activation retrieval shared across the Whiteboard, Memory, and Table."
     },
     "regiment": {
       "_meta": {},
@@ -2363,7 +2448,7 @@
         "file_hashes": {
           "lattice/regiment/__init__.py": "51ed764b25109489",
           "lattice/regiment/intake_packet.py": "c5bdc2d8008fb855",
-          "lattice/regiment/markdown_tables.py": "148d757eab4107cd"
+          "lattice/regiment/markdown_tables.py": "9b4f06a32dccc124"
         },
         "files": [
           "lattice/regiment/__init__.py",
@@ -2373,7 +2458,8 @@
         "owner": "eng0, eng1, eng2, eng3",
         "role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
         "stage": "Stages 15-18",
-        "updated_turn": 17
+        "updated_turn": 30,
+        "why": "Compiles structured Markdown pipe tables (Charter, Component, Flow, Interface, Law, Schema, Rule) into grounded MCUs in <5ms without LLM variance."
       },
       "build_status": "VERIFIED",
       "build_tag": "s18c-eng3-compiler-3",
@@ -2387,7 +2473,7 @@
       "file_hashes": {
         "lattice/regiment/__init__.py": "51ed764b25109489",
         "lattice/regiment/intake_packet.py": "c5bdc2d8008fb855",
-        "lattice/regiment/markdown_tables.py": "148d757eab4107cd"
+        "lattice/regiment/markdown_tables.py": "9b4f06a32dccc124"
       },
       "files": [
         "lattice/regiment/__init__.py",
@@ -2401,7 +2487,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+      "last_commit_sha": "148a9a88649d282996d3e2bc8aefee7b5a80738e",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2409,7 +2495,8 @@
       "rules": [],
       "stage": "Stages 15-18",
       "status": "VERIFIED",
-      "updated_turn": 1
+      "updated_turn": 1,
+      "why": "Compiles structured Markdown pipe tables (Charter, Component, Flow, Interface, Law, Schema, Rule) into grounded MCUs in <5ms without LLM variance."
     },
     "runtime_foundation": {
       "_meta": {},
@@ -2426,11 +2513,11 @@
           "lattice/mcp_verifier.py"
         ],
         "_table_role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
-        "depends_on": "None",
+        "depends_on": "",
         "file_hashes": {
           "lattice/__init__.py": "837c54c33cd000b4",
-          "lattice/cli.py": "5b7c41ed67c4fa65",
-          "lattice/mcp_server.py": "55a686d339bb3c13",
+          "lattice/cli.py": "adc27674321c2653",
+          "lattice/mcp_server.py": "0aa2632d1158f578",
           "lattice/mcp_verifier.py": "a015087de6656801",
           "lattice/nlp.py": "bfdfb1a1a0687299",
           "lattice/types.py": "2172d10c1427d1b2"
@@ -2446,7 +2533,8 @@
         "owner": "bethe",
         "role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
         "stage": "Stage 15",
-        "updated_turn": 17
+        "updated_turn": 30,
+        "why": "Eliminates heavy NLP/ML dependencies so the CLI and MCP server start instantly using only the Python 3.11+ standard library."
       },
       "build_status": "VERIFIED",
       "build_tag": null,
@@ -2457,8 +2545,8 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/__init__.py": "837c54c33cd000b4",
-        "lattice/cli.py": "5b7c41ed67c4fa65",
-        "lattice/mcp_server.py": "55a686d339bb3c13",
+        "lattice/cli.py": "adc27674321c2653",
+        "lattice/mcp_server.py": "0aa2632d1158f578",
         "lattice/mcp_verifier.py": "a015087de6656801",
         "lattice/nlp.py": "bfdfb1a1a0687299",
         "lattice/types.py": "2172d10c1427d1b2"
@@ -2477,7 +2565,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+      "last_commit_sha": "148a9a88649d282996d3e2bc8aefee7b5a80738e",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2485,7 +2573,8 @@
       "rules": [],
       "stage": "Stage 15",
       "status": "VERIFIED",
-      "updated_turn": 1
+      "updated_turn": 1,
+      "why": "Eliminates heavy NLP/ML dependencies so the CLI and MCP server start instantly using only the Python 3.11+ standard library."
     },
     "the_executive": {
       "_meta": {},
@@ -2504,7 +2593,7 @@
           "lattice/the_executive/preflight.py",
           "lattice/the_executive/voice.py"
         ],
-        "_table_role": "preflight_routing_gate_and_voice",
+        "_table_role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
           "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
@@ -2521,9 +2610,10 @@
           "lattice/the_executive/voice.py"
         ],
         "owner": "eng2",
-        "role": "preflight_routing_gate_and_voice",
+        "role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
         "stage": "stage 23",
-        "updated_turn": 17
+        "updated_turn": 30,
+        "why": "Enforces verified-scope edit guards, AST contract/signature parity, call-graph % LAW wiring, and automatic post-commit STALE cascades across downstream dependents."
       },
       "build_status": "VERIFIED",
       "build_tag": "s25b-eng2-table-1",
@@ -2559,15 +2649,16 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+      "last_commit_sha": "148a9a88649d282996d3e2bc8aefee7b5a80738e",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
-      "role": "preflight_routing_gate_and_voice",
+      "role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
       "rules": [],
       "stage": "stage 23",
       "status": "VERIFIED",
-      "updated_turn": 1
+      "updated_turn": 1,
+      "why": "Enforces verified-scope edit guards, AST contract/signature parity, call-graph % LAW wiring, and automatic post-commit STALE cascades across downstream dependents."
     },
     "the_table": {
       "_meta": {},
@@ -2587,13 +2678,13 @@
           "lattice/the_table/renderer.py",
           "lattice/the_table/workspace_sync.py"
         ],
-        "_table_role": "bounded_conference_room_working_surface",
+        "_table_role": "Bounded Working Surface, LOD_0 Atlas & Living Spec Renderer",
         "depends_on": "graph_core, whiteboard, ai_memory",
         "file_hashes": {
           "lattice/the_table/__init__.py": "d1d25d49b0f45310",
           "lattice/the_table/renderer.py": "456df3bffa847203",
           "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
-          "lattice/the_table/surface.py": "cf6c17642bc63212",
+          "lattice/the_table/surface.py": "f5a8e646db0c5c25",
           "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
         },
         "files": [
@@ -2604,9 +2695,10 @@
           "lattice/the_table/workspace_sync.py"
         ],
         "owner": "eng1",
-        "role": "bounded_conference_room_working_surface",
+        "role": "Bounded Working Surface, LOD_0 Atlas & Living Spec Renderer",
         "stage": "stage 25",
-        "updated_turn": 17
+        "updated_turn": 30,
+        "why": "Bounds active working memory to <=16 slots / <=1200 tokens with pinned-slot immunity and compiles boards into LOD_0 Atlases and full Markdown specifications."
       },
       "build_status": "VERIFIED",
       "build_tag": "s25a-eng1-table-1",
@@ -2623,7 +2715,7 @@
         "lattice/the_table/__init__.py": "d1d25d49b0f45310",
         "lattice/the_table/renderer.py": "456df3bffa847203",
         "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
-        "lattice/the_table/surface.py": "cf6c17642bc63212",
+        "lattice/the_table/surface.py": "f5a8e646db0c5c25",
         "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
       },
       "files": [
@@ -2640,15 +2732,16 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+      "last_commit_sha": "148a9a88649d282996d3e2bc8aefee7b5a80738e",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
-      "role": "bounded_conference_room_working_surface",
+      "role": "Bounded Working Surface, LOD_0 Atlas & Living Spec Renderer",
       "rules": [],
       "stage": "stage 25",
       "status": "VERIFIED",
-      "updated_turn": 1
+      "updated_turn": 1,
+      "why": "Bounds active working memory to <=16 slots / <=1200 tokens with pinned-slot immunity and compiles boards into LOD_0 Atlases and full Markdown specifications."
     },
     "whiteboard": {
       "_meta": {},
@@ -2669,7 +2762,7 @@
           "lattice/whiteboard/read_engine.py",
           "lattice/whiteboard/frustration.py"
         ],
-        "_table_role": "living_nd_system_lattice",
+        "_table_role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
         "depends_on": "graph_core, regiment",
         "file_hashes": {
           "lattice/whiteboard/__init__.py": "b2f8f6dc53be6844",
@@ -2677,8 +2770,8 @@
           "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
           "lattice/whiteboard/linker.py": "b186b8f0fcde09ca",
           "lattice/whiteboard/mutations.py": "ebf6c304e22f9d7a",
-          "lattice/whiteboard/read_engine.py": "75d778d5e2f20632",
-          "lattice/whiteboard/rewriter.py": "6bd4b61fe20216ef",
+          "lattice/whiteboard/read_engine.py": "975539da1332f22a",
+          "lattice/whiteboard/rewriter.py": "5f64ed04906bd833",
           "lattice/whiteboard/schema.py": "2094567fa1041c95"
         },
         "files": [
@@ -2692,9 +2785,10 @@
           "lattice/whiteboard/frustration.py"
         ],
         "owner": "eng2",
-        "role": "living_nd_system_lattice",
+        "role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
         "stage": "stage 22",
-        "updated_turn": 17
+        "updated_turn": 30,
+        "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves <2KB 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
       },
       "build_status": "VERIFIED",
       "build_tag": "s22c-eng2-compiler-1",
@@ -2712,8 +2806,8 @@
         "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
         "lattice/whiteboard/linker.py": "b186b8f0fcde09ca",
         "lattice/whiteboard/mutations.py": "ebf6c304e22f9d7a",
-        "lattice/whiteboard/read_engine.py": "75d778d5e2f20632",
-        "lattice/whiteboard/rewriter.py": "6bd4b61fe20216ef",
+        "lattice/whiteboard/read_engine.py": "975539da1332f22a",
+        "lattice/whiteboard/rewriter.py": "5f64ed04906bd833",
         "lattice/whiteboard/schema.py": "2094567fa1041c95"
       },
       "files": [
@@ -2734,18 +2828,19 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+      "last_commit_sha": "148a9a88649d282996d3e2bc8aefee7b5a80738e",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
-      "role": "living_nd_system_lattice",
+      "role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
       "rules": [],
       "stage": "stage 22",
       "status": "VERIFIED",
-      "updated_turn": 1
+      "updated_turn": 1,
+      "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves <2KB 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },
-  "turn": 28,
-  "turn_index": 28,
+  "turn": 30,
+  "turn_index": 30,
   "version": 1
 }

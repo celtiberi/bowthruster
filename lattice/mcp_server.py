@@ -21,23 +21,10 @@ from typing import Any
 
 from lattice.ai_memory import sync_git_diff_uris
 from lattice.cli import (
-    LATTICE_HOME,
-    REPO_ROOT,
-    _board_lock,
-    _build_git_manifest,
-    _call_compile_packets,
-    _execute_turn,
-    _get_evaluate_lattice_proof,
-    _get_render_lattice_atlas,
-    _get_transition_build_status,
-    _load_atlas_boards,
-    _load_board,
-    _save_board,
-    _verify_component_files,
-    format_exception_error,
-    is_table_file_indexed,
-    read_flight_logs,
-    record_flight_event,
+    LATTICE_HOME, REPO_ROOT, _board_lock, _build_git_manifest, _call_compile_packets, _execute_turn,
+    _get_evaluate_lattice_proof, _get_render_lattice_atlas, _get_transition_build_status, _load_atlas_boards,
+    _load_board, _save_board, _verify_component_files, format_exception_error, is_table_file_indexed,
+    read_flight_logs, record_flight_event,
 )
 from lattice.graph_core import SQLiteGraphStore
 from lattice.the_executive import detect_working_tree_drift, sync_post_commit_to_lattice
@@ -89,7 +76,7 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
     },
     {
         "name": "lattice_atlas",
-        "description": "Step 1 (Explore LOD_0): Render the 1-line-per-component Lattice Atlas topology, verification statuses, > FLOW edges, health metrics, and optional Mermaid graph across one or more boards.",
+        "description": "Step 1 (Explore LOD_0 or Living Spec): Render the 1-line-per-component Lattice Atlas topology (with Charter, Role, Why/Rationale, verification statuses, > FLOW edges, health metrics, and optional Mermaid graph) or pass spec=true to compile the full human-readable Markdown specification from the live board.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -97,6 +84,7 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
                 "boards": {"type": "string", "description": "Comma-separated list of board names"},
                 "load_all": {"type": "boolean", "description": "Load all discovered boards"},
                 "mermaid": {"type": "boolean", "description": "Include Mermaid flowchart"},
+                "spec": {"type": "boolean", "description": "Render the complete human-readable Markdown specification (Charter, Purpose/Why, Mermaid topology, Flows, Interfaces, Schemas, Laws, Rules) from the live board"},
                 "project_root": {"type": "string", "description": "Optional repository root path (auto-discovered by board name or file paths if omitted)"},
             },
         },
@@ -139,13 +127,13 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
     },
     {
         "name": "lattice_turn",
-        "description": "Step 2 (Mutate Board First -> STALE): Compile Markdown pipe tables into the Whiteboard in <50ms BEFORE editing any VERIFIED file when contracts/architecture change. Canonical table headers: | Component | Role | Owner | Stage | Depends_On | Files |, | Flow | Source | Target | Payload | Condition |, | Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |, | Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec | (reserve % LAW for multi-variable k>=2 boolean rules using Bool.and/or/not; never invent 1-boolean x==x tautologies), | Schema | Component | Fields | Owner | Stage | File | Spec |, | Rule | Component | Type | Property | Op | Value | Condition |.",
+        "description": "Step 2 (Mutate Board First -> STALE): Compile Markdown pipe tables into the Whiteboard in <50ms BEFORE editing any VERIFIED file when contracts/architecture change. Canonical table headers: | Charter | Summary | Principles |, | Component | Role | Why | Owner | Stage | Depends_On | Files | (Why column is optional), | Flow | Source | Target | Payload | Condition |, | Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |, | Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec | (reserve % LAW for multi-variable k>=2 boolean rules using Bool.and/or/not; never invent 1-boolean x==x tautologies), | Schema | Component | Fields | Owner | Stage | File | Spec |, | Rule | Component | Type | Property | Op | Value | Condition |.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "board": {"type": "string", "description": "Target board name"},
                 "speaker": {"type": "string", "description": "Speaker alias (default: agent)"},
-                "message": {"type": "string", "description": "Canonical Markdown pipe tables (Component, Flow, Interface, Law, Schema, Rule)"},
+                "message": {"type": "string", "description": "Canonical Markdown pipe tables (Charter, Component, Flow, Interface, Law, Schema, Rule)"},
                 "round_num": {"type": "integer", "description": "Optional round number"},
                 "profile": {"type": "string", "description": "Runtime profile (cloud, hybrid, local)"},
                 "project_root": {"type": "string", "description": "Optional repository root path (auto-discovered by board name or file paths if omitted)"},
@@ -264,6 +252,7 @@ def _format_tool_result(payload: dict[str, Any], *, is_error: bool = False, text
 
 def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str, Any]:
     """Dispatches a validated MCP tool call to the Lattice engine (`$ INTERFACE call_lattice_tool`)."""
+    _hot_reload_if_changed()
     t0 = time.perf_counter()
     args = dict(arguments) if isinstance(arguments, dict) else {}
     name = str(tool_name or "").strip()
@@ -303,12 +292,13 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
                 return resp
 
             if name == "lattice_atlas":
+                from lattice.the_table.surface import render_lattice_atlas as _render_atlas
                 boards_dict = _load_atlas_boards(board, args.get("boards"), bool(args.get("load_all", False)))
-                view = _get_render_lattice_atlas()(boards_dict, has_local_seed_cues=False, explicit_atlas_request=True)
-                atlas_txt = f"```text\n{view.get('atlas_schematic') or ''}\n[Atlas Metrics]: {json.dumps(view.get('atlas_metrics') or {}, sort_keys=True)}\n```" + (f"\n\n```mermaid\n{view['atlas_mermaid']}\n```" if args.get("mermaid") and view.get("atlas_mermaid") else "")
+                view = _render_atlas(boards_dict, has_local_seed_cues=False, explicit_atlas_request=True)
+                atlas_txt = str(view.get("atlas_spec") or "") if args.get("spec") else (f"```text\n{view.get('atlas_schematic') or ''}\n[Atlas Metrics]: {json.dumps(view.get('atlas_metrics') or {}, sort_keys=True)}\n```" + (f"\n\n```mermaid\n{view['atlas_mermaid']}\n```" if args.get("mermaid") and view.get("atlas_mermaid") else ""))
                 resp, nbytes = _format_tool_result({
                     "boards": list(boards_dict.keys()), "atlas_mounted": view.get("atlas_mounted"), "atlas_schematic": view.get("atlas_schematic"),
-                    "atlas_metrics": view.get("atlas_metrics"), **({"atlas_mermaid": view.get("atlas_mermaid")} if args.get("mermaid") else {}),
+                    "atlas_metrics": view.get("atlas_metrics"), **({"atlas_mermaid": view.get("atlas_mermaid")} if args.get("mermaid") else {}), **({"atlas_spec": view.get("atlas_spec")} if args.get("spec") else {}),
                 }, text=atlas_txt)
                 record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
                 return resp
@@ -434,21 +424,33 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
     return resp
 
 
-_LAST_MTIME: float = 0.0
+_LAST_MTIME: float = max((p.stat().st_mtime for p in (LATTICE_HOME / "lattice").rglob("*.py") if p.is_file()), default=0.0)
 def _hot_reload_if_changed() -> None:
     global _LAST_MTIME
     import importlib
     cur = max((p.stat().st_mtime for p in (LATTICE_HOME / "lattice").rglob("*.py") if p.is_file()), default=0.0)
     if _LAST_MTIME and cur > _LAST_MTIME:
-        for mname in [k for k in list(sys.modules) if k == "lattice" or k.startswith("lattice.")]:
-            if mname != __name__ and (mod := sys.modules.get(mname)) is not None and getattr(mod, "__file__", None):
-                try: importlib.reload(mod)
+        _LAST_MTIME = cur
+        for pkg in ("lattice.graph_core", "lattice.regiment", "lattice.ai_memory", "lattice.whiteboard", "lattice.the_table", "lattice.the_executive"):
+            for mname in sorted([k for k in list(sys.modules) if k.startswith(f"{pkg}.") and k != "lattice.graph_core.sqlite_store"]):
+                if (mod := sys.modules.get(mname)) is not None and getattr(mod, "__file__", None):
+                    try: importlib.reload(mod)
+                    except Exception: pass
+            if (pmod := sys.modules.get(pkg)) is not None:
+                try: importlib.reload(pmod)
                 except Exception: pass
+        if (cmod := sys.modules.get("lattice.cli")) is not None:
+            try: importlib.reload(cmod)
+            except Exception: pass
         try:
             self_mod = sys.modules.get("lattice.mcp_server")
             m = importlib.reload(self_mod) if self_mod is not None else importlib.import_module("lattice.mcp_server")
-            for k in ("MCP_TOOLS", "KNOWN_TOOL_NAMES", "_read_doc_resource", "_resolve_project_root", "_format_tool_result", "call_lattice_tool"):
-                if hasattr(m, k): globals()[k] = getattr(m, k)
+            m._LAST_MTIME = cur
+            main_mod = sys.modules.get("__main__")
+            for k in ("MCP_TOOLS", "KNOWN_TOOL_NAMES", "_hot_reload_if_changed", "_read_doc_resource", "_resolve_project_root", "_format_tool_result", "call_lattice_tool"):
+                if hasattr(m, k):
+                    globals()[k] = getattr(m, k)
+                    if main_mod is not None: setattr(main_mod, k, getattr(m, k))
         except Exception: pass
     _LAST_MTIME = cur
 

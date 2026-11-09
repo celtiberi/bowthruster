@@ -143,120 +143,70 @@ def admit_or_evict_slot(
     return admitted
 
 
-def pin_to_table(
-    table_state: dict[str, Any],
-    slot_id: str,
-    *,
-    pinned: bool = True,
-    current_turn: int | None = None,
-) -> TableSlot:
+def pin_to_table(table_state: dict[str, Any], slot_id: str, *, pinned: bool = True, current_turn: int | None = None) -> TableSlot:
     """Pins or unpins `slot_id` in `table_state` (enforcing `max_pinned_slots <= 6`) and returns the updated `TableSlot`."""
-    if not isinstance(slot_id, str) or not slot_id.strip():
-        raise ValueError(f"slot_id must be a non-empty str, got {slot_id!r}")
-    if not isinstance(pinned, bool):
-        raise ValueError(f"pinned must be a bool, got {pinned!r}")
+    if not isinstance(slot_id, str) or not slot_id.strip(): raise ValueError(f"slot_id must be a non-empty str, got {slot_id!r}")
+    if not isinstance(pinned, bool): raise ValueError(f"pinned must be a bool, got {pinned!r}")
     slots, _, _, max_pinned = _ensure_table_state_dict(table_state)
     target = slot_id.strip()
     idx = next((i for i, s in enumerate(slots) if s["slot_id"] == target or s["concept_id"] == target), None)
-    if idx is None:
-        raise KeyError(f"Slot {slot_id!r} not found in table_state['slots']")
-
+    if idx is None: raise KeyError(f"Slot {slot_id!r} not found in table_state['slots']")
     slot = slots[idx]
-    if pinned and not slot["pinned"]:
-        pinned_cnt = sum(1 for s in slots if s["pinned"])
-        if pinned_cnt + 1 > max_pinned:
-            raise ValueError(f"max_pinned_slots ({max_pinned}) exceeded: cannot pin {slot_id!r}")
-
+    if pinned and not slot["pinned"] and sum(1 for s in slots if s["pinned"]) + 1 > max_pinned:
+        raise ValueError(f"max_pinned_slots ({max_pinned}) exceeded: cannot pin {slot_id!r}")
     slot["pinned"] = bool(pinned)
     if current_turn is not None:
-        if isinstance(current_turn, bool) or not isinstance(current_turn, int) or current_turn < 0:
-            raise ValueError(f"current_turn must be a non-negative int, got {current_turn!r}")
+        if isinstance(current_turn, bool) or not isinstance(current_turn, int) or current_turn < 0: raise ValueError(f"current_turn must be a non-negative int, got {current_turn!r}")
         slot["updated_turn"] = int(current_turn)
     sync_table_to_sqlite(table_state)
     object.__setattr__(slot, "_table_state", table_state)
     return slot
 
 
-def unpin_from_table(
-    table_state: dict[str, Any],
-    slot_id: str,
-    *,
-    current_turn: int | None = None,
-) -> TableSlot:
+def unpin_from_table(table_state: dict[str, Any], slot_id: str, *, current_turn: int | None = None) -> TableSlot:
     """Unpins `slot_id` in `table_state` and returns the updated `TableSlot`."""
     return pin_to_table(table_state, slot_id, pinned=False, current_turn=current_turn)
 
 
-def evict_from_table(
-    table_state: dict[str, Any],
-    slot_id: str,
-    *,
-    force: bool = False,
-) -> bool:
+def evict_from_table(table_state: dict[str, Any], slot_id: str, *, force: bool = False) -> bool:
     """Evicts an unpinned `slot_id` from `table_state` (enforcing Law 2 `pinned_slot_eviction_immunity_law` unless `force=True`)."""
-    if not isinstance(slot_id, str) or not slot_id.strip():
-        return False
+    if not isinstance(slot_id, str) or not slot_id.strip(): return False
     slots, _, _, max_pinned = _ensure_table_state_dict(table_state)
     target = slot_id.strip()
     idx = next((i for i, s in enumerate(slots) if s["slot_id"] == target or s["concept_id"] == target), None)
-    if idx is None:
-        return False
+    if idx is None: return False
     slot = slots[idx]
-    pinned_cnt = sum(1 for s in slots if s["pinned"])
-    if not force and not can_evict_table_slot(bool(slot["pinned"]), True, pinned_cnt <= max_pinned):
+    if not force and not can_evict_table_slot(bool(slot["pinned"]), True, sum(1 for s in slots if s["pinned"]) <= max_pinned):
         raise ValueError(f"Cannot evict pinned slot {slot_id!r}: pinned_slot_eviction_immunity_law")
     slots.pop(idx)
-    table_state["slots"] = slots
-    table_state["total_tokens"] = sum(int(s["token_cost"]) for s in slots)
+    table_state["slots"], table_state["total_tokens"] = slots, sum(int(s["token_cost"]) for s in slots)
     sync_table_to_sqlite(table_state)
     return True
 
 
 def get_active_slots(table_state: dict[str, Any]) -> list[TableSlot]:
     """Returns the ordered list of active `TableSlot` entries on `table_state` (`table_surface --[active_slots]--> table_renderer`)."""
-    slots, _, _, _ = _ensure_table_state_dict(table_state)
-    return list(slots)
+    return list(_ensure_table_state_dict(table_state)[0])
 
 
 def render_table_view(table_state: dict[str, Any]) -> TableView:
     """Renders `table_state` into a bounded `TableView` (`slots`, `total_tokens`, `compact_view`)."""
     slots, max_slots, max_tokens, _ = _ensure_table_state_dict(table_state)
     total_tokens = sum(int(s["token_cost"]) for s in slots)
-    header = f"[TABLE_VIEW slots={len(slots)}/{max_slots} tokens={total_tokens}/{max_tokens}]"
-    lines = [header]
-    for s in slots:
-        pin_tag = " [PINNED]" if s["pinned"] else ""
-        lines.append(f"- [{s['slot_id']}] ({s['concept_id']}, {s['lod_tier']}{pin_tag}, cost={s['token_cost']}): {s['summary']}")
+    lines = [f"[TABLE_VIEW slots={len(slots)}/{max_slots} tokens={total_tokens}/{max_tokens}]", *[f"- [{s['slot_id']}] ({s['concept_id']}, {s['lod_tier']}{' [PINNED]' if s['pinned'] else ''}, cost={s['token_cost']}): {s['summary']}" for s in slots]]
     compact = "\n".join(lines)
     return TableView({"slots": copy.deepcopy(slots), "total_tokens": total_tokens, "compact_view": compact, "text": compact})
 
 
-def sync_memory_to_table(
-    table_state: dict[str, Any] | None,
-    recalled_concepts: list[dict[str, Any]],
-    *,
-    current_turn: int = 1,
-) -> TableView:
+def sync_memory_to_table(table_state: dict[str, Any] | None, recalled_concepts: list[dict[str, Any]], *, current_turn: int = 1) -> TableView:
     """Hydrates `recalled_concepts` (`ConceptFrames` from `ai_memory`) onto `table_state` and returns `TableView`."""
     state = create_empty_table_state() if table_state is None else table_state
-    if not isinstance(recalled_concepts, list):
-        raise ValueError(f"recalled_concepts must be a list, got {type(recalled_concepts).__name__}")
+    if not isinstance(recalled_concepts, list): raise ValueError(f"recalled_concepts must be a list, got {type(recalled_concepts).__name__}")
     for item in recalled_concepts:
-        if not isinstance(item, dict):
-            raise ValueError(f"recalled_concepts entry must be a dict, got {type(item).__name__}")
+        if not isinstance(item, dict): raise ValueError(f"recalled_concepts entry must be a dict, got {type(item).__name__}")
         raw_sum = str(item.get("summary") if "summary" in item else (item.get("lod1_synopsis") if "lod1_synopsis" in item else item.get("text", ""))).strip()
-        clamped_sum = " ".join(raw_sum.split()[:MAX_SLOT_SUMMARY_WORDS])
         cid = str(item.get("concept_id") or item.get("id") or item.get("slot_id") or "").strip()
-        sid = str(item.get("slot_id") or cid).strip()
-        slot_cand = {
-            **item,
-            "slot_id": sid,
-            "concept_id": cid,
-            "summary": clamped_sum,
-            "lod_tier": item.get("lod_tier", LOD_1),
-            "pinned": bool(item.get("pinned", False)),
-        }
-        admit_or_evict_slot(state, slot_cand, current_turn=current_turn)
+        admit_or_evict_slot(state, {**item, "slot_id": str(item.get("slot_id") or cid).strip(), "concept_id": cid, "summary": " ".join(raw_sum.split()[:MAX_SLOT_SUMMARY_WORDS]), "lod_tier": item.get("lod_tier", LOD_1), "pinned": bool(item.get("pinned", False))}, current_turn=current_turn)
     view = render_table_view(state)
     view["table_state"] = state
     return view
@@ -361,7 +311,13 @@ def _collect_atlas_topology(
             if not sid or sid == "global_defaults" or not isinstance(sc, dict):
                 continue
             st = "STALE" if "STALE" in (str(sc.get("status") or "").strip().upper(), str(sc.get("build_status") or "").strip().upper()) else (str(sc.get("status") if sc.get("status") not in (None, "", "DRAFT") else (sc.get("build_status") or "DRAFT")).strip().upper() or "DRAFT")
-            owner, role, stage = str(sc.get("owner") or "").strip() or None, str(sc.get("role") or "").strip() or None, str(sc.get("stage") or "").strip() or None
+            sc_attrs = sc.get("attributes") if isinstance(sc.get("attributes"), dict) else {}
+            owner = str(sc.get("owner") or sc_attrs.get("owner") or "").strip() or None
+            role = str(sc.get("role") or sc_attrs.get("role") or sc_attrs.get("_table_role") or "").strip() or None
+            stage = str(sc.get("stage") or sc_attrs.get("stage") or "").strip() or None
+            why = str(sc.get("why") or sc_attrs.get("why") or sc_attrs.get("rationale") or "").strip() or None
+            raw_files = sc.get("files") or sc_attrs.get("files") or []
+            files = [str(f).strip() for f in (raw_files.split(",") if isinstance(raw_files, str) else raw_files) if str(f).strip()]
             deps = [str(d).strip() for d in (sc.get("depends_on") or []) if str(d).strip() and str(d).strip() != sid]
             has_comp_attrs_or_refs = _has_comp(sid, sc)
             if not (is_atlas_component_scope(has_comp_attrs_or_refs, board_has_sbf_comps) and atlas_component_filter_law(has_comp_attrs_or_refs, board_has_sbf_comps)):
@@ -371,28 +327,26 @@ def _collect_atlas_topology(
             if sid not in components:
                 components[sid] = {
                     "id": sid, "board": bname, "build_status": st, "status": st,
-                    "owner": owner, "role": role, "stage": stage, "depends_on": list(deps),
+                    "owner": owner, "role": role, "why": why, "stage": stage, "depends_on": list(deps), "files": files,
                 }
             else:
                 cur = components[sid]
                 if st != "DRAFT" and cur["build_status"] == "DRAFT":
                     cur["build_status"] = cur["status"] = st
                 if owner and not cur["owner"]:
-                    cur["owner"] = owner
-                    cur["board"] = bname
-                if role and not cur["role"]:
-                    cur["role"] = role
-                if stage and not cur["stage"]:
-                    cur["stage"] = stage
+                    cur["owner"], cur["board"] = owner, bname
+                if role and not cur["role"]: cur["role"] = role
+                if why and not cur.get("why"): cur["why"] = why
+                if stage and not cur["stage"]: cur["stage"] = stage
+                if files and not cur.get("files"): cur["files"] = files
                 for d in deps:
-                    if d not in cur["depends_on"]:
-                        cur["depends_on"].append(d)
+                    if d not in cur["depends_on"]: cur["depends_on"].append(d)
 
     for rsid, bname in ref_sids.items():
         if rsid not in components:
             components[rsid] = {
                 "id": rsid, "board": bname, "build_status": "DRAFT", "status": "DRAFT",
-                "owner": None, "role": None, "stage": None, "depends_on": [],
+                "owner": None, "role": None, "why": None, "stage": None, "depends_on": [], "files": [],
             }
 
     dependents_map: dict[str, set[str]] = {sid: set() for sid in components}
@@ -422,6 +376,70 @@ def _collect_atlas_topology(
     return components, flows, metrics
 
 
+def _extract_board_charter(bname: str, board: dict[str, Any]) -> dict[str, str] | None:
+    ch = board.get("charter") or (((board.get("scopes") or {}).get("global_defaults") or {}).get("attributes") or {}).get("charter")
+    if isinstance(ch, dict) and (ch.get("summary") or ch.get("principles")):
+        return {"name": str(ch.get("name") or bname), "summary": str(ch.get("summary") or "").strip(), "principles": str(ch.get("principles") or "").strip()}
+    return None
+
+
+def _render_board_spec(
+    boards: list[tuple[str, dict[str, Any]]], components: dict[str, dict[str, Any]],
+    flows: list[dict[str, Any]], metrics: dict[str, Any], mermaid_str: str,
+) -> str:
+    bnames = ", ".join(b for b, _ in boards)
+    lines = [
+        f"# {bnames} — Living Architecture & Intent Specification", "",
+        f"> **Status:** `{metrics['verified_components']}/{metrics['total_components']}` components `VERIFIED` | `{metrics['total_flows']}` data flows | `{metrics['open_gaps']}` open gaps | **Hubs:** `{', '.join(metrics['hub_bottlenecks']) or 'none'}`",
+    ]
+    charters = [(bn, ch) for bn, bd in boards if (ch := _extract_board_charter(bn, bd))]
+    g_rules = [r for _, bd in boards for r in (((bd.get("scopes") or {}).get("global_defaults") or {}).get("rules") or []) if isinstance(r, dict) and r.get("text") and not str(r.get("text") or "").startswith("Charter [")]
+    if charters or g_rules:
+        lines.extend(["", "## 1. Project Charter & Purpose"])
+        for _, ch in charters:
+            lines.append(f"### `{ch['name']}`")
+            if ch["summary"]: lines.append(f"- **What & Why (`Summary`):** {ch['summary']}")
+            if ch["principles"]: lines.append(f"- **Core Principles (`Principles`):** {ch['principles']}")
+        if g_rules:
+            lines.append("### Standing Global Rules")
+            for gr in g_rules: lines.append(f"- **`{gr.get('type', 'RULE')}` (`{gr.get('target_prop') or gr.get('id') or 'global'}`):** {gr.get('text')}")
+    lines.extend(["", "## 2. System Topology & Data Flows", "", "```mermaid", mermaid_str, "```"])
+    if flows:
+        lines.extend(["", "| Source | Target | Payload | Board |", "| :--- | :--- | :--- | :--- |"])
+        for fl in flows: lines.append(f"| `{fl['source']}` | `{fl['target']}` | `{fl.get('payload') or '-'}` | `{fl.get('board') or '-'}` |")
+    arts_by_scope: dict[str, list[dict[str, Any]]] = {}
+    rules_by_scope: dict[str, list[dict[str, Any]]] = {}
+    for _, bd in boards:
+        for a in (bd.get("lattice_artifacts") or []):
+            if isinstance(a, dict) and (asid := str(a.get("scope_id") or a.get("scope") or "").strip()):
+                arts_by_scope.setdefault(asid, []).append(a)
+        for sid, sc in ((bd.get("scopes") or {}).items() if isinstance(bd.get("scopes"), dict) else []):
+            if isinstance(sc, dict) and sid != "global_defaults":
+                for r in (sc.get("rules") or []):
+                    if isinstance(r, dict) and r.get("text"): rules_by_scope.setdefault(sid, []).append(r)
+    lines.extend(["", "## 3. Components, Rationale & Contracts"])
+    for sid, c in components.items():
+        lines.extend(["", f"### `{sid}` (`{c['build_status']}`, owner: `{c['owner'] or 'unassigned'}`, stage: `{c['stage'] or '-'}`)"])
+        lines.append(f"- **Purpose (`Role`):** {c.get('role') or f'Component {sid}'}")
+        if c.get("why"): lines.append(f"- **Why It Exists (`Rationale`):** {c['why']}")
+        lines.append(f"- **Depends On:** {', '.join(f'`{d}`' for d in c['depends_on']) or 'none'}")
+        if c.get("files"): lines.append(f"- **Files:** {', '.join(f'`{f}`' for f in c['files'])}")
+        s_arts = arts_by_scope.get(sid) or []
+        for kind, label in (("INTERFACE", "Interfaces"), ("SCHEMA", "Schemas"), ("LAW", "Formal Laws (Bend 2)")):
+            k_arts = [a for a in s_arts if str(a.get("kind") or "").upper() == kind]
+            if k_arts:
+                lines.append(f"- **{label}:**")
+                for a in k_arts:
+                    nm, sp, fl = a.get("name") or a.get("id"), a.get("spec") or a.get("text") or "", a.get("file") or (a.get("dimensions") or {}).get("file") or ""
+                    ins, outs = ", ".join(str(x) for x in (a.get("inputs") or [])), ", ".join(str(x) for x in (a.get("outputs") or []))
+                    sig = f"`{nm}({ins}) -> {outs}`" if kind == "INTERFACE" else (f"`{nm}({ins})`" if ins else f"`{nm}`")
+                    lines.append(f"  - {sig}" + (f" (`{fl}`)" if fl else "") + (f": {sp}" if sp else ""))
+        if s_rules := rules_by_scope.get(sid):
+            lines.append("- **Bounds & Invariants:**")
+            for r in s_rules: lines.append(f"  - `{r.get('type', 'RULE')}`: {r.get('text')}")
+    return "\n".join(lines)
+
+
 def render_lattice_atlas(
     whiteboard_boards: dict[str, dict[str, Any]] | list[dict[str, Any]] | dict[str, Any],
     *,
@@ -430,7 +448,7 @@ def render_lattice_atlas(
     explicit_atlas_request: bool = True,
     current_turn: int = 1,
 ) -> TableView:
-    """Computes a multi-board `LOD_0` topological Lattice Atlas (`atlas_schematic`, `atlas_mermaid`, `atlas_metrics`)
+    """Computes a multi-board `LOD_0` topological Lattice Atlas (`atlas_schematic`, `atlas_mermaid`, `atlas_metrics`, `atlas_spec`)
     and conditionally mounts `slot_lattice_atlas` onto `table_state` per Bend 2 Law 4 (`should_mount_global_atlas`)."""
     boards = _normalize_atlas_boards(whiteboard_boards)
     components, flows, atlas_metrics = _collect_atlas_topology(boards)
@@ -438,10 +456,14 @@ def render_lattice_atlas(
         atlas_metrics["total_components"], atlas_metrics["verified_components"], atlas_metrics["total_flows"], atlas_metrics["open_gaps"], atlas_metrics["hub_bottlenecks"]
     )
     schem_lines = [f"[LATTICE_ATLAS LOD0 boards={len(boards)} components={total_components} verified={verified_components}/{total_components} flows={total_flows} open_gaps={open_gaps}]"]
+    for bname, board in boards:
+        if ch := _extract_board_charter(bname, board):
+            schem_lines.append(f"- * CHARTER [{ch['name']}]: {ch['summary']}" + (f" (principles: {ch['principles']})" if ch["principles"] else ""))
     mermaid_lines = ["flowchart LR"]
     for sid, c in components.items():
         deps_str, owner_str = ", ".join(c["depends_on"]), c["owner"] or "unassigned"
-        schem_lines.append(f"- @ COMPONENT [{sid}] (board={c['board']}, status={c['build_status']}, owner={owner_str}, depends_on=[{deps_str}])")
+        role_tail = (f": {c['role']}" if c.get("role") else "") + (f" [why: {c['why']}]" if c.get("why") else "")
+        schem_lines.append(f"- @ COMPONENT [{sid}] (board={c['board']}, status={c['build_status']}, owner={owner_str}, depends_on=[{deps_str}]){role_tail}")
         mermaid_lines.append(f'  {sid}["{sid} ({c["build_status"]}, {owner_str})"]')
     for fl in flows:
         pay_tag = f" [{fl['payload']}]" if fl["payload"] else ""
@@ -449,22 +471,19 @@ def render_lattice_atlas(
         mermaid_lines.append(f"  {fl['source']} -->|{fl['payload']}| {fl['target']}" if fl["payload"] else f"  {fl['source']} --> {fl['target']}")
     schem_lines.append(f"- # METRICS total_components={total_components} verified_components={verified_components} total_flows={total_flows} open_gaps={open_gaps} hub_bottlenecks=[{', '.join(hub_bottlenecks)}]")
     atlas_schematic, atlas_mermaid = "\n".join(schem_lines), "\n".join(mermaid_lines)
-
+    atlas_spec = _render_board_spec(boards, components, flows, atlas_metrics, atlas_mermaid)
     hw_edges = ", ".join(f"{fl['source']}->{fl['target']}" for fl in flows) or "none"
-    raw_sum = f"LOD0 Lattice Atlas: {len(boards)} boards, {total_components} components ({verified_components} VERIFIED), {total_flows} flows, {open_gaps} gaps. Highway: {hw_edges}"
-    clamped_sum = " ".join(raw_sum.split()[:MAX_SLOT_SUMMARY_WORDS])
-
+    clamped_sum = " ".join(f"LOD0 Lattice Atlas: {len(boards)} boards, {total_components} components ({verified_components} VERIFIED), {total_flows} flows, {open_gaps} gaps. Highway: {hw_edges}".split()[:MAX_SLOT_SUMMARY_WORDS])
     state = create_empty_table_state() if table_state is None else table_state
     _, max_slots, max_tokens, _ = _ensure_table_state_dict(state)
     slot_cand = validate_table_slot({"slot_id": "slot_lattice_atlas", "concept_id": "lattice_atlas", "lod_tier": LOD_0, "summary": clamped_sum, "updated_turn": current_turn}, max_tokens=max_tokens)
     pinned_other = [s for s in state.get("slots", []) if isinstance(s, dict) and s.get("pinned") and s.get("slot_id") != "slot_lattice_atlas"]
     budget_ok = should_admit_table_slot(len(pinned_other) + 1 <= max_slots, sum(int(s["token_cost"]) for s in pinned_other) + int(slot_cand["token_cost"]) <= max_tokens)
-
     mounted = should_mount_global_atlas(bool(has_local_seed_cues), bool(explicit_atlas_request), bool(budget_ok))
     if mounted:
         try: admit_or_evict_slot(state, slot_cand, current_turn=current_turn)
         except ValueError: mounted = False
-
     view = render_table_view(state)
-    view.update({"atlas_mounted": mounted, "atlas_schematic": atlas_schematic, "atlas_mermaid": atlas_mermaid, "atlas_metrics": atlas_metrics, "table_state": state})
+    view.update({"atlas_mounted": mounted, "atlas_schematic": atlas_schematic, "atlas_mermaid": atlas_mermaid, "atlas_metrics": atlas_metrics, "atlas_spec": atlas_spec, "table_state": state})
     return view
+

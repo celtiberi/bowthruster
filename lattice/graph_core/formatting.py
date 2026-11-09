@@ -231,6 +231,9 @@ def _format_component_line(comp: dict[str, Any]) -> str:
         tags.append(f"stage={comp['stage']}")
     prefix = f"@ COMPONENT [{cid}]" + (f" ({', '.join(tags)})" if tags else "")
     role_str = str(comp.get("role") or comp.get("text") or "").strip()
+    why_str = str(comp.get("why") or (comp.get("attributes") if isinstance(comp.get("attributes"), dict) else {}).get("why") or "").strip()
+    if why_str:
+        role_str = f"{role_str} [why: {why_str}]" if role_str else f"[why: {why_str}]"
     ins = [str(x) for x in (comp.get("inputs") or []) if str(x).strip()]
     outs = [str(x) for x in (comp.get("outputs") or []) if str(x).strip()]
     io_str = f"in=[{', '.join(ins)}] -> out=[{', '.join(outs)}]" if (ins or outs) else ""

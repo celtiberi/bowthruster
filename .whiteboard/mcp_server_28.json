@@ -1,11 +1,28 @@
 {
   "active_tasks": [],
   "alias_index": {
+    "global_defaults": "global_defaults",
     "mcp_protocol_verifier": "mcp_protocol_verifier",
     "mcp_server": "mcp_server",
     "mcp_tool_call": "mcp_tool_call"
   },
-  "ambient_notes": [],
+  "ambient_notes": [
+    {
+      "access_turns": [
+        9,
+        10
+      ],
+      "activation": 0.693147,
+      "id": "ambient_t9_m1",
+      "text": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
+      "turn": 10
+    }
+  ],
+  "charter": {
+    "name": "mcp_server_28",
+    "principles": "Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
+    "summary": "Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents."
+  },
   "external_links": {
     "mcp_protocol_verifier": [
       {
@@ -88,20 +105,21 @@
   "lattice_artifacts": [
     {
       "calls": [
-        "_format_tool_result#L259-L262",
-        "_read_doc_resource#L227-L239",
-        "_resolve_project_root#L242-L256"
+        "_format_tool_result#L247-L250",
+        "_hot_reload_if_changed#L428-L455",
+        "_read_doc_resource#L215-L227",
+        "_resolve_project_root#L230-L244"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "lattice/mcp_server.py#L265-L434",
+        "file": "lattice/mcp_server.py#L253-L424",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "lattice/mcp_server.py#L265-L434",
+      "file": "lattice/mcp_server.py#L253-L424",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -123,19 +141,19 @@
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L438-L453",
-        "_read_doc_resource#L227-L239"
+        "_hot_reload_if_changed#L428-L455",
+        "_read_doc_resource#L215-L227"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "lattice/mcp_server.py#L456-L478",
+        "file": "lattice/mcp_server.py#L458-L480",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "lattice/mcp_server.py#L456-L478",
+      "file": "lattice/mcp_server.py#L458-L480",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -242,10 +260,10 @@
       "dimensions": {
         "description": "JSON-RPC 2.0 MCP request envelope",
         "fields": "jsonrpc, id, method, params",
-        "file": "lattice/mcp_server.py#L52-L56",
+        "file": "lattice/mcp_server.py#L39-L43",
         "schema": "McpJsonRpcRequest"
       },
-      "file": "lattice/mcp_server.py#L52-L56",
+      "file": "lattice/mcp_server.py#L39-L43",
       "id": "schema_mcp_server_mcpjsonrpcrequest",
       "inputs": [],
       "kind": "SCHEMA",
@@ -340,6 +358,82 @@
   "mitosis_splits": [],
   "open_blockers": [],
   "scopes": {
+    "global_defaults": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {
+        "charter": {
+          "name": "mcp_server_28",
+          "principles": "Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
+          "summary": "Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents."
+        },
+        "lod1_synopsis": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload."
+      },
+      "build_status": "DRAFT",
+      "build_tag": null,
+      "children": [],
+      "core_tag": null,
+      "depends_on": [],
+      "failure_diagnostic": null,
+      "id": "global_defaults",
+      "in_edges": [],
+      "inputs": [],
+      "kind": null,
+      "outputs": [],
+      "owner": null,
+      "parent": null,
+      "role": null,
+      "rules": [
+        {
+          "access_turns": [
+            9
+          ],
+          "bound_op": null,
+          "bound_val": null,
+          "conditions": [],
+          "created_turn": 9,
+          "exceptions": [],
+          "facet": "context_facts",
+          "id": "r_global_defaults_3",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults",
+          "target_prop": null,
+          "text": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
+          "turn": 9,
+          "type": "FACT",
+          "updated_turn": 9
+        },
+        {
+          "access_turns": [
+            10
+          ],
+          "bound_op": null,
+          "bound_val": null,
+          "conditions": [],
+          "created_turn": 10,
+          "exceptions": [],
+          "facet": "context_facts",
+          "id": "r_global_defaults_4",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults",
+          "target_prop": null,
+          "text": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
+          "turn": 10,
+          "type": "FACT",
+          "updated_turn": 10
+        }
+      ],
+      "stage": null,
+      "status": "DRAFT"
+    },
     "mcp_protocol_verifier": {
       "_meta": {},
       "aliases": [],
@@ -361,7 +455,8 @@
         "owner": "groves",
         "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
         "stage": 28,
-        "updated_turn": 1
+        "updated_turn": 10,
+        "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
       },
       "build_status": "VERIFIED",
       "build_tag": null,
@@ -392,7 +487,8 @@
       "rules": [],
       "stage": "28",
       "status": "VERIFIED",
-      "updated_turn": 1
+      "updated_turn": 1,
+      "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
     },
     "mcp_server": {
       "_meta": {},
@@ -403,12 +499,12 @@
           "lattice/mcp_server.py"
         ],
         "_table_role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
-        "depends_on": "-",
+        "depends_on": "",
         "description": "MCP tool call result payload",
         "fields": "content, isError, structuredContent",
         "file": "lattice/mcp_server.py",
         "file_hashes": {
-          "lattice/mcp_server.py": "55a686d339bb3c13"
+          "lattice/mcp_server.py": "0aa2632d1158f578"
         },
         "files": [
           "lattice/mcp_server.py"
@@ -418,7 +514,8 @@
         "role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
         "schema": "McpToolCallResult",
         "stage": 28,
-        "updated_turn": 1
+        "updated_turn": 10,
+        "why": "Gives AI coding agents direct <50ms access to architecture memory, focused AST code slices, living specs, and pre-commit verification over stdio JSON-RPC 2.0."
       },
       "build_status": "VERIFIED",
       "build_tag": null,
@@ -428,7 +525,7 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "lattice/mcp_server.py": "55a686d339bb3c13"
+        "lattice/mcp_server.py": "0aa2632d1158f578"
       },
       "files": [
         "lattice/mcp_server.py"
@@ -471,10 +568,11 @@
       ],
       "stage": "28",
       "status": "VERIFIED",
-      "updated_turn": 1
+      "updated_turn": 1,
+      "why": "Gives AI coding agents direct <50ms access to architecture memory, focused AST code slices, living specs, and pre-commit verification over stdio JSON-RPC 2.0."
     }
   },
-  "turn": 8,
-  "turn_index": 8,
+  "turn": 10,
+  "turn_index": 10,
   "version": 1
 }

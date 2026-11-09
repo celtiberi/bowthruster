@@ -325,7 +325,8 @@ def _node_matches_slice_dims(
             str(v)
             for v in (
                 node.get("id"), node.get("name"), node.get("scope"), node.get("scope_id"),
-                node.get("source"), node.get("target"), node.get("payload"), node.get("role"),
+                node.get("source"), node.get("target"), node.get("payload"), node.get("role"), node.get("why"),
+                (node.get("attributes") if isinstance(node.get("attributes"), dict) else {}).get("why"),
                 node.get("spec"), node.get("text"), node.get("target_prop"), node.get("owner"), node.get("stage"),
                 node.get("files"), node.get("file"), node.get("bend_dir"), node.get("args"), node.get("lhs"), node.get("rhs"),
             )

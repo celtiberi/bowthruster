@@ -13,6 +13,7 @@ from typing import Any
 from lattice.nlp import restore_ascii_dots
 
 CANONICAL_PIPE_TABLE_HEADERS: tuple[str, ...] = (
+    "| Charter | Summary | Principles |",
     "| Component | Role | Owner | Stage | Depends_On | Files |",
     "| Flow | Source | Target | Payload | Condition |",
     "| Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |",
@@ -181,6 +182,8 @@ def extract_flow_sentences(raw_text: str) -> list[dict[str, Any]]:
 
 
 def _classify_table_kind(hset: set[str]) -> str:
+    if "charter" in hset or "project" in hset or ("summary" in hset and any(k in hset for k in ("principles", "purpose", "why", "non_goals"))):
+        return "CHARTER"
     if "flow" in hset or ("source" in hset and "target" in hset):
         return "FLOW"
     if "rule" in hset or "bound" in hset or ("type" in hset and ("property" in hset or "target_prop" in hset or "value" in hset)):
@@ -229,6 +232,8 @@ def extract_structured_table_rows(doc_tables: list[dict[str, Any]] | str) -> lis
                 scope = str(col_map.get("source") or col_map.get("from") or first_val or "global_defaults")
             elif t_kind in ("INTERFACE", "LAW", "SCHEMA", "RULE"):
                 scope = str(col_map.get("component") or col_map.get("scope") or col_map.get("module") or "global_defaults")
+            elif t_kind == "CHARTER":
+                scope = "global_defaults"
             else:
                 scope = str(col_map.get("scope") or col_map.get("component") or first_val or "global_defaults")
             row_entry: dict[str, Any] = {"table_kind": t_kind, "scope": scope, **col_map}
@@ -293,10 +298,27 @@ def build_mcus_from_tables_and_flows(
                 "lattice_payload": {k: v for k, v in (("id", rid), ("owner", owner), ("stage", stage)) if v},
             })
             next_id += 1
+        elif t_kind == "CHARTER":
+            cname = str(srow.get("charter") or srow.get("project") or srow.get("board") or "project").strip()
+            csum = str(srow.get("summary") or srow.get("purpose") or srow.get("why") or "").strip()
+            cprin = str(srow.get("principles") or srow.get("non_goals") or "").strip()
+            txt = f"Charter [{cname}]: {csum}" + (f" | Principles: {cprin}" if cprin else "")
+            mcus.append({
+                "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
+                "text": txt, "canonical_text": txt, "type": "FACT", "facet": "context_facts",
+                "primary_scope": "global_defaults", "secondary_refs": [],
+                "target_prop": None, "bound_op": None, "bound_val": None,
+                "conditions": [], "is_exception": False, "superseded_literals": [],
+                "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
+                "lattice_kind": "CHARTER",
+                "lattice_payload": {"name": cname, "summary": csum, "principles": cprin},
+            })
+            next_id += 1
         elif t_kind == "COMPONENT":
             deps = _split_list_cell(srow.get("depends_on") or srow.get("dependencies") or srow.get("deps"))
             files = _split_list_cell(srow.get("files") or srow.get("file"))
             role = str(srow.get("role") or srow.get("description") or srow.get("purpose") or f"Component {scope}").strip()
+            why = str(srow.get("why") or srow.get("rationale") or "").strip() or None
             mcus.append({
                 "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
                 "text": f"{scope}: {role}", "canonical_text": f"{scope}: {role}", "type": "FACT", "facet": "context_facts",
@@ -305,7 +327,7 @@ def build_mcus_from_tables_and_flows(
                 "conditions": [], "is_exception": False, "superseded_literals": [],
                 "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
                 "lattice_kind": "COMPONENT",
-                "lattice_payload": {"scope": scope, "role": role, "depends_on": deps, "files": files, "owner": owner, "stage": stage},
+                "lattice_payload": {"scope": scope, "role": role, "why": why, "depends_on": deps, "files": files, "owner": owner, "stage": stage},
             })
             next_id += 1
         elif t_kind in ("INTERFACE", "LAW", "SCHEMA"):

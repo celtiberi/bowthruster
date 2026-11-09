@@ -62,7 +62,7 @@ Once registered, the server exposes **8 first-class MCP tools**:
 | MCP Tool | Workflow Step | Key Arguments & Purpose |
 | :--- | :---: | :--- |
 | `lattice_readme` | **Onboard** | Fetch onboarding docs or the unified `lattice` skill template (`section="readme" \| "guide" \| "skill" \| "all"`). |
-| `lattice_atlas` | **Step 1 (Explore)** | Render the 1-line-per-component `LOD_0` topology, health metrics, and optional Mermaid graph (`board`, `load_all=True`, `mermaid=True`). |
+| `lattice_atlas` | **Step 1 (Explore / Spec)** | Render the 1-line-per-component `LOD_0` topology (with Charter, Role, Why/Rationale, statuses, `> FLOW` edges, metrics, and optional Mermaid graph) or pass `spec=True` to compile the full human-readable Markdown specification (`board`, `load_all=True`, `mermaid=True`, `spec=True`). |
 | `lattice_slice` | **Step 1 (Slice + Code)** | Pull a `< 2 KB` component/symbol slice + exact `#L<start>-L<end>` source code in one call (`board`, `component`, `query`, `include_code=True`, `mark_stale=True`). |
 | `lattice_turn` | **Step 2 (Mutate Board)** | Compile Markdown pipe tables into the Whiteboard in `< 50ms` and mark modified/downstream components `STALE` (`board`, `speaker`, `message`). |
 | `lattice_packets` | **Step 3 (Build Packet)** | Emit wave-ordered `WorkPacket`s (`laws_skeleton`, `python_skeleton`, `baseline_commit_sha`) (`board`, `component`, `status="STALE"`). |
@@ -100,14 +100,18 @@ You do **not** need to rewrite existing code to adopt Lattice. Any greenfield de
 Check active boards in `.whiteboard/`:
 - Call `lattice_atlas(board="my_board", load_all=True)`
 
-#### Step 2: Compile the Architecture to `PROVEN_COMPLETE` (`lattice_turn`)
-Pass the canonical Markdown pipe tables (`Component`, `Flow`, `Interface`, `Law` — plus optional `Schema` and `Rule` tables) to `lattice_turn`. Because Lattice is built for AI agents that emit structured Markdown natively, `lattice_turn` compiles pipe tables **100% deterministically in `< 50ms`** with zero LLM calls and zero API keys:
+#### Step 2: Compile the Architecture & Intent to `PROVEN_COMPLETE` (`lattice_turn`)
+Pass the canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`, `Law` — plus optional `Schema` and `Rule` tables) to `lattice_turn`. Because Lattice is built for AI agents that emit structured Markdown natively, `lattice_turn` compiles pipe tables **100% deterministically in `< 50ms`** with zero LLM calls and zero API keys—and `lattice_atlas(board="my_board", spec=True)` (or `lattice --board my_board atlas --spec`) renders the complete human-readable Markdown specification (`# <Board> — Living Architecture & Intent Specification`) directly from the board at any time:
 
 ```markdown
-| Component | Role | Owner | Stage | Depends_On | Files |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| auth_service | JWT token validator | backend | 1 | none | src/auth.py:L1-L120 |
-| api_gateway | HTTP request router | backend | 1 | auth_service | src/gateway.py:L1-L150 |
+| Charter | Summary | Principles |
+| :--- | :--- | :--- |
+| my_board | Edge API gateway and stateless JWT authentication service for client requests. | Stateless token validation (<5ms); zero shared mutable state between gateway workers; explicit typed contracts on all internal flows. |
+
+| Component | Role | Why | Owner | Stage | Depends_On | Files |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| auth_service | JWT token validator | Isolates cryptographic signature and expiration checks so downstream handlers only receive verified AuthTokens. | backend | 1 | none | src/auth.py:L1-L120 |
+| api_gateway | HTTP request router | Terminates external HTTP requests and enforces auth_check before dispatching to internal services. | backend | 1 | auth_service | src/gateway.py:L1-L150 |
 
 | Flow | Source | Target | Payload | Condition |
 | :--- | :--- | :--- | :--- | :--- |

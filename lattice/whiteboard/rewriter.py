@@ -30,19 +30,12 @@ _CANONICAL_HEADERS_MSG = (
 )
 
 def is_table_schema_valid(has_valid_table_headers: bool = True, table_accepted: bool = True) -> bool:
-    """Pure table-header schema gate governed by Bend 2 `table_header_schema_law` (Stage 22)."""
     return bool(has_valid_table_headers or (not table_accepted))
-
 def table_header_schema_law(has_valid_table_headers: bool = True, table_accepted: bool = True) -> bool:
-    """Alias for Bend 2 `table_header_schema_law` AST call-graph verification."""
     return is_table_schema_valid(has_valid_table_headers, table_accepted)
-
 def is_flow_or_rule_table_fused(has_flow_or_rule_table: bool = True, fused_into_graph: bool = True) -> bool:
-    """Pure Flow/Rule table fusion gate governed by Bend 2 `flow_and_rule_table_fusion_law` (Stage 22)."""
     return bool((not has_flow_or_rule_table) or fused_into_graph)
-
 def flow_and_rule_table_fusion_law(has_flow_or_rule_table: bool = True, fused_into_graph: bool = True) -> bool:
-    """Alias for Bend 2 `flow_and_rule_table_fusion_law` AST call-graph verification."""
     return is_flow_or_rule_table_fused(has_flow_or_rule_table, fused_into_graph)
 
 class Phase4InvariantError(ValueError):
@@ -234,17 +227,29 @@ def fuse_table_attributes(
         if any(not nh for nh in norm_headers):
             raise ValueError(f"doc_tables[{t_idx}] contains empty/unmapped structural header in {headers!r}")
         has_comp_col = any(k in norm_headers for k in ("component", "scope", "scope_id", "module"))
+        is_charter_t = "charter" in norm_headers or "project" in norm_headers or ("summary" in norm_headers and any(k in norm_headers for k in ("principles", "purpose", "why", "non_goals")))
         is_flow_t = "flow" in norm_headers or ("source" in norm_headers and "target" in norm_headers)
         is_rule_t = "rule" in norm_headers or "bound" in norm_headers or ("type" in norm_headers and any(k in norm_headers for k in ("property", "target_prop", "value", "bound_val")))
-        if "interface" in norm_headers: valid_hdrs = has_comp_col
+        if is_charter_t: valid_hdrs = any(k in norm_headers for k in ("summary", "purpose", "why", "principles", "description"))
+        elif "interface" in norm_headers: valid_hdrs = has_comp_col
         elif "law" in norm_headers: valid_hdrs = has_comp_col and any(k in norm_headers for k in ("lhs", "rhs", "theorem", "equation", "formula", "invariant", "spec", "description"))
         elif "schema" in norm_headers: valid_hdrs = any(k in norm_headers for k in ("fields", "field", "component", "scope", "scope_id", "module", "spec", "description"))
         elif is_flow_t: valid_hdrs = "source" in norm_headers and "target" in norm_headers
         elif is_rule_t: valid_hdrs = any(k in norm_headers for k in ("property", "target_prop", "value", "bound_val", "condition", "rule", "bound", "spec", "description"))
         else:
-            valid_hdrs = len(norm_headers) >= 2 and any(k in norm_headers for k in ("component", "scope", "scope_id", "module", "service", "division", "division_persona")) and (not ("component" in norm_headers) or any(k in norm_headers for k in ("role", "purpose", "responsibility", "owner", "division", "stage", "phase", "depends_on", "deps", "dependencies", "files", "file", "description", "tier", "media", "inputs", "outputs", "parent", "children")))
+            valid_hdrs = len(norm_headers) >= 2 and any(k in norm_headers for k in ("component", "scope", "scope_id", "module", "service", "division", "division_persona")) and (not ("component" in norm_headers) or any(k in norm_headers for k in ("role", "purpose", "responsibility", "why", "rationale", "owner", "division", "stage", "phase", "depends_on", "deps", "dependencies", "files", "file", "description", "tier", "media", "inputs", "outputs", "parent", "children")))
         if not (is_table_schema_valid(valid_hdrs, True) and table_header_schema_law(valid_hdrs, True) and valid_hdrs):
             raise ValueError(f"doc_tables[{t_idx}] headers {headers!r}: {_CANONICAL_HEADERS_MSG}")
+
+        if is_charter_t:
+            for row in (r for r in rows if isinstance(r, dict)):
+                cname = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("charter", "project", "board", "name")) or str(row.get(headers[0], ""))).strip().strip("\"`'*").strip() or "project"
+                csum = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("summary", "purpose", "description", "why"))).strip()
+                cprin = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("principles", "non_goals", "rationale"))).strip()
+                graph["charter"] = {"name": cname, "summary": csum, "principles": cprin}
+                ensure_scope_node(graph, "global_defaults")["attributes"]["charter"] = dict(graph["charter"])
+                if "global_defaults" not in fused_scopes: fused_scopes.append("global_defaults")
+            continue
 
         if is_flow_t:
             has_flow_or_rule = True
@@ -341,7 +346,7 @@ def fuse_table_attributes(
 
         primary_col_idx = next((norm_headers.index(k) for k in ("component", "scope", "scope_id", "module") if k in norm_headers), 0)
         primary_hdr, heading_path = str(headers[primary_col_idx]), table.get("heading_path")
-        non_alias_cols = frozenset({"role", "purpose", "responsibility", "owner", "division", "stage", "phase", "parent", "depends_on", "deps", "dependencies", "children", "inputs", "input", "outputs", "output", "files", "file"})
+        non_alias_cols = frozenset({"role", "purpose", "responsibility", "why", "rationale", "owner", "division", "stage", "phase", "parent", "depends_on", "deps", "dependencies", "children", "inputs", "input", "outputs", "output", "files", "file"})
         for row in (r for r in rows if isinstance(r, dict)):
             if not (raw_entity := str(row.get(primary_hdr, row.get(norm_headers[primary_col_idx], ""))).strip()): continue
             scope_id = _resolve_or_register_scope(graph, raw_entity, create=True)
@@ -362,6 +367,8 @@ def fuse_table_attributes(
                 is_empty_cell = clean_str.lower() in ("", "none", "-", "—", "n/a", "null")
                 if col_key in ("role", "purpose", "responsibility") and not is_empty_cell:
                     sbf_kwargs["role"] = attrs["_table_role"] = clean_str
+                elif col_key in ("why", "rationale") and not is_empty_cell:
+                    scope["why"] = attrs["why"] = clean_str
                 elif col_key in ("owner", "division") and not is_empty_cell:
                     sbf_kwargs["owner"] = _extract_canonical_and_aliases(raw_cell_str)[0] if ("`" in raw_cell_str or "(" in raw_cell_str) else clean_str
                 elif col_key in ("stage", "phase") and not is_empty_cell: sbf_kwargs["stage"] = clean_str
@@ -414,15 +421,10 @@ def _filter_non_dep_tokens(
         return list(attrs["_table_depends_on"]), non_dep_low
     clean_deps: list[str] = []
     for d in raw_deps:
-        if not (ds := str(d).strip().strip("\"`'*").strip()):
-            continue
+        if not (ds := str(d).strip().strip("\"`'*").strip()): continue
         d_low, d_slug = ds.lower(), _slugify_scope_id(ds)
-        if d_low in non_dep_low or d_slug in non_dep_low or "." in ds or any(d_low.endswith(ext) for ext in ("_py", "_bend", "_mjs", "_json")):
-            non_dep_low.update((d_low, d_slug))
-            continue
-        if role_tail_pos >= 0 and text_low.find(d_low) > role_tail_pos and text_low.find(d_low, 0, role_tail_pos) < 0:
-            non_dep_low.update((d_low, d_slug))
-            continue
+        if d_low in non_dep_low or d_slug in non_dep_low or "." in ds or any(d_low.endswith(ext) for ext in ("_py", "_bend", "_mjs", "_json")) or (role_tail_pos >= 0 and text_low.find(d_low) > role_tail_pos and text_low.find(d_low, 0, role_tail_pos) < 0):
+            non_dep_low.update((d_low, d_slug)); continue
         clean_deps.append(ds)
     return clean_deps, non_dep_low
 

@@ -368,13 +368,20 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             disc_board = _resolve_project_root("sib_board")
             disc_msg = _resolve_project_root("new_board", message="Inspect src/widget.py in sibling repo")
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-                par_turns = list(pool.map(lambda i: call_lattice_tool("lattice_turn", {"board": "sib_board", "project_root": str(sib_repo), "message": f"| Component | Role | Owner | Stage | Status | Depends On | Files |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| par_comp_{i} | Parallel worker {i} | groves | 28 | READY | | src/widget.py |\n"}), range(4)))
-            r_sib = call_lattice_tool("lattice_slice", {"board": "sib_board"})
+                par_turns = list(pool.map(lambda i: call_lattice_tool("lattice_turn", {"board": "sib_board", "project_root": str(sib_repo), "message": f"| Charter | Summary | Principles |\n| :--- | :--- | :--- |\n| sib_board | Widget engine | Deterministic execution |\n\n| Component | Role | Why | Owner | Stage | Status | Depends On | Files |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| par_comp_{i} | Parallel worker {i} | Isolates worker {i} | groves | 28 | READY | | src/widget.py |\n"}), range(4)))
+            r_sib = call_lattice_tool("lattice_slice", {"board": "sib_board", "project_root": str(sib_repo)})
+            r_spec = call_lattice_tool("lattice_atlas", {"board": "sib_board", "project_root": str(sib_repo), "spec": True})["structuredContent"]
             par_scopes = set((json.loads((sib_repo / ".whiteboard" / "sib_board.json").read_text(encoding="utf-8")).get("scopes") or {}).keys())
         finally:
             MCP_SRV.LATTICE_HOME = orig_lh
             shutil.rmtree(Path("/tmp/whiteboard_sessions/sib_board"), ignore_errors=True)
-        restored_cli_root = CLI.REPO_ROOT == orig_cli_root and all(not r.get("isError") for r in par_turns) and {f"par_comp_{i}" for i in range(4)} <= par_scopes
+        restored_cli_root = (
+            CLI.REPO_ROOT == orig_cli_root and all(not r.get("isError") for r in par_turns) and {f"par_comp_{i}" for i in range(4)} <= par_scopes
+            and "- * CHARTER [sib_board]: Widget engine" in str(r_spec.get("atlas_schematic"))
+            and "[why: Isolates worker 0]" in str(r_spec.get("atlas_schematic"))
+            and "## 1. Project Charter & Purpose" in str(r_spec.get("atlas_spec"))
+            and "**Why It Exists (`Rationale`):** Isolates worker 0" in str(r_spec.get("atlas_spec"))
+        )
         readme_inline_txt = r_readme["content"][0]["text"]
         full_readme_txt = r_full["content"][0]["text"]
         seam_check_ok = (

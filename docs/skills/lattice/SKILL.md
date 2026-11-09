@@ -11,14 +11,15 @@ description: Unified Lattice-first workflow for exploring code (`lattice_atlas` 
 
 ## Step 1 — Explore & Pull Code Slices (`lattice_atlas` $\rightarrow$ `lattice_slice`)
 Never grep blindly across the repository or read whole files out of curiosity:
-1. **Topology (`LOD_0`):** Call `lattice_atlas(board="<BOARD_NAME>")` (or `load_all=True`) for the 1-line-per-component map, verification statuses, and `> FLOW` edges.
+1. **Topology & Living Spec (`LOD_0` / `spec=True`):** Call `lattice_atlas(board="<BOARD_NAME>")` (or `load_all=True`) for the 1-line-per-component map (Charter, Role, Why/Rationale, verification statuses, and `> FLOW` edges), or pass `spec=True` to render the complete human-readable Markdown specification.
 2. **Component + Code Slice in One Shot (`LOD_2`):** Call `lattice_slice(board="<BOARD_NAME>", query="<function_or_helper>", include_code=True)` (or `component="<comp>"`).
    - Returns the owning `@ COMPONENT`, `# SCHEMA` and `$ INTERFACE` `file=<path>#L<start>-L<end>` spans, intra-file helper call trees (`calls=[_helper#L<start>-L<end>, ...]`), on-the-fly `@ AST_SYMBOL` resolution (including private `_helper` functions), and the exact numbered `[CODE <path>#L<start>-L<end>]` block so you can pass lines directly to `edit_file` without `read_file`.
    - **Internal Fixes (3-Call Fast Path):** If fixing internal code where no contract/schema/law changes, pass `mark_stale=True` to `lattice_slice(..., include_code=True, mark_stale=True)` to transition the matched component to `STALE` in the same call and skip directly to `edit_file` $\rightarrow$ `lattice_git_sync(mode="pre", mark_verified=True)`.
 
 ## Step 2 — Mutate the Board First When Contracts Change (`lattice_turn` $\rightarrow$ `STALE`)
 Never edit a `VERIFIED` component's files directly (`verified_scope_edit_guard_law` blocks the commit). When adding or changing a component, flow, interface, schema, law, or rule, call `lattice_turn(board="<BOARD_NAME>", speaker="agent", message="...")` with canonical Markdown pipe tables (`< 50ms`, zero LLMs):
-- `| Component | Role | Owner | Stage | Depends_On | Files |`
+- `| Charter | Summary | Principles |` *(project/board purpose, why it exists, and core design principles)*
+- `| Component | Role | Why | Owner | Stage | Depends_On | Files |` *(`Why` column is optional rationale)*
 - `| Flow | Source | Target | Payload | Condition |`
 - `| Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |`
 - `| Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec |` *(or `Theorem` column `LHS == RHS`)*

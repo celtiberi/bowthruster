@@ -26,7 +26,7 @@ DIVISION_CIDS: dict[str, str] = dict((next((json.loads(p.read_text(encoding="utf
 _get_evaluate_lattice_proof = lambda: getattr(_wb, "evaluate_lattice_proof", None) or getattr(_wb_frust, "evaluate_lattice_proof", None)
 _get_compile_work_packets = lambda: getattr(_wb, "compile_work_packets", None) or getattr(_wb_ingest, "compile_work_packets", None)
 _get_transition_build_status = lambda: getattr(_wb, "transition_component_build_status", None) or getattr(_wb_mut, "transition_component_build_status", None)
-_get_render_lattice_atlas = lambda: render_lattice_atlas
+_get_render_lattice_atlas = lambda: getattr(sys.modules.get("lattice.the_table.surface"), "render_lattice_atlas", render_lattice_atlas)
 def format_exception_error(exc: BaseException) -> dict[str, Any]:
     last = tb[-1] if (tb := traceback.extract_tb(exc.__traceback__)) else None
     return {"type": type(exc).__name__, "file": last.filename if last else "", "line": int(last.lineno) if last else 0, "message": str(exc), "traceback": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))}
@@ -143,7 +143,7 @@ def _load_board(board: str) -> tuple[ContextGraph, Path, Path, Path]:
             for sid, raw_sc in (raw_data.get("scopes") or {}).items():
                 if isinstance(raw_sc, dict) and raw_sc.get("active_ticket_id") and sid in graph.get("scopes", {}): graph["scopes"][sid]["active_ticket_id"] = raw_sc["active_ticket_id"]
             sync_to_sqlite(graph)
-        else: graph = create_empty_context_graph(store=store); _save_board(graph, wb_json, wb_sqlite)
+        else: graph = create_empty_context_graph(store=store)
         return graph, wb_json, wb_sqlite, transcript_path
 def _load_atlas_boards(explicit_board: str | None, boards_csv: str | None, load_all: bool) -> dict[str, dict[str, Any]]:
     vault_wb = REPO_ROOT / ".whiteboard"
@@ -353,7 +353,7 @@ def main() -> int:
     for flg, dst in (("--build-tag", "build_tag"), ("--core-tag", "core_tag"), ("--reason", "reason"), ("--for", "for_div")): p_stat.add_argument(flg, default=None, dest=dst)
     for flg, dst in (("--dispatch", "dispatch"), ("--no-ticket", "no_ticket")): p_stat.add_argument(flg, action="store_true", dest=dst)
     p_atlas.add_argument("--boards", default=None)
-    for flg, dst in (("--all", "load_all"), ("--mermaid", "mermaid")): p_atlas.add_argument(flg, action="store_true", dest=dst)
+    for flg, dst in (("--all", "load_all"), ("--mermaid", "mermaid"), ("--spec", "spec")): p_atlas.add_argument(flg, action="store_true", dest=dst)
     for flg, dst in (("--pre-commit", "pre_commit"), ("--post-commit", "post_commit"), ("--baseline", "baseline"), ("--drift", "drift"), ("--mark-verified", "mark_verified")): p_gsync.add_argument(flg, action="store_true", dest=dst)
     p_gsync.add_argument("--manifest", default=None)
     p_logs.add_argument("--limit", type=int, default=20); p_logs.add_argument("--status", default=None)
@@ -400,9 +400,9 @@ def main() -> int:
         if args.cmd == "atlas":
             boards_dict = _load_atlas_boards(explicit_board, args.boards, args.load_all)
             view = _get_render_lattice_atlas()(boards_dict, has_local_seed_cues=False, explicit_atlas_request=True)
-            out_payload = {"boards": list(boards_dict.keys()), **{k: view.get(k) for k in ("atlas_mounted", "atlas_schematic", "atlas_metrics", "atlas_mermaid")}}
+            out_payload = {"boards": list(boards_dict.keys()), **{k: view.get(k) for k in ("atlas_mounted", "atlas_schematic", "atlas_metrics", "atlas_mermaid", "atlas_spec")}}
             record_flight_event(board, "atlas", (time.perf_counter() - t0_cmd) * 1000.0, "OK")
-            print(json.dumps(out_payload, indent=2, sort_keys=True, ensure_ascii=False) if args.as_json else f"{view.get('atlas_schematic') or ''}\n\n[Atlas Metrics]: {json.dumps(view.get('atlas_metrics') or {}, sort_keys=True)}" + (f"\n\n[Atlas Mermaid]:\n{view['atlas_mermaid']}" if args.mermaid and view.get("atlas_mermaid") else ""))
+            print(json.dumps(out_payload, indent=2, sort_keys=True, ensure_ascii=False) if args.as_json else (str(view.get("atlas_spec") or "") if args.spec else f"{view.get('atlas_schematic') or ''}\n\n[Atlas Metrics]: {json.dumps(view.get('atlas_metrics') or {}, sort_keys=True)}" + (f"\n\n[Atlas Mermaid]:\n{view['atlas_mermaid']}" if args.mermaid and view.get("atlas_mermaid") else "")))
             return 0
         if args.cmd == "reset":
             bdir, wb_json, wb_sqlite, transcript_path = _board_paths(board)
