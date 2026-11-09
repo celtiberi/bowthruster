@@ -3,15 +3,15 @@
 **Architecture memory, focused code lookup, and pre-commit verification for AI coding agents. The Lattice itself is the spec, eliminating manual spec writing and keeping design and code in sync automatically.**
 
 > **Built for AI Coding Agents — Not Manual Human Bookkeeping**  
-> Lattice (`lattice-mcp`) is a tool for **your AI coding agent** to operate directly, not another spec format for you to maintain by hand. Anyone (or any AI agent) can clone the repo and run it immediately with stock `python3` — **no `pip install`, no virtualenv, and no API keys required**. You connect `lattice-mcp` to your agent (Claude Code, Cursor, Antigravity, Windsurf, etc.), and your AI builds the architecture map, pulls focused code slices, and verifies its own commits automatically.
->
-> **Try it in 60 seconds:** [Clone & connect `lattice-mcp`](#20-install--register-lattice-mcp-in-30-seconds-zero-pip-dependencies), then paste these two prompts to your AI:  
-> 1. **Map the codebase:** *`"Call lattice_readme(section='readme') and map this repository onto a Lattice board with its Charter, component Roles/Why, Flows, Interfaces, and Laws."`*  
-> 2. **Run an architectural audit:** *`"With the insight you now have from the Lattice board and AST slices, what would you change about this project's architecture (e.g., monoliths doing another component's job, hidden state mutations across flows, duplicated logic, or missing seams)?"`*
+> Lattice (`lattice-mcp`) is a tool for **your AI coding agent** to operate directly, not another spec format for you to maintain by hand. Anyone (or any AI agent) can clone the repo and run it immediately with stock `python3` — **no `pip install`, no virtualenv, and no API keys required**. Connect `lattice-mcp` to your agent (Claude Code, Cursor, Antigravity, Windsurf, etc.), and your AI builds the architecture map, pulls focused code slices, and verifies its own commits automatically.
+
+---
+
+## Why Lattice
 
 When you use an AI coding agent on a growing project, three things start going wrong:
 1. **It burns time and tokens hunting through files:** To make a 15-line change, the agent greps across the repo and reads dozens of files—filling its context window with noise before it writes a single line of code.
-2. **Fixing one thing breaks another:** It forgets a business rule you explained earlier, or changes a function in one file without realizing three downstream modules depend on it.
+2. **Fixing one thing breaks another:** It forgets a rule you explained earlier, or changes a function in one file without realizing three downstream modules depend on it.
 3. **Architecture docs rot immediately:** Nobody has time to keep markdown specs in sync with code by hand.
 
 **Lattice (`lattice-mcp`) fixes all three.** It is a fast, deterministic MCP server (zero LLMs, zero API keys) that your AI operates directly to keep your codebase's architecture, rules, and Git history in lockstep:
@@ -19,11 +19,7 @@ When you use an AI coding agent on a growing project, three things start going w
 - **1-Shot Code Slicing Instead of Repo Grepping:** Instead of reading whole files, your agent queries Lattice for a function or feature and gets back a `< 2 KB` slice containing the exact `#L<start>-L<end>` source code, the private helpers it calls, and its upstream/downstream contracts in a single call.
 - **Rules That Can't Be Silently Dropped:** Important invariants and module contracts are registered on the Lattice board instead of buried in chat history. Before a commit lands, Lattice checks your code's AST and formal invariants—blocking the commit if an invariant was bypassed or an unrelated module was edited by mistake.
 - **Automatic Blast-Radius Tracking:** When your agent changes an upstream data structure or interface, Lattice automatically marks the affected downstream modules **`STALE`** so the agent knows exactly what else needs updating and which tests to run.
-- **Works Across Languages & Repos:** Supports Python, TypeScript/JavaScript, Go, Rust, C/C++, Java, Kotlin, C#, Swift, and Ruby—and automatically discovers the right board across multiple repositories from a single global MCP config.
-
----
-
-## Part 1: How Daily Work Changes with Lattice
+- **Works Across Languages & Repos:** Built-in AST/symbol extractors support Python, TypeScript/JavaScript, Go, Rust, C/C++, Java, Kotlin, C#, Swift, and Ruby—and `lattice-mcp` automatically discovers the right board across multiple repositories from a single global MCP config.
 
 | Without Lattice | With Lattice (`lattice-mcp`) |
 | :--- | :--- |
@@ -34,20 +30,17 @@ When you use an AI coding agent on a growing project, three things start going w
 
 ---
 
-## Part 2: Onboarding & Daily Workflow (`lattice-mcp`)
+## Quick Start (30 Seconds, Zero Dependencies)
 
-### 2.0 Install & Register `lattice-mcp` in 30 Seconds (Zero `pip` Dependencies)
+Lattice runs on stock `python3` using only the **Python 3.11+ standard library** (`json`, `sqlite3`, `ast`, `pathlib`, `hashlib`, `subprocess`).
 
-Anyone (or any AI agent) can clone the repo and run it immediately with stock `python3` — **no `pip install`, no virtualenv, and no API keys required** (`100%` Python 3.11+ standard library: `json`, `sqlite3`, `ast`, `pathlib`, `hashlib`, `subprocess`).
-
-#### 1. Clone the repository
+### 1. Clone the repository
 ```bash
 git clone https://github.com/celtiberi/lattice.git
 ```
-*(Optional: run `python3 -m lattice.mcp_verifier` inside `lattice/` to verify the stdio JSON-RPC 2.0 server in `< 1s`, or install `pip install -e .` if you want the `lattice` and `lattice-mcp` CLI entrypoints on your `PATH`.)*
+*(Optional: run `python3 -m lattice.mcp_verifier` inside `lattice/` to verify the stdio JSON-RPC 2.0 server, or `pip install -e .` if you want the `lattice` and `lattice-mcp` CLI entrypoints on your `PATH`.)*
 
-#### 2. Connect `lattice-mcp` to your AI coding agent
-Register `lattice.mcp_server` in your AI host (Claude Code, Cursor, Antigravity, Windsurf, etc.):
+### 2. Connect `lattice-mcp` to your AI coding agent
 
 - **Claude Code (one command):**
   ```bash
@@ -68,37 +61,44 @@ Register `lattice.mcp_server` in your AI host (Claude Code, Cursor, Antigravity,
     }
   }
   ```
-  - **`command` / `args`:** Runs the stdio MCP server (`python3 -m lattice.mcp_server`) using any stock Python 3.11+ interpreter.
-  - **`PYTHONPATH`:** Path to the cloned `lattice` directory so `import lattice` resolves from any working directory.
-  - **`LATTICE_PROJECT_ROOT` *(optional)*:** Root directory of a specific target repository. If omitted, `lattice-mcp` automatically discovers the right repository from `.whiteboard/<board>.json` or the file paths passed to `lattice_turn`.
+  *(Optional env var: `LATTICE_PROJECT_ROOT` to pin a specific repo. If omitted, `lattice-mcp` automatically discovers the active repository from `.whiteboard/<board>.json` or the file paths passed to `lattice_turn`.)*
 
-Once registered, the server exposes **8 first-class MCP tools**:
+### 3. Paste these two prompts to your AI
+Once connected, open any new or existing repository and tell your agent:
+1. **Map the codebase:**
+   > *`"Call lattice_readme(section='readme') and map this repository onto a Lattice board with its Charter, component Roles/Why, Flows, Interfaces, and Laws."`*
+2. **Run an architectural audit:**
+   > *`"With the insight you now have from the Lattice board and AST slices, what would you change about this project's architecture (e.g., monoliths doing another component's job, hidden state mutations across flows, duplicated logic, or missing seams)?"`*
 
-| MCP Tool | Workflow Step | Key Arguments & Purpose |
+---
+
+## Agent Reference: Tools, Workflows & Pipe-Table Schema
+
+### The 8 MCP Tools
+
+| MCP Tool | Step | Key Arguments & Purpose |
 | :--- | :---: | :--- |
 | `lattice_readme` | **Onboard** | Fetch onboarding docs or the unified `lattice` skill template (`section="readme" \| "guide" \| "skill" \| "all"`). |
-| `lattice_atlas` | **Step 1 (Explore / Spec)** | Render the 1-line-per-component `LOD_0` topology (with Charter, Role, Why/Rationale, statuses, `> FLOW` edges, metrics, and optional Mermaid graph) or pass `spec=True` to compile the full human-readable Markdown specification (`board`, `load_all=True`, `mermaid=True`, `spec=True`). |
-| `lattice_slice` | **Step 1 (Slice + Code)** | Pull a `< 2 KB` component/symbol slice + exact `#L<start>-L<end>` source code in one call (`board`, `component`, `query`, `include_code=True`, `mark_stale=True`). |
+| `lattice_atlas` | **Step 1 (Explore / Spec)** | Render the 1-line-per-component `LOD_0` topology (Charter, Role, Why, statuses, `> FLOW` edges, metrics, and Mermaid graph) or pass `spec=True` to compile the full Markdown specification (`board`, `load_all=True`, `mermaid=True`, `spec=True`). |
+| `lattice_slice` | **Step 1 (Slice + Code)** | Pull a `< 2 KB` component/symbol slice + exact `#L<start>-L<end>` source code in one call (`board`, `component`, `query`, `include_code=True`, `mark_stale=True`). Supports windowed lookup (`query="fn_name 100-180"` or `query="fn_name keyword"`). |
 | `lattice_turn` | **Step 2 (Mutate Board)** | Compile Markdown pipe tables into the Whiteboard and mark modified/downstream components `STALE` (`board`, `speaker`, `message`). |
 | `lattice_packets` | **Step 3 (Build Packet)** | Emit wave-ordered `WorkPacket`s (`laws_skeleton`, `python_skeleton`, `baseline_commit_sha`) (`board`, `component`, `status="STALE"`). |
 | `lattice_git_sync` | **Step 4 (Verify & Sync)** | Run pre-commit verification + auto-verify (`mode="pre"`, `mark_verified=True`), post-commit hash/line-anchor stamp (`mode="post"`), initial baseline (`mode="baseline"`), or drift check (`mode="drift"`). |
 | `lattice_status` | **Step 4 (Status)** | Transition a component's build status (`board`, `component`, `new_status="VERIFIED" \| "STALE" \| "FAILED"`). |
 | `lattice_logs` | **Diagnose** | Read structured Flight Recorder telemetry (`board`, `status="ERROR" \| "REJECTED"`, `limit=20`). |
 
-### 2.1 Daily Agent Workflow: 3 Calls for Internal Fixes vs. 4 Calls for Contract Changes
+### Daily Agent Workflows
 
-Once a repository is onboarded, your AI coding agent uses two streamlined workflows depending on whether a change is **internal** or **architectural**:
-
-#### Workflow A — Internal Implementation Fix (`0` Contract Changes, **3 Tool Calls**)
-When fixing an internal bug, helper function, or threshold where no `# SCHEMA`, `$ INTERFACE`, `> FLOW`, or `% LAW` signature changes, the agent takes the **exact same 3 steps** as raw `read_file` $\rightarrow$ `edit_file` $\rightarrow$ `test`, with zero extra bookkeeping calls:
+#### Workflow A — Internal Fix (`0` Contract Changes, **3 Tool Calls**)
+When fixing an internal bug, helper function, or threshold where no `# SCHEMA`, `$ INTERFACE`, `> FLOW`, or `% LAW` signature changes:
 1. **Pull Code & Mark `STALE` in One Shot:**
    - Call `lattice_slice(board="my_board", query="verify_token", include_code=True, mark_stale=True)`
-   - Returns the `< 2 KB` component contract slice, the exact `#L<start>-L<end>` code block, and transitions the owning component (`auth_service`) to `STALE` in one call. *(If exploring first without knowing whether you will edit, call `lattice_slice(..., include_code=True)` first, and pass `mark_stale=True` only when pulling the target function to edit.)*
+   - Returns the `< 2 KB` component contract slice, the exact `#L<start>-L<end>` code block, and transitions the owning component (`auth_service`) to `STALE` in one call. *(If exploring first without knowing whether you will edit, omit `mark_stale=True` until you pull the target function to edit.)*
 2. **Edit the Code:**
-   - Call `edit_file` directly using the returned `#L<start>-L<end>` code lines.
+   - Call `edit_file` directly using the returned `#L<start>-L<end>` lines.
 3. **Pre-Commit Gate + Auto-Verify in One Shot:**
-   - Call `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)` (and run delta `pytest -k auth_service`).
-   - Verifies all AST signatures, `% LAW` call-graph reachability, `> FLOW` schemas, and Bend 2 proofs, and when `allowed: true`, **automatically transitions `STALE` components back to `VERIFIED`** (`marked_verified_scopes: ["auth_service"]`) and refreshes their file hashes and `#L<start>-L<end>` AST anchors.
+   - Call `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)` (and run delta tests on the changed component).
+   - Verifies AST signatures, `% LAW` call-graph reachability, `> FLOW` schemas, and Bend 2 proofs. When `allowed: true`, it **automatically transitions `STALE` components back to `VERIFIED`** and refreshes file hashes and `#L<start>-L<end>` AST anchors.
 
 #### Workflow B — Architectural / Contract Change (**4 Tool Calls**)
 When adding or modifying a `@ COMPONENT`, `> FLOW`, `$ INTERFACE`, `# SCHEMA`, `% LAW`, or `Rule`:
@@ -107,21 +107,14 @@ When adding or modifying a `@ COMPONENT`, `> FLOW`, `$ INTERFACE`, `# SCHEMA`, `
 3. **Edit the Code (`edit_file`):** Implement the updated contract and `% LAW` wiring.
 4. **Pre-Commit Gate + Auto-Verify (`lattice_git_sync`):** Call `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)`, run delta + producer $\rightarrow$ consumer seam tests, commit, and stamp `lattice_git_sync(board="my_board", mode="post")`.
 
-### 2.2 Onboarding a New or Existing Codebase in 4 Steps
+### Canonical Pipe-Table Schema (`lattice_turn`)
 
-You do **not** need to rewrite existing code to adopt Lattice. Any greenfield design or existing ("brownfield") repository can be onboarded in four steps:
-
-#### Step 1: Inspect or Initialize a Board (`lattice_atlas`)
-Check active boards in `.whiteboard/`:
-- Call `lattice_atlas(board="my_board", load_all=True)`
-
-#### Step 2: Compile the Architecture & Intent to `PROVEN_COMPLETE` (`lattice_turn`)
-Pass the canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`, `Law` — plus optional `Schema` and `Rule` tables) to `lattice_turn`. Because Lattice is built for AI agents that emit structured Markdown natively, `lattice_turn` compiles pipe tables **100% deterministically** with zero LLM calls and zero API keys—and `lattice_atlas(board="my_board", spec=True)` (or `lattice --board my_board atlas --spec`) renders the complete human-readable Markdown specification (`# <Board> — Living Architecture & Intent Specification`) directly from the board at any time:
+Pass canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`, `Law`, plus optional `Schema` and `Rule` tables) to `lattice_turn`. `lattice_atlas(board="my_board", spec=True)` renders the complete human-readable specification directly from the board at any time:
 
 ```markdown
 | Charter | Summary | Principles |
 | :--- | :--- | :--- |
-| my_board | Edge API gateway and stateless JWT authentication service for client requests. | Stateless token validation (<5ms); zero shared mutable state between gateway workers; explicit typed contracts on all internal flows. |
+| my_board | Edge API gateway and stateless JWT authentication service for client requests. | Stateless token validation; zero shared mutable state between gateway workers; explicit typed contracts on all internal flows. |
 
 | Component | Role | Why | Owner | Stage | Depends_On | Files |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -152,30 +145,16 @@ Pass the canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interf
 | retry_cap_rule | api_gateway | BOUND | MAX_RETRIES | <= | 3 | always |
 | no_requests_lib | api_gateway | PROHIBITION | requests | == | false | always |
 ```
+
 - **When to use `Rule` (`*`) vs. `Law` (`%`):**
   - **`Rule` (`BOUND` / `PROHIBITION` / `OBLIGATION`):** Use for file line caps (`BOUND` on `max_file_lines`), module constant bounds (`BOUND` on an AST constant like `MAX_RETRIES <= 3`), banned imports (`PROHIBITION` on a module name like `requests` or `torch`, checked against AST `import` statements on `lattice_git_sync`), or component obligations (`OBLIGATION`, mounted in `lattice_slice`). Re-submitting the same `(Component, Property)` overwrites the old rule in place (`MARKOVIAN_OVERWRITE`), or attaches a conditional exception when `Condition` differs.
   - **`Law` (`% LAW`):** Reserve for multi-variable boolean state machines, routing tables, or conservation invariants ($k \ge 2$ boolean inputs, or a `Theorem` column `LHS == RHS`) that are proven in Bend 2 and called by the component's `$ INTERFACE` in the AST call graph. Never invent a 1-boolean identity law (`MOD.is_ok(x) == x`) just to mark a component `STALE`—use `lattice_slice(..., mark_stale=True)` or update the `$ INTERFACE`, `# SCHEMA`, or `Rule` row instead.
 
-#### Step 3: Generate Skeletons (Greenfield) or Stamp the Baseline (Brownfield)
-- **For Greenfield components:** Call `lattice_packets(board="my_board", component="auth_service")` to get the component's `laws_skeleton` (`LAWS.bend`) and `python_skeleton` (typed Python stub with `# MUST CALL` anchors), implement the files, and run `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)`.
-- **For Existing (Brownfield) codebases:**
-  1. Verify all components and transition them from `READY` / `STALE` to `VERIFIED` in one call (checking file existence, `max_file_lines`, AST signatures, and Bend 2 laws):
-     - Call `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)`
-  2. Stamp the initial Git baseline (`commit_sha`, `file_hashes`, and `#L<start>-L<end>` AST anchors):
-     - Call `lattice_git_sync(board="my_board", mode="post")`
-  3. Render the human-readable Living Specification (or ask your agent what it would refactor now that the architecture and AST spans are mapped):
-     - Call `lattice_atlas(board="my_board", spec=True)`
+### Onboarding an Existing Repository & Installing the AI Skill / Git Hooks
 
-#### Step 4: Install the Unified `lattice` AI Skill & Git Hooks
-To ensure future AI sessions in this repository automatically follow the 4-step Lattice workflow without re-reading this README or juggling multiple separate skills:
-
-1. **Fetch & Install the Unified `lattice` Skill (`lattice_readme(section="skills")`)**:
-   - Call `lattice_readme(section="skills")` to retrieve the canonical [`docs/skills/lattice/SKILL.md`](docs/skills/lattice/SKILL.md) template.
-   - Write it into the repository's `.agents/skills/lattice/SKILL.md` (or `.claude/skills/lattice/SKILL.md`), **replacing `<BOARD_NAME>` with this repository's actual board name and `<TEST_CMD>` with this repository's test command** (e.g., `.venv/bin/pytest -k`).
-   - Because all four steps (**1. Explore & Slice Code** `lattice_slice(include_code=True)` $\rightarrow$ **2. Mutate Board (`STALE`)** `lattice_turn` $\rightarrow$ **3. Build Skeleton** `lattice_packets` $\rightarrow$ **4. Pre-Commit Gate, Seam Test & Sync** `lattice_git_sync` + `lattice_status`) live in **one ~45-line skill** and are reinforced directly on the MCP tool schemas, the AI loads the complete workflow in a single read with zero skill split-brain.
-
-2. **Install `.git/hooks/pre-commit` & `.git/hooks/post-commit`**:
-   Wire `git-sync` into `.git/hooks/` so every commit automatically runs the pre-commit gate and post-commit hash/line sync:
+1. **Compile & Verify the Baseline:** Submit the initial pipe tables via `lattice_turn`, mark existing files `VERIFIED` via `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)`, and stamp the initial Git SHA via `lattice_git_sync(board="my_board", mode="post")`.
+2. **Install the Unified `lattice` Skill:** Call `lattice_readme(section="skills")` to retrieve [`docs/skills/lattice/SKILL.md`](docs/skills/lattice/SKILL.md) and write it to `.agents/skills/lattice/SKILL.md` (or `.claude/skills/lattice/SKILL.md`), replacing `<BOARD_NAME>` and `<TEST_CMD>`.
+3. **Optional Git Hooks (`.git/hooks/pre-commit` & `post-commit`):**
    ```bash
    # .git/hooks/pre-commit (chmod +x .git/hooks/pre-commit)
    #!/usr/bin/env bash
@@ -191,7 +170,7 @@ To ensure future AI sessions in this repository automatically follow the 4-step 
 
 ---
 
-## Part 3: Deep Technical Architecture & Why Each Subsystem Works
+## How It Works Under the Hood
 
 Lattice is organized into six packages under `lattice/`:
 
@@ -211,135 +190,57 @@ flowchart LR
     GC -. "Storage" .-> Table
 ```
 
-### 3.1 How Lattice Proves Architecture & Code (The 4-Layer Verification Stack)
+### 1. The 4-Layer Verification Stack
+Behavioral unit tests alone leave internal program structure underdetermined ([*Skeleton Coding*, `arXiv:2610.38214`](https://arxiv.org/abs/2610.38214)): an LLM can pass a unit test with a hardcoded workaround while ignoring your architecture. Lattice verifies both the architecture graph and the implementation across four layers:
+1. **Graph Completeness & Interval Satisfiability (`whiteboard/frustration.py`):** A board only reaches `PROVEN_COMPLETE` when every `@ COMPONENT` has an owner, file path, typed `$ INTERFACE` contract, connected `> FLOW` edge, and at least one `% LAW` invariant, with `0` open structural gaps and `0` contradictory `BOUND`/`PROHIBITION` intervals.
+2. **Formal Dependent-Type Proofs in Bend 2 (`LATTICE_PROOF.bend` & `LAWS.bend`):** Every `% LAW` (`Args`, `LHS`, `RHS`) is compiled into a formal equality theorem (`LHS == RHS` proven via `rewrite` reflexivity and inductive case analysis over `Bool`/`Nat`) and checked by the **Bend 2 proof checker (`bend check`)**.
+3. **AST Signature, Schema & Call-Graph Gate (`the_executive/gate.py`):** Before every commit (`lattice_git_sync(mode="pre")`), Lattice parses staged files to verify that every declared `# SCHEMA` class (including `> FLOW` payload schemas) and `$ INTERFACE` function exists with its required fields/parameters, every `$ INTERFACE` invokes its governing `% LAW` helper function(s) in the static call graph (across single- or multi-file components), and no `VERIFIED` file was modified without marking its component `STALE`.
+4. **Truth-Table & Mutation Parity (`bend_gate.py`):** Compiles Bend 2 theorems to `.mjs`, exhaustively evaluates all boolean input combinations to verify exact truth-table parity with the Python `% LAW` helpers, and runs incremental law-mutation checks (`--only-law`).
 
-Behavioral unit tests alone leave internal program structure underdetermined ([*Skeleton Coding*, `arXiv:2610.38214`](https://arxiv.org/abs/2610.38214)): an LLM can pass a unit test with a hardcoded workaround while ignoring your architecture. Lattice verifies both the architecture graph and the Python implementation across four layers:
-
-1. **Graph Completeness & Interval Satisfiability (`evaluate_lattice_proof` in `whiteboard/frustration.py`):**
-   A board only reaches `PROVEN_COMPLETE` when every `@ COMPONENT` has an owner, file path, typed `$ INTERFACE` contract, connected `> FLOW` edge, and at least one `% LAW` invariant, with `0` open structural gaps and `0` contradictory `BOUND`/`PROHIBITION` intervals.
-2. **Formal Dependent-Type Proofs in Bend 2 (`LATTICE_PROOF.bend` & `LAWS.bend`):**
-   Every `% LAW` (`Args`, `LHS`, `RHS`) is compiled into a formal equality theorem (`LHS == RHS` proven via `rewrite` reflexivity and inductive case analysis over `Bool`/`Nat`) and checked by the **Bend 2 proof checker (`bend check`)**.
-3. **AST Signature & Call-Graph Skeleton Gate (`verify_ast_call_graph_skeleton` in `the_executive/gate.py`):**
-   Before every commit (`lattice_git_sync(mode="pre")`), Lattice parses the staged Python files with `ast` to verify that:
-   - Every declared `# SCHEMA` class and `$ INTERFACE` function exists with its required fields/parameters.
-   - Every `$ INTERFACE` entrypoint invokes its governing `% LAW` helper function(s) in the static AST call graph (`0` disconnected law functions).
-   - Every declared file exists on disk and no local relative imports point to deleted modules.
-4. **Truth-Table & Mutation Parity (`bend_gate.py`):**
-   Compiles Bend 2 theorems to `.mjs`, exhaustively evaluates all boolean input combinations to verify exact truth-table parity with the Python `% LAW` helper functions, and runs incremental law-mutation checks (`--only-law`).
-
----
-
-### 3.2 `lattice.ai_memory`: Why Standard Vector RAG & GraphRAG Fail on Code, and How Directed Spreading Activation Works
-
-If you put a codebase into a naive dependency graph and walk 2 undirected hops from `auth_service`, hop 1 hits a shared utility (`types.py` or `graph_core`), and hop 2 bounces out to **every module in the repository that imports `types.py`** (`94.7%` hub noise). Conversely, if you restrict retrieval to 1 hop, you miss multi-stage data pipelines (`gateway -> router -> auth -> token_store`).
+### 2. Directed Spreading Activation vs. Naive GraphRAG (`lattice.ai_memory`)
+If you put a codebase into a naive dependency graph and walk 2 undirected hops from `auth_service`, hop 1 hits a shared utility (`types.py` or `graph_core`), and hop 2 bounces out to **every module in the repository that imports `types.py`** (`94.7%` hub noise). Conversely, restricting retrieval to 1 hop misses multi-stage data pipelines (`gateway -> router -> auth -> token_store`).
 
 `lattice.ai_memory` ([`hippocampal_index.py`](lattice/ai_memory/hippocampal_index.py) and [`uri_resolver.py`](lattice/ai_memory/uri_resolver.py)) solves this with three mechanisms:
-
-1. **Pointer-Only Storage & Git-Synchronized URIs (`pointer_only_storage_law`):**
-   `ai_memory` never copies raw source files into a vector database. It stores concept nodes holding `uri://file/<path>#L<start>-L<end>` pointers. When files are renamed (`git mv`) or line ranges shift on commit, [`sync_git_diff_uris`](lattice/ai_memory/uri_resolver.py) automatically heals the pointers and refreshes AST line anchors.
+1. **Pointer-Only Storage & Git-Synchronized URIs:** `ai_memory` never copies raw source files into a vector database. It stores concept nodes holding `uri://file/<path>#L<start>-L<end>` pointers and local `_helper#L<start>-L<end>` call trees. When files are renamed (`git mv`) or line ranges shift on commit, [`sync_git_diff_uris`](lattice/ai_memory/uri_resolver.py) automatically heals the pointers and refreshes AST line anchors.
 2. **Causal Edge-Type Separation (Data Flows vs. Shared Utilities):**
    - **Data-Flow Edges (`> FLOW`) & Scope Hierarchy:** Propagate activation both forward and backward along the pipeline (up to 6 hops) so multi-step data paths stay connected.
-   - **Shared Utility Dependencies (`depends_on`):** Pulled **1 hop forward** (`caller -> utility`) into a **terminal contract sink** (`steiner_bridge_and_sink_isolation_law`). You get the utility's interface contract without ever bouncing backward into unrelated callers (`0%` hub noise).
-3. **Two-Ended Pipeline Bridge Recall:**
-   When a task mentions two components at opposite ends of a pipeline (e.g., `web_gateway` and `cursor_engine`), `recall_concepts` propagates a forward wave from the upstream component and a backward wave from the downstream component. The intermediate pipeline stages where both waves meet (such as `turn_pipeline` and `turn_brief`) automatically get boosted into the active context slice—surfacing the full connecting path across up to 5 hops without pulling in unrelated branches.
+   - **Shared Utility Dependencies (`depends_on`):** Pulled **1 hop forward** (`caller -> utility`) into a **terminal contract sink**. You get the utility's interface contract without ever bouncing backward into unrelated callers (`0%` hub noise).
+3. **Two-Ended Pipeline Bridge Recall:** When a task mentions two components at opposite ends of a pipeline (e.g., `web_gateway` and `cursor_engine`), `recall_concepts` propagates a forward wave from the upstream component and a backward wave from the downstream component. Intermediate pipeline stages where both waves meet automatically get boosted into the active context slice—surfacing the full connecting path across up to 5 hops without pulling in unrelated branches.
+
+### 3. Bounded Working Context (`lattice.the_table`) & Markovian Board Updates (`lattice.whiteboard`)
+- **Three Levels of Detail (`LOD_0` / `LOD_1` / `LOD_2`):** `lattice.the_table` bounds active working memory (`max_table_slots = 16`, `max_table_tokens = 1200`), mounting `LOD_0` (`lattice_atlas`) for global topology/spec queries, `LOD_1` (50-word synopses) for neighboring components, and `LOD_2` (full contracts + `#L<start>-L<end>` code slices) for active targets.
+- **Markovian Overwrite & Scope Mitosis:** Re-submitting a rule on `(Component, Property)` or a flow on `(Source, Target, Payload)` updates the existing entry in place (`MARKOVIAN_OVERWRITE`) so superseded rules and duplicate edges never accumulate. When any component exceeds `k_cap` rules (default `7`), it automatically splits along metadata axes into child sub-scopes (`comp::subscope`).
 
 ---
 
-### 3.3 `lattice.the_table`: Solving the "Paper-Towel Tube vs. Rabbit-Hole" Context Problem
+## Configuration (`config.json`) & Limitations
 
-AI agents fail when they have either **tunnel vision** (seeing only one function, like looking through a paper-towel tube) or **unbounded exploration** (seeing the whole file tree and reading 20 unrelated files out of curiosity).
-
-`lattice.the_table` ([`surface.py`](lattice/the_table/surface.py), [`renderer.py`](lattice/the_table/renderer.py), [`workspace_sync.py`](lattice/the_table/workspace_sync.py)) manages the agent's active working context as a bounded desk (`max_table_slots = 16`, `max_table_tokens = 1200`):
-
-- **Three Levels of Detail (`LOD_0` / `LOD_1` / `LOD_2`):**
-  - **`LOD_0` (`lattice_atlas`):** A compact 1-line-per-component topology of components, verification statuses, and `> FLOW` edges (~15–20 tokens per component, plus a `flowchart LR` Mermaid diagram; large systems can be queried per-board or across all boards). Governed by `atlas_mode_isolation_law`, `LOD_0` is mounted on global architectural queries and withheld during local component edits so the agent stays focused.
-  - **`LOD_1` (50-Word Synopses):** Compact component summaries loaded by Stage 1 `ai_memory` recall.
-  - **`LOD_2` (Full Contracts & `file:Lstart-Lend` Slices):** Full rules, interfaces, schemas, and source line anchors for the active target components.
-- **Zero-Wandering Stage 2 Escalation (`forage_table_context`):**
-  Governed by `stage2_foraging_budget_law`, if Pre-Flight detects zero conflicts and zero missing references, Stage 2 performs **`0` extra lookups**. Only when Pre-Flight detects a conflict or ungrounded identifier on a component does Stage 2 escalate that slot from `LOD_1` to `LOD_2`, pin it (`pinned_slot_eviction_immunity_law`), and expand its 1-hop neighbors.
-
----
-
-### 3.4 `lattice.whiteboard`, `lattice.the_executive` & `lattice.regiment`
-
-- **`lattice.whiteboard` (Markovian Rule Overwrite & Scope Mitosis):**
-  - When a new rule updates an existing parameter on a component, Stage 4B ([`linker.py`](lattice/whiteboard/linker.py)) classifies the delta as `MARKOVIAN_OVERWRITE` (replacing the old bound in-place), `LEX_SPECIALIS_EXCEPTION` (wiring an explicit conditional exception edge), or `ORTHOGONAL_INSERT`. Old superseded rules never linger in active context.
-  - When any component scope exceeds `k_cap` rules (default `7`), it automatically splits along orthogonal metadata axes (`stage`, `owner`, `condition`) into child sub-scopes (`comp::subscope`) so individual slices stay small.
-- **`lattice.the_executive` (Trial Cloning & Pre-Flight Conflict Gate):**
-  - On every `lattice_turn`, [`preflight.py`](lattice/the_executive/preflight.py) clones the board and test-applies the proposed rules. If a rule contradicts an existing `BOUND`/`PROHIBITION` or leaves a premise ungrounded, [`gate.py`](lattice/the_executive/gate.py) rejects the commit (`SEND_BACK_TO_USER`) and cites the exact conflicting rule IDs without mutating the board.
-- **`lattice.regiment` (Deterministic Pipe-Table Compiler):**
-  - Because AI coding agents generate structured Markdown effortlessly, `lattice.regiment` parses only structured Markdown pipe tables (`Component`, `Flow`, `Interface`, `Law`, `Schema`, `Rule`) plus canonical `FLOW` lines (`The <source> component sends <Payload> to <target>.`) with **zero LLM calls, zero `spacy`/`torch` dependencies, and zero API keys**.
-  - If an agent passes unstructured prose or unrecognized table headers to `lattice_turn`, `lattice.regiment` immediately fails fast with an explicit schema guide listing all 6 canonical pipe-table headers.
-
----
-
-## Part 4: Zero-LLM Runtime & Configuration (`config.json`)
-
-Every Lattice operation (`lattice_readme`, `lattice_atlas`, `lattice_slice`, `lattice_packets`, `lattice_turn`, `lattice_git_sync`, `lattice_status`, `lattice_logs`) is **100% deterministic Python, SQLite, Python `ast`, and Bend 2**:
+### Zero-LLM Runtime & `config.json`
+Every Lattice operation is **100% deterministic Python, SQLite, `ast`, and Bend 2**:
 - **`0` LLM API calls & `0` API keys required**
 - **`0 GB` local model weights / GPU RAM (`100%` Python 3.11+ standard library)**
 - **`< 50ms` turn compilation and pre-commit verification**
 
 All gate policies and working-memory budgets live in [`config.json`](config.json):
 
-```json
-{
-  "gate": {
-    "max_file_lines": null,
-    "verify_files_exist_on_status": true,
-    "require_call_graph_laws": true
-  },
-  "lattice": {
-    "k_cap": 7,
-    "max_ring": 5,
-    "max_table_slots": 16,
-    "max_table_tokens": 1200,
-    "max_pinned_slots": 6,
-    "max_slot_summary_words": 50,
-    "max_foraging_steps": 4,
-    "hub_bottleneck_min_dependents": 3
-  }
-}
-```
-
 | Config Key | Default | What It Controls |
 | :--- | :---: | :--- |
-| `gate.max_file_lines` | `null` *(off)* | Optional maximum line count per `.py`/`.bend` file enforced by `git-sync --pre-commit` and `status ... VERIFIED` (can also be set per-component via a `Rule` table `BOUND` row). |
-| `gate.verify_files_exist_on_status` | `true` | Verifies that all declared component files actually exist on disk (and pass `max_file_lines` if set) before allowing `lattice_status(..., new_status="VERIFIED")`. |
-| `gate.require_call_graph_laws` | `true` | Requires every `$ INTERFACE` function in a staged `.py` file to invoke its component's `% LAW` helper functions in the AST call graph (`Stage 27`). |
+| `gate.max_file_lines` | `null` *(off)* | Optional maximum line count per file enforced by `git-sync --pre-commit` and `status ... VERIFIED` (can also be set per-component via a `Rule` table `BOUND` row). |
+| `gate.verify_files_exist_on_status` | `true` | Verifies that all declared component files exist on disk (and pass `max_file_lines` if set) before allowing `lattice_status(..., new_status="VERIFIED")`. |
+| `gate.require_call_graph_laws` | `true` | Requires every `$ INTERFACE` function in a staged `.py` file to invoke its component's `% LAW` helper functions in the AST call graph. |
 | `lattice.k_cap` | `7` | Maximum rules per scope before automatic sub-scope mitosis (`comp::subscope`). |
 | `lattice.max_table_slots` / `max_table_tokens` | `16` / `1200` | Working-memory slot and token budget for `lattice.the_table`. |
 | `lattice.hub_bottleneck_min_dependents` | `3` | Minimum number of downstream dependents before a component is flagged in `hub_bottlenecks` on `lattice_atlas`. |
 
----
-
-## Part 5: Design Boundaries & Known Limitations (What Lattice Does Not Replace)
-
-Lattice is a **prescriptive architecture circuit and verification gate**, not a copy of your source code or a replacement for Git. Understanding what Lattice intentionally leaves out is essential for using it well:
-
-1. **AI Memory Tracks `#L<start>-L<end>` Line Ranges, Local Private Helper Call Trees, and On-the-Fly AST Code Slicing:**
-   - `lattice.ai_memory` (`sync_git_diff_uris`) automatically extracts AST `(lineno, end_lineno)` spans and stamps `file=<path>#L<start>-L<end>` pointers (plus `uri://file/<path>#L<start>-L<end>` `external_links`) onto every declared `# SCHEMA` class and `$ INTERFACE` function, **and** attaches `calls=[_helper#L<start>-L<end>, ...]` listing the intra-file private helper functions called by each `$ INTERFACE`.
-   - Furthermore, `lattice_slice(board="...", query="<symbol>", include_code=True)` scans the board's declared `files` on the fly to locate **any** AST symbol (including private `_helper` functions not registered on the board) and returns both its owning `@ COMPONENT` contract slice and its exact numbered `#L<start>-L<end>` source code block in one call.
-   - In addition, `evaluate_git_commit_gate` reports `unregistered_public_symbols` whenever a component's files define public functions or classes that have not yet been registered as `$ INTERFACE` or `# SCHEMA` rows on the board.
-
-2. **Git Owns Diffs & History (`baseline_commit_sha` Instead of Board Diffs):**
-   - Lattice does not duplicate `git diff` or track removed lines/files inside the board JSON. Instead, every WorkPacket records `baseline_commit_sha` (the last commit synchronized via `lattice_git_sync(mode="post")`). When refactoring or removing deprecated files, the agent inspects `git diff <baseline_commit_sha>` to see exact file and line changes.
-
-3. **Static AST & Boolean Law Proofs Do Not Replace Behavioral Tests:**
-   - The pre-commit gate (`evaluate_git_commit_gate` + `verify_ast_call_graph_skeleton`) and Bend 2 (`bend check`) prove that:
-     - No file in a `VERIFIED` component was edited without marking the component `STALE` first (`verified_scope_edit_guard_law`),
-     - Declared `# SCHEMA` classes/fields and `$ INTERFACE` functions/parameters exist in the Python AST,
-     - Every `$ INTERFACE` invokes its governing `% LAW` helper in the static call graph without discarding the return value (`_ = law(...)`), and
-     - Every `% LAW` boolean formula (`LHS == RHS`) is mathematically sound.
-   - **What static gates cannot prove:** Neither AST call-graph reachability nor finite boolean laws can prove that an algorithm computes the right intermediate values before passing booleans to a `% LAW` helper, or that SQL queries, I/O, or state mutations behave correctly at runtime. Fast, component-scoped unit/integration tests (`pytest` on `changed_scopes | stale_dependents`) remain necessary.
-
-4. **Enforcement Is Bounded by What Is Declared on the Board:**
-   - `evaluate_git_commit_gate` only verifies schemas, interfaces, laws, and import prohibitions that are registered on the board. If an internal helper introduces an undeclared side effect, dynamic `importlib` call, or performance regression not governed by a board rule, Lattice will not flag it automatically—the agent must diagnose it in the component's source files and, if it represents a standing architectural invariant, promote a new `Rule` or `% LAW` onto the board via `lattice_turn`.
+### Known Limitations (What Lattice Does Not Replace)
+1. **Static AST & Boolean Law Proofs Complement Behavioral Tests:**
+   - The pre-commit gate (`evaluate_git_commit_gate` + `verify_ast_call_graph_skeleton`) and Bend 2 (`bend check`) prove that no `VERIFIED` component was edited without marking it `STALE`, declared `# SCHEMA` classes/fields and `$ INTERFACE` functions/parameters exist in the AST, every `$ INTERFACE` calls its governing `% LAW` helper without discarding the return value, and every `% LAW` formula (`LHS == RHS`) is mathematically sound.
+   - However, static checks cannot prove that an algorithm computes the right intermediate values before passing booleans to a `% LAW` helper, or that SQL queries, I/O, or runtime state mutations behave correctly. Component-scoped unit and producer $\rightarrow$ consumer seam tests (`pytest` on `changed_scopes | stale_dependents`) remain essential.
+2. **Enforcement Is Bounded by What Is Declared on the Board:**
+   - `evaluate_git_commit_gate` verifies schemas, interfaces, laws, bounds, and import prohibitions registered on the board (and flags `unregistered_public_symbols` on modified files). If an internal helper introduces an undeclared side effect not governed by a board rule, promote a new `Rule`, `# SCHEMA`, or `% LAW` onto the board via `lattice_turn`.
 
 ---
 
 ## License
 
 Licensed under the **Functional Source License, Version 1.1, Apache 2.0 Future License (`FSL-1.1-Apache-2.0`)**. See [LICENSE](LICENSE) for full terms.
-
-
