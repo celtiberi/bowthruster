@@ -14,36 +14,36 @@ Lattice coordinates multi-agent work using **`STALE` cascades** and **wave-order
 flowchart LR
     Lead["Lead / Architect Agent"] -- "1. lattice_turn\n(Update Schema/Flow)" --> Board[("Lattice Board\n(.whiteboard)")]
     Board -- "2. Auto-Cascade STALE\n(Wave 0: Producer, Wave 1: Consumers)" --> Packets["lattice_packets(status='STALE')"]
-    Packets -- "Wave 0 Packet\n(cursor_engine)" --> AgentA["Subagent A\n(cursor.py)"]
-    Packets -- "Wave 1 Packet\n(mix_play)" --> AgentB["Subagent B\n(mix_play.py)"]
-    Packets -- "Wave 1 Packet\n(turn_brief)" --> AgentC["Subagent C\n(turn_brief.py)"]
+    Packets -- "Wave 0 Packet\n(auth_service)" --> AgentA["Subagent A\n(src/auth.py)"]
+    Packets -- "Wave 1 Packet\n(api_gateway)" --> AgentB["Subagent B\n(src/gateway.py)"]
+    Packets -- "Wave 1 Packet\n(billing_service)" --> AgentC["Subagent C\n(src/billing.py)"]
     AgentA & AgentB & AgentC -- "3. lattice_git_sync(mode='pre', mark_verified=True)" --> Gate["Pre-Commit Gate\n(VERIFIED)"]
 ```
 
 ### Step-by-Step Multi-Agent Flow
 
 1. **Lead Agent Updates the Contract on the Board (`lattice_turn`):**
-   Suppose `cursor_engine` adds a new field (`review_due: list[str]`) to the `TaughtSet` schema that flows into `mix_play` and `turn_brief`:
+   Suppose `auth_service` adds a new field (`tenant_id: str`) to the `AuthToken` schema that flows into `api_gateway` and `billing_service`:
    ```markdown
    | Schema | Component | Fields | Owner | Stage | File | Spec |
    | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-   | TaughtSet | cursor_engine | taught_ids: list, review_due: list | tutor | 1 | tutor/cursor.py | Spec 1 |
+   | AuthToken | auth_service | user_id: str, tenant_id: str, expires_at: int | backend | 1 | src/auth.py | Spec 1 |
 
    | Flow | Source | Target | Payload | Condition |
    | :--- | :--- | :--- | :--- | :--- |
-   | cursor_to_mix | cursor_engine | mix_play | TaughtSet | on candidate selection |
-   | cursor_to_brief | cursor_engine | turn_brief | TaughtSet | on prompt assembly |
+   | auth_to_gateway | auth_service | api_gateway | AuthToken | on authenticated request |
+   | auth_to_billing | auth_service | billing_service | AuthToken | on metered API call |
    ```
-   - `lattice_turn` updates `TaughtSet` in place and **automatically transitions `cursor_engine` (producer) and `mix_play` + `turn_brief` (downstream consumers) from `VERIFIED` to `STALE`**, while leaving all other components `VERIFIED`.
+   - `lattice_turn` updates `AuthToken` in place and **automatically transitions `auth_service` (producer) and `api_gateway` + `billing_service` (downstream consumers) from `VERIFIED` to `STALE`**, while leaving all other components `VERIFIED`.
 
 2. **Lead Agent Pulls Wave-Ordered `WorkPacket`s (`lattice_packets`):**
    - Calling `lattice_packets(board="my_board", status="STALE")` returns self-contained packets ordered by dependency wave:
-     - **Wave 0 (`cursor_engine`):** Contains `cursor_engine`'s contract slice, declared `Files` (`tutor/cursor.py`), and `TaughtSet` schema requirements.
-     - **Wave 1 (`mix_play`, `turn_brief`):** Contains each consumer's contract slice, upstream `> FLOW` payload (`TaughtSet`), and declared `Files`.
+     - **Wave 0 (`auth_service`):** Contains `auth_service`'s contract slice, declared `Files` (`src/auth.py`), and `AuthToken` schema requirements.
+     - **Wave 1 (`api_gateway`, `billing_service`):** Contains each consumer's contract slice, upstream `> FLOW` payload (`AuthToken`), and declared `Files`.
 
 3. **Subagents Execute in Parallel Without Collisions:**
    - The Lead Agent dispatches a subagent for each `STALE` component with its `WorkPacket`.
-   - **Scope Isolation (`verified_scope_edit_guard_law`):** If Subagent B (`mix_play`) accidentally edits a `VERIFIED` file belonging to another component, `lattice_git_sync(mode="pre")` blocks the commit and names the offending file.
+   - **Scope Isolation (`verified_scope_edit_guard_law`):** If Subagent B (`api_gateway`) accidentally edits a `VERIFIED` file belonging to another component, `lattice_git_sync(mode="pre")` blocks the commit and names the offending file.
    - **Concurrency Safety:** `lattice-mcp` guards board reads/writes with cross-process file locks (`flock`), so parallel subagents can call `lattice_slice` and `lattice_git_sync` simultaneously.
 
 ---
@@ -51,7 +51,7 @@ flowchart LR
 ## 2. Targeted QA & Producer $\rightarrow$ Consumer Seam Testing
 
 Standard unit test suites fail in two ways with AI agents:
-1. **Mock Drift:** Agent A updates `cursor_engine` to return `{"taught_ids": [...], "review_due": [...]}`. Agent B's unit test for `mix_play` still mocks the old return value, so all unit tests pass while the real pipeline crashes.
+1. **Mock Drift:** Agent A updates `auth_service` to return `AuthToken(user_id=..., tenant_id=..., expires_at=...)`. Agent B's unit test for `billing_service` still mocks the old return value, so all unit tests pass while the real pipeline crashes.
 2. **Slow Full-Repo Test Runs:** Running the entire test suite after every small edit wastes minutes.
 
 ### How Lattice Changes the QA Loop
@@ -59,7 +59,7 @@ Standard unit test suites fail in two ways with AI agents:
 1. **Blast-Radius Test Selection (`changed_scopes | stale_dependents`):**
    When an agent runs `lattice_git_sync(board="my_board", mode="pre")`, Lattice identifies the exact modified components and their downstream `> FLOW` dependents. Instead of running the entire test suite, the QA agent runs only the affected component tests:
    ```bash
-   pytest -k "cursor_engine or mix_play or turn_brief"
+   pytest -k "auth_service or api_gateway or billing_service"
    ```
 
 2. **Static `> FLOW` Payload Schema Verification:**
@@ -68,15 +68,15 @@ Standard unit test suites fail in two ways with AI agents:
 3. **Unmocked Producer $\rightarrow$ Consumer Seam Tests:**
    Every `> FLOW Source --[Payload]--> Target` edge on the board defines a required **unmocked integration seam**. When a QA agent (or coding agent) sees:
    ```text
-   @ FLOW cursor_engine --[TaughtSet]--> mix_play
+   @ FLOW auth_service --[AuthToken]--> billing_service
    ```
-   it writes or runs a seam test that calls the real `cursor_engine` interface and feeds its actual output directly into `mix_play` with zero mocks:
+   it writes or runs a seam test that calls the real `auth_service` interface and feeds its actual output directly into `billing_service` with zero mocks:
    ```python
-   def test_seam_cursor_engine_to_mix_play():
-       taught_set = compute_taught_set(session_state)  # Producer ($ INTERFACE)
-       mix_plan = select_mix_candidates(taught_set)    # Consumer ($ INTERFACE)
-       assert isinstance(taught_set, TaughtSet)
-       assert mix_plan.valid
+   def test_seam_auth_service_to_billing_service():
+       token = verify_token(raw_jwt)          # Producer ($ INTERFACE on auth_service)
+       receipt = record_usage(token, units=1) # Consumer ($ INTERFACE on billing_service)
+       assert isinstance(token, AuthToken)
+       assert receipt.tenant_id == token.tenant_id
    ```
 
 ---
@@ -90,13 +90,13 @@ Once a repository is mapped onto a Lattice board with a project `Charter` and co
 Prompt your agent:
 > *`"Inspect lattice_atlas(board='my_board', spec=True) and the component slices. Where does the current implementation violate a component's Why rationale or the Charter principles?"`*
 
-Typical issues the agent catches immediately from the board + AST slices:
-- **Cross-Component State Mutation:** A grading component (`jev_judge`) directly mutating `session.sheet` instead of returning a `GradeMutation` payload along a `> FLOW` edge to `cursor_engine`.
-- **Boundary Leakage:** A prompt-rendering stage reaching into private `_brief_fields` helpers owned by another component instead of consuming the declared `$ INTERFACE`.
+Typical issues the agent catches from the board + AST slices:
+- **Cross-Component State Mutation:** A request handler (`api_gateway`) directly mutating billing ledger state instead of passing an event payload along a `> FLOW` edge to `billing_service`.
+- **Boundary Leakage:** A downstream service reaching into private `_parse_claims` helpers owned by `auth_service` instead of consuming the declared `$ INTERFACE` (`verify_token`).
 
 ### B. What the Pre-Commit Gate Catches Automatically (`lattice_git_sync(mode="pre")`)
 
-Even if an agent forgets a rule during coding, `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)` blocks the commit when any of the following occur:
+Even if an agent forgets a structural rule during coding, `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)` blocks the commit when any of the following occur:
 
 | Gate Violation | What the Agent Did Wrong | How Lattice Blocks It |
 | :--- | :--- | :--- |
