@@ -101,7 +101,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+  "last_commit_sha": "fac66cd2541645c6be3b6d030221f8eecd863dbd",
   "lattice_artifacts": [
     {
       "calls": [
@@ -137,7 +137,7 @@
       "stage": "28",
       "text": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
       "turn": 8,
-      "updated_turn": 8
+      "updated_turn": 10
     },
     {
       "calls": [
@@ -170,7 +170,7 @@
       "stage": "28",
       "text": "Handle JSON-RPC 2.0 MCP requests with self-describing tool schemas",
       "turn": 5,
-      "updated_turn": 8
+      "updated_turn": 10
     },
     {
       "created_turn": 1,
@@ -276,7 +276,7 @@
       "stage": null,
       "text": "The McpJsonRpcRequest schema scoped to mcp_server has fields jsonrpc, id, method, and params in lattice/mcp_server.py and represents a JSON-RPC 2.0 MCP request envelope.",
       "turn": 1,
-      "updated_turn": 8
+      "updated_turn": 10
     },
     {
       "args": "is_verified: Bool, files_exist: Bool, within_max_lines: Bool",
@@ -479,7 +479,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+      "last_commit_sha": "fac66cd2541645c6be3b6d030221f8eecd863dbd",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -536,7 +536,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "047e54361b4a5a489b342668f37e0dd9fa00eafc",
+      "last_commit_sha": "fac66cd2541645c6be3b6d030221f8eecd863dbd",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -544,7 +544,7 @@
       "rules": [
         {
           "access_turns": [
-            8
+            10
           ],
           "bound_op": "<=",
           "bound_val": 28,
