@@ -377,7 +377,7 @@ def main() -> int:
                 gate_res = dict(evaluate_git_commit_gate(graph, manifest, uri_sync_report=sync_git_diff_uris(copy.deepcopy(graph), manifest)))
                 allow = bool(gate_res.get("allowed", gate_res.get("allow_commit", True)))
                 if allow and args.mark_verified:
-                    stale_sids = [sid for sid, sc in sorted((graph.get("scopes") or {}).items()) if isinstance(sc, dict) and sid != "global_defaults" and str(sc.get("status") or sc.get("build_status") or "").upper() == "STALE"]
+                    stale_sids = [sid for sid, sc in sorted((graph.get("scopes") or {}).items()) if isinstance(sc, dict) and sid != "global_defaults" and (str(sc.get("status") or sc.get("build_status") or "").upper() in ("STALE", "READY") or (bool(sc.get("files") or (sc.get("attributes") or {}).get("files")) and str(sc.get("status") or sc.get("build_status") or "DRAFT").upper() != "VERIFIED"))]
                     for sid in stale_sids: _verify_component_files(graph, sid); _get_transition_build_status()(graph, sid, "VERIFIED")
                     if stale_sids: _save_board(graph, wb_json, wb_sqlite)
                     gate_res["marked_verified_scopes"] = stale_sids

@@ -368,8 +368,9 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             disc_board = _resolve_project_root("sib_board")
             disc_msg = _resolve_project_root("new_board", message="Inspect src/widget.py in sibling repo")
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-                par_turns = list(pool.map(lambda i: call_lattice_tool("lattice_turn", {"board": "sib_board", "project_root": str(sib_repo), "message": f"| Charter | Summary | Principles |\n| :--- | :--- | :--- |\n| sib_board | Widget engine | Deterministic execution |\n\n| Component | Role | Why | Owner | Stage | Status | Depends On | Files |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| par_comp_{i} | Parallel worker {i} | Isolates worker {i} | groves | 28 | READY | | src/widget.py |\n"}), range(4)))
+                par_turns = list(pool.map(lambda i: call_lattice_tool("lattice_turn", {"board": "sib_board", "project_root": str(sib_repo), "message": f"| Charter | Summary | Principles |\n| :--- | :--- | :--- |\n| sib_board | Widget engine | Deterministic execution |\n\n| Component | Role | Why | Owner | Stage | Status | Depends On | Files |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| par_comp_{i} | Parallel worker {i} | Isolates worker {i} | groves | 28 | READY | | src/widget.py |\n\n| Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| run_widget | par_comp_{i} | | bool | groves | 28 | src/widget.py | Spec 28 |\n\n| Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| widget_ready_law_{i} | par_comp_{i} | groves | 28 | laws | a: Bool, b: Bool | MOD.is_widget_ready_{i}(a, b) | Bool.and(a, b) | Spec 28 |\n"}), range(4)))
             r_sib = call_lattice_tool("lattice_slice", {"board": "sib_board", "project_root": str(sib_repo)})
+            r_sib_ver = call_lattice_tool("lattice_git_sync", {"board": "sib_board", "project_root": str(sib_repo), "mode": "pre", "mark_verified": True})["structuredContent"]
             r_spec = call_lattice_tool("lattice_atlas", {"board": "sib_board", "project_root": str(sib_repo), "spec": True})["structuredContent"]
             par_scopes = set((json.loads((sib_repo / ".whiteboard" / "sib_board.json").read_text(encoding="utf-8")).get("scopes") or {}).keys())
         finally:
@@ -377,6 +378,7 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             shutil.rmtree(Path("/tmp/whiteboard_sessions/sib_board"), ignore_errors=True)
         restored_cli_root = (
             CLI.REPO_ROOT == orig_cli_root and all(not r.get("isError") for r in par_turns) and {f"par_comp_{i}" for i in range(4)} <= par_scopes
+            and r_sib_ver.get("allowed") is True and r_sib_ver.get("marked_verified_scopes") == [f"par_comp_{i}" for i in range(4)]
             and "- @ CHARTER [sib_board]: Widget engine" in str(r_spec.get("atlas_schematic"))
             and "[why: Isolates worker 0]" in str(r_spec.get("atlas_schematic"))
             and "## 1. Project Charter & Purpose" in str(r_spec.get("atlas_spec"))

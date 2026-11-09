@@ -373,7 +373,7 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
                     gate_res = dict(evaluate_git_commit_gate(graph, manifest, uri_sync_report=sync_git_diff_uris(copy.deepcopy(graph), manifest)))
                     allow = bool(gate_res.get("allowed", True))
                     if allow and bool(args.get("mark_verified", False)) and can_transition_to_verified(True, True, True) and verified_status_files_exist_law(True, True, True):
-                        stale_sids = [sid for sid, sc in sorted((graph.get("scopes") or {}).items()) if isinstance(sc, dict) and sid != "global_defaults" and str(sc.get("status") or sc.get("build_status") or "").upper() == "STALE"]
+                        stale_sids = [sid for sid, sc in sorted((graph.get("scopes") or {}).items()) if isinstance(sc, dict) and sid != "global_defaults" and (str(sc.get("status") or sc.get("build_status") or "").upper() in ("STALE", "READY") or (bool(sc.get("files") or (sc.get("attributes") or {}).get("files")) and str(sc.get("status") or sc.get("build_status") or "DRAFT").upper() != "VERIFIED"))]
                         trans_fn = _get_transition_build_status()
                         for sid in stale_sids: _verify_component_files(graph, sid); trans_fn(graph, sid, "VERIFIED")
                         if stale_sids: _save_board(graph, wb_json, wb_sqlite)

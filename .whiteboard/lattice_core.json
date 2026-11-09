@@ -2516,8 +2516,8 @@
         "depends_on": "",
         "file_hashes": {
           "lattice/__init__.py": "837c54c33cd000b4",
-          "lattice/cli.py": "adc27674321c2653",
-          "lattice/mcp_server.py": "a7ea24d7fd2a2145",
+          "lattice/cli.py": "7a70269e375279ca",
+          "lattice/mcp_server.py": "f0598d296f5ad634",
           "lattice/mcp_verifier.py": "a015087de6656801",
           "lattice/nlp.py": "bfdfb1a1a0687299",
           "lattice/types.py": "2172d10c1427d1b2"
@@ -2545,8 +2545,8 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/__init__.py": "837c54c33cd000b4",
-        "lattice/cli.py": "adc27674321c2653",
-        "lattice/mcp_server.py": "a7ea24d7fd2a2145",
+        "lattice/cli.py": "7a70269e375279ca",
+        "lattice/mcp_server.py": "f0598d296f5ad634",
         "lattice/mcp_verifier.py": "a015087de6656801",
         "lattice/nlp.py": "bfdfb1a1a0687299",
         "lattice/types.py": "2172d10c1427d1b2"
@@ -2597,7 +2597,7 @@
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
           "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-          "lattice/the_executive/gate.py": "04ca0191d2fdb065",
+          "lattice/the_executive/gate.py": "a707990d9bc53e5c",
           "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
           "lattice/the_executive/preflight.py": "5be08f3f57952191",
           "lattice/the_executive/voice.py": "5fb44eaba9171d58"
@@ -2628,7 +2628,7 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-        "lattice/the_executive/gate.py": "04ca0191d2fdb065",
+        "lattice/the_executive/gate.py": "a707990d9bc53e5c",
         "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
         "lattice/the_executive/preflight.py": "5be08f3f57952191",
         "lattice/the_executive/voice.py": "5fb44eaba9171d58"

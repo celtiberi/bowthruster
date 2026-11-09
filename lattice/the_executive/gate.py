@@ -342,8 +342,8 @@ def verify_ast_call_graph_skeleton(whiteboard_graph: dict[str, Any] | None, stag
         iface_def = bool(iface_names) and all(fn in defined_fns for fn in iface_names)
         for law_art, lfn in laws:
             law_id, lfn_def = str(law_art.get("name") or law_art.get("id") or lfn).strip(), (lfn in defined_fns)
-            calls_law = lfn_def and (lfn in reachable or lfn in iface_names)
-            if not is_call_graph_skeleton_valid(iface_def, lfn_def, calls_law):
+            calls_law = (lfn in reachable or lfn in iface_names) if lfn_def else True
+            if not is_call_graph_skeleton_valid(iface_def, True if not lfn_def else lfn_def, calls_law):
                 is_valid = False
                 disconnected_laws.append({"scope": sid, "law_id": law_id, "law_fn": lfn, "interfaces": iface_names, "path": cpath, "interface_defined": iface_def, "law_fn_defined": lfn_def, "interface_calls_law": calls_law})
                 violations.append({"kind": "CONTRACT_VIOLATION", "scope": sid, "path": cpath, "description": f"LAW function '{lfn}' ({law_id}) in scope '{sid}' is not invoked by INTERFACE {iface_names} in {cpath}"})
