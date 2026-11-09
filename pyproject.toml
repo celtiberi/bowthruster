@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "lattice"
 version = "0.1.0"
-description = "Lattice (lattice-mcp): <50ms architecture graph, 1-shot AST code slicer, and formal pre-commit gate for AI coding agents (zero LLMs, zero API keys)."
+description = "Architecture memory, focused code lookup, and pre-commit verification for AI coding agents. The Lattice itself is the spec, eliminating manual spec writing and keeping design and code in sync automatically."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"

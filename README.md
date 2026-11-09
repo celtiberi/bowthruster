@@ -1,5 +1,7 @@
 # Lattice
 
+**Architecture memory, focused code lookup, and pre-commit verification for AI coding agents. The Lattice itself is the spec, eliminating manual spec writing and keeping design and code in sync automatically.**
+
 > **Built for AI Coding Agents — Not Manual Human Bookkeeping**  
 > Lattice (`lattice-mcp`) is a tool for **your AI coding agent** to operate directly, not another spec format for you to maintain by hand. You connect `lattice-mcp` to your agent (Claude Code, Cursor, Antigravity, Windsurf, etc.), and your AI builds the architecture map, pulls focused code slices, and verifies its own commits automatically.
 >
