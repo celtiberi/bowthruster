@@ -482,6 +482,8 @@ def slice_lattice(
                 active_flows.extend(copy.deepcopy(fl) for fl in graph.get("flows", []) if isinstance(fl, dict) and msid in (fl.get("source"), fl.get("target")) and fl not in active_flows)
                 active_artifacts.extend(copy.deepcopy(a) for a in graph.get("lattice_artifacts", []) if isinstance(a, dict) and str(a.get("scope_id") or a.get("scope") or "") == msid and a not in active_artifacts)
                 active_rules.extend(copy.deepcopy(r) for r in (scopes[msid].get("rules") or []) if isinstance(r, dict) and r not in active_rules)
+    if (component or matched_symbols) and not (division or stage or schema or kind):
+        active_rules.extend(copy.deepcopy(r) for gs, gsc in scopes.items() if (gs == "global_defaults" or str(gs).startswith("global_defaults::")) and isinstance(gsc, dict) for r in (gsc.get("rules") or []) if isinstance(r, dict) and str(r.get("type") or "").upper() in ("BOUND", "PROHIBITION", "OBLIGATION", "POLICY") and r not in active_rules)
     open_blockers = [copy.deepcopy(b) for b in graph.get("open_blockers", []) if isinstance(b, dict) and b.get("status") != "RESOLVED"]
     all_blockers = list(conflicts) + [b for b in open_blockers if b.get("type") != "CONFLICT"]
 
