@@ -5,8 +5,9 @@
 > **Built for AI Coding Agents — Not Manual Human Bookkeeping**  
 > Lattice (`lattice-mcp`) is a tool for **your AI coding agent** to operate directly, not another spec format for you to maintain by hand. You connect `lattice-mcp` to your agent (Claude Code, Cursor, Antigravity, Windsurf, etc.), and your AI builds the architecture map, pulls focused code slices, and verifies its own commits automatically.
 >
-> **Try it in 60 seconds:** Connect `lattice-mcp` and paste this to your AI:  
-> *`"Call lattice_readme(section='readme') and explain to me in plain English how Lattice would change how we build and maintain this repository — then map this codebase onto a Lattice board."`*
+> **Try it in 60 seconds:** Connect `lattice-mcp` and paste these two prompts to your AI:  
+> 1. **Map the codebase:** *`"Call lattice_readme(section='readme') and map this repository onto a Lattice board with its Charter, component Roles/Why, Flows, Interfaces, and Laws."`*  
+> 2. **Run an architectural audit:** *`"With the insight you now have from the Lattice board and AST slices, what would you change about this project's architecture (e.g., monoliths doing another component's job, hidden state mutations across flows, duplicated logic, or missing seams)?"`*
 
 When you use an AI coding agent on a growing project, three things start going wrong:
 1. **It burns time and tokens hunting through files:** To make a 15-line change, the agent greps across the repo and reads dozens of files—filling its context window with noise before it writes a single line of code.
@@ -130,12 +131,14 @@ Pass the canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interf
 *(Optional tables: `| Schema | Component | Fields | Owner | Stage | File | Spec |` for data models, and `| Rule | Component | Type | Property | Op | Value | Condition |` for numeric/boolean bounds such as `| max_lines_rule | auth_service | BOUND | max_file_lines | <= | 500 | always |`. In Law tables, you can provide either `LHS` and `RHS` columns or a `Theorem` column written as `LHS == RHS`. **Anti-Tautology `% LAW` Rule:** Reserve `% LAW` for multi-variable boolean state machines, routing tables, or conservation invariants ($k \ge 2$ boolean inputs); never invent a 1-boolean identity law like `MOD.is_ok(x) == x` just to mark a component `STALE` for a bug fix — instead, update the affected `$ INTERFACE`, `# SCHEMA`, or `Rule` row.)*
 
 #### Step 3: Generate Skeletons (Greenfield) or Stamp the Baseline (Brownfield)
-- **For Greenfield components:** Call `lattice_packets(board="my_board", component="auth_service")` to get the component's `laws_skeleton` (`LAWS.bend`) and `python_skeleton` (typed Python stub with `# MUST CALL` anchors), implement the files, and run `lattice_git_sync(board="my_board", mode="pre")`.
+- **For Greenfield components:** Call `lattice_packets(board="my_board", component="auth_service")` to get the component's `laws_skeleton` (`LAWS.bend`) and `python_skeleton` (typed Python stub with `# MUST CALL` anchors), implement the files, and run `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)`.
 - **For Existing (Brownfield) codebases:**
-  1. Mark existing components `VERIFIED` (this checks that every declared file exists on disk and satisfies any active `max_file_lines` bound):
-     - Call `lattice_status(board="my_board", component="auth_service", new_status="VERIFIED")`
-  2. Stamp the initial Git baseline (`commit_sha` and `file_hashes` — when run for the first time on a board or with `mode="baseline"`, this records `HEAD` as the clean baseline without diffing `HEAD~1..HEAD`):
+  1. Verify all components and transition them from `READY` / `STALE` to `VERIFIED` in one call (checking file existence, `max_file_lines`, AST signatures, and Bend 2 laws):
+     - Call `lattice_git_sync(board="my_board", mode="pre", mark_verified=True)`
+  2. Stamp the initial Git baseline (`commit_sha`, `file_hashes`, and `#L<start>-L<end>` AST anchors):
      - Call `lattice_git_sync(board="my_board", mode="post")`
+  3. Render the human-readable Living Specification (or ask your agent what it would refactor now that the architecture and AST spans are mapped):
+     - Call `lattice_atlas(board="my_board", spec=True)`
 
 #### Step 4: Install the Unified `lattice` AI Skill & Git Hooks
 To ensure future AI sessions in this repository automatically follow the 4-step Lattice workflow without re-reading this README or juggling multiple separate skills:
