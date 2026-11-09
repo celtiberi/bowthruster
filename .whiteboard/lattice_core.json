@@ -62,7 +62,7 @@
       "access_turns": [
         1
       ],
-      "activation": -1.683648,
+      "activation": -1.777674,
       "id": "ambient_t1_m2",
       "text": "In regiment, LAWS.bend defines literal_conservation_law and partition_completeness_law for eng3 in stage 18.",
       "turn": 1
@@ -71,7 +71,7 @@
       "access_turns": [
         4
       ],
-      "activation": -1.629048,
+      "activation": -1.732868,
       "id": "ambient_t4_m3",
       "text": "The transition_component_build_status interface of whiteboard takes graph, component_id, and new_status.",
       "turn": 4
@@ -80,7 +80,7 @@
       "access_turns": [
         4
       ],
-      "activation": -1.629048,
+      "activation": -1.732868,
       "id": "ambient_t4_m4",
       "text": "The transition_component_build_status interface returns dict.",
       "turn": 4
@@ -89,7 +89,7 @@
       "access_turns": [
         7
       ],
-      "activation": -1.567747,
+      "activation": -1.683648,
       "id": "ambient_t7_m1",
       "text": "The regiment module exposes the extract_structured_table_rows interface taking doc_tables and returning table_records.",
       "turn": 7
@@ -98,7 +98,7 @@
       "access_turns": [
         7
       ],
-      "activation": -1.567747,
+      "activation": -1.683648,
       "id": "ambient_t7_m4",
       "text": "The whiteboard module exposes the compile_laws_bend interface taking scope_id and law_records and returning laws_bend_text.",
       "turn": 7
@@ -108,15 +108,24 @@
         29,
         30
       ],
-      "activation": 0.693147,
+      "activation": -0.240528,
       "id": "ambient_t29_m1",
       "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
       "turn": 30
+    },
+    {
+      "access_turns": [
+        36
+      ],
+      "activation": 0.0,
+      "id": "ambient_t36_m1",
+      "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines per file; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+      "turn": 36
     }
   ],
   "charter": {
     "name": "lattice_core",
-    "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+    "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines per file; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
     "summary": "Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically."
   },
   "external_links": {
@@ -534,7 +543,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
+  "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -2303,7 +2312,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
+      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2320,19 +2329,14 @@
       "attributes": {
         "charter": {
           "name": "lattice_core",
-          "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+          "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines per file; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
           "summary": "Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically."
         },
-        "lod1_synopsis": "Every source file must be at most 500 lines"
+        "lod1_synopsis": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines"
       },
       "build_status": "DRAFT",
       "build_tag": null,
-      "children": [
-        "global_defaults::general",
-        "global_defaults::regiment",
-        "global_defaults::no",
-        "global_defaults::max"
-      ],
+      "children": [],
       "core_tag": null,
       "depends_on": [],
       "failure_diagnostic": null,
@@ -2344,49 +2348,7 @@
       "owner": null,
       "parent": null,
       "role": null,
-      "rules": [],
-      "stage": null,
-      "status": "DRAFT"
-    },
-    "global_defaults::general": {
-      "_meta": {},
-      "aliases": [],
-      "attributes": {},
-      "build_status": "DRAFT",
-      "build_tag": null,
-      "children": [],
-      "core_tag": null,
-      "depends_on": [],
-      "failure_diagnostic": null,
-      "id": "global_defaults::general",
-      "in_edges": [],
-      "inputs": [],
-      "kind": null,
-      "outputs": [],
-      "owner": null,
-      "parent": "global_defaults",
-      "role": null,
       "rules": [
-        {
-          "bound_op": null,
-          "bound_val": null,
-          "conditions": [],
-          "created_turn": 4,
-          "exceptions": [],
-          "facet": "obligations",
-          "id": "r_global_defaults_1",
-          "is_exception": false,
-          "meta_keys": [],
-          "meta_tokens": [],
-          "overrides": [],
-          "refs": [],
-          "scope": "global_defaults::general",
-          "target_prop": null,
-          "text": "The whiteboard system must transition a component's status to STALE when editing any rule or contract on a VERIFIED component.",
-          "turn": 4,
-          "type": "OBLIGATION",
-          "updated_turn": 4
-        },
         {
           "access_turns": [
             29
@@ -2403,38 +2365,13 @@
           "meta_tokens": [],
           "overrides": [],
           "refs": [],
-          "scope": "global_defaults::general",
+          "scope": "global_defaults",
           "target_prop": null,
           "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
           "turn": 29,
           "type": "FACT",
           "updated_turn": 29
-        }
-      ],
-      "stage": null,
-      "status": "DRAFT"
-    },
-    "global_defaults::max": {
-      "_meta": {},
-      "aliases": [],
-      "attributes": {
-        "lod1_synopsis": "Every source file must be at most 500 lines"
-      },
-      "build_status": "DRAFT",
-      "build_tag": null,
-      "children": [],
-      "core_tag": null,
-      "depends_on": [],
-      "failure_diagnostic": null,
-      "id": "global_defaults::max",
-      "in_edges": [],
-      "inputs": [],
-      "kind": null,
-      "outputs": [],
-      "owner": null,
-      "parent": "global_defaults",
-      "role": null,
-      "rules": [
+        },
         {
           "access_turns": [
             35
@@ -2451,84 +2388,13 @@
           "meta_tokens": [],
           "overrides": [],
           "refs": [],
-          "scope": "global_defaults::max",
+          "scope": "global_defaults",
           "target_prop": "max_file_lines",
           "text": "Every source file must be at most 500 lines",
           "turn": 35,
           "type": "BOUND",
           "updated_turn": 35
-        }
-      ],
-      "stage": null,
-      "status": "DRAFT"
-    },
-    "global_defaults::no": {
-      "_meta": {},
-      "aliases": [],
-      "attributes": {
-        "lod1_synopsis": "Never silently truncate strings, lists, code windows, or diagnostic outputs ([:N]) to hide data or force output into a budget"
-      },
-      "build_status": "DRAFT",
-      "build_tag": null,
-      "children": [],
-      "core_tag": null,
-      "depends_on": [],
-      "failure_diagnostic": null,
-      "id": "global_defaults::no",
-      "in_edges": [],
-      "inputs": [],
-      "kind": null,
-      "outputs": [],
-      "owner": null,
-      "parent": "global_defaults",
-      "role": null,
-      "rules": [
-        {
-          "access_turns": [
-            35
-          ],
-          "bound_op": "==",
-          "bound_val": "true",
-          "conditions": [],
-          "created_turn": 32,
-          "exceptions": [],
-          "facet": "obligations",
-          "id": "r_global_defaults_5",
-          "is_exception": false,
-          "meta_keys": [],
-          "meta_tokens": [],
-          "overrides": [],
-          "refs": [],
-          "scope": "global_defaults::no",
-          "target_prop": "no_silent_truncation",
-          "text": "Never silently truncate strings, lists, code windows, or diagnostic outputs ([:N]) to hide data or force output into a budget",
-          "turn": 35,
-          "type": "POLICY",
-          "updated_turn": 35
-        }
-      ],
-      "stage": null,
-      "status": "DRAFT"
-    },
-    "global_defaults::regiment": {
-      "_meta": {},
-      "aliases": [],
-      "attributes": {},
-      "build_status": "DRAFT",
-      "build_tag": null,
-      "children": [],
-      "core_tag": null,
-      "depends_on": [],
-      "failure_diagnostic": null,
-      "id": "global_defaults::regiment",
-      "in_edges": [],
-      "inputs": [],
-      "kind": null,
-      "outputs": [],
-      "owner": null,
-      "parent": "global_defaults",
-      "role": null,
-      "rules": [
+        },
         {
           "access_turns": [
             17
@@ -2547,12 +2413,35 @@
           "meta_tokens": [],
           "overrides": [],
           "refs": [],
-          "scope": "global_defaults::regiment",
+          "scope": "global_defaults",
           "target_prop": "regiment_nlp",
           "text": "In `global_defaults`, `regiment_nlp` != imported when Never import regiment_nlp, spacy, torch, or onnxruntime inside lattice.",
           "turn": 17,
           "type": "PROHIBITION",
           "updated_turn": 17
+        },
+        {
+          "access_turns": [
+            36
+          ],
+          "bound_op": null,
+          "bound_val": null,
+          "conditions": [],
+          "created_turn": 36,
+          "exceptions": [],
+          "facet": "context_facts",
+          "id": "r_global_defaults_10",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults",
+          "target_prop": null,
+          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines per file; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+          "turn": 36,
+          "type": "FACT",
+          "updated_turn": 36
         }
       ],
       "stage": null,
@@ -2623,7 +2512,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
+      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2691,7 +2580,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
+      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2769,7 +2658,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
+      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2853,7 +2742,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
+      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2936,7 +2825,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
+      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
@@ -3032,7 +2921,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
+      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -3044,7 +2933,7 @@
       "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves <2KB 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },
-  "turn": 35,
-  "turn_index": 35,
+  "turn": 36,
+  "turn_index": 36,
   "version": 1
 }

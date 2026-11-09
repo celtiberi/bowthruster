@@ -12,15 +12,24 @@
         9,
         10
       ],
-      "activation": 0.693147,
+      "activation": -0.156114,
       "id": "ambient_t9_m1",
       "text": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
       "turn": 10
+    },
+    {
+      "access_turns": [
+        15
+      ],
+      "activation": 0.0,
+      "id": "ambient_t15_m1",
+      "text": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; no silent truncation of slices or diagnostics; automatic project_root discovery and live hot-reload.",
+      "turn": 15
     }
   ],
   "charter": {
     "name": "mcp_server_28",
-    "principles": "Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
+    "principles": "Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; no silent truncation of slices or diagnostics; automatic project_root discovery and live hot-reload.",
     "summary": "Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents."
   },
   "external_links": {
@@ -101,7 +110,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "41a27a28caaa64ef911e54c2ff719cbb3c08a8eb",
+  "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
   "lattice_artifacts": [
     {
       "calls": [
@@ -364,10 +373,10 @@
       "attributes": {
         "charter": {
           "name": "mcp_server_28",
-          "principles": "Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
+          "principles": "Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; no silent truncation of slices or diagnostics; automatic project_root discovery and live hot-reload.",
           "summary": "Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents."
         },
-        "lod1_synopsis": "Never silently truncate strings, lists, code windows, or diagnostic outputs ([:N]) to hide data or force output into a budget"
+        "lod1_synopsis": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; no silent truncation of slices or diagnostics; automatic project_root"
       },
       "build_status": "DRAFT",
       "build_tag": null,
@@ -432,14 +441,14 @@
         },
         {
           "access_turns": [
-            14
+            15
           ],
-          "bound_op": "==",
-          "bound_val": "true",
+          "bound_op": null,
+          "bound_val": null,
           "conditions": [],
-          "created_turn": 11,
+          "created_turn": 15,
           "exceptions": [],
-          "facet": "obligations",
+          "facet": "context_facts",
           "id": "r_global_defaults_5",
           "is_exception": false,
           "meta_keys": [],
@@ -447,11 +456,11 @@
           "overrides": [],
           "refs": [],
           "scope": "global_defaults",
-          "target_prop": "no_silent_truncation",
-          "text": "Never silently truncate strings, lists, code windows, or diagnostic outputs ([:N]) to hide data or force output into a budget",
-          "turn": 14,
-          "type": "POLICY",
-          "updated_turn": 14
+          "target_prop": null,
+          "text": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; no silent truncation of slices or diagnostics; automatic project_root discovery and live hot-reload.",
+          "turn": 15,
+          "type": "FACT",
+          "updated_turn": 15
         }
       ],
       "stage": null,
@@ -502,7 +511,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "41a27a28caaa64ef911e54c2ff719cbb3c08a8eb",
+      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -559,7 +568,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "41a27a28caaa64ef911e54c2ff719cbb3c08a8eb",
+      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -567,7 +576,7 @@
       "rules": [
         {
           "access_turns": [
-            14
+            15
           ],
           "bound_op": "<=",
           "bound_val": 28,
@@ -595,7 +604,7 @@
       "why": "Gives AI coding agents direct <50ms access to architecture memory, focused AST code slices, living specs, and pre-commit verification over stdio JSON-RPC 2.0."
     }
   },
-  "turn": 14,
-  "turn_index": 14,
+  "turn": 15,
+  "turn_index": 15,
   "version": 1
 }

@@ -132,9 +132,10 @@ Pass canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`
 | no_requests_lib | api_gateway | PROHIBITION | requests | == | false | always |
 ```
 
-- **When to use `Rule` (`*`) vs. `Law` (`%`):**
-  - **`Rule` (`BOUND` / `PROHIBITION` / `OBLIGATION`):** Use for file line caps (`BOUND` on `max_file_lines`), module constant bounds (`BOUND` on an AST constant like `MAX_RETRIES <= 3`), banned imports (`PROHIBITION` on a module name like `requests` or `torch`, checked against AST `import` statements on `lattice_git_sync`), or component obligations (`OBLIGATION`, mounted in `lattice_slice`). Re-submitting the same `(Component, Property)` overwrites the old rule in place (`MARKOVIAN_OVERWRITE`), or attaches a conditional exception when `Condition` differs.
+- **When to use `Rule` (`*`) vs. `Law` (`%`) vs. `Charter` / `Why`:**
+  - **`Rule` (`BOUND` / `PROHIBITION`):** Strictly for rules that the pre-commit AST gate mechanically enforces: file line caps (`BOUND` on `max_file_lines`), module constant bounds (`BOUND` on an AST constant like `MAX_RETRIES <= 3`), or banned imports (`PROHIBITION` on a module name like `requests` or `sqlalchemy`, checked against AST `import` statements on `lattice_git_sync`). Re-submitting the same `(Component, Property)` overwrites the old rule in place (`MARKOVIAN_OVERWRITE`), or attaches a conditional exception when `Condition` differs.
   - **`Law` (`% LAW`):** Reserve for multi-variable boolean state machines, routing tables, or conservation invariants ($k \ge 2$ boolean inputs, or a `Theorem` column `LHS == RHS`) that are proven in Bend 2 and called by the component's `$ INTERFACE` in the AST call graph. Never invent a 1-boolean identity law (`MOD.is_ok(x) == x`) just to mark a component `STALE`—use `lattice_slice(..., mark_stale=True)` or update the `$ INTERFACE`, `# SCHEMA`, or `Rule` row instead.
+  - **`Charter` & Component `Why`:** High-level project principles belong in the `| Charter | Summary | Principles |` table, and component design rationale belongs in the `Why` column of `| Component | ... |`—never disguise prose guidelines as fake `Rule` rows.
 
 ### Onboarding an Existing Repository & Installing the AI Skill / Git Hooks
 

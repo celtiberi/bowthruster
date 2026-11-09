@@ -24,7 +24,7 @@ Never edit a `VERIFIED` component's files directly (`verified_scope_edit_guard_l
 - `| Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |`
 - `| Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec |` *(or `Theorem` column `LHS == RHS`)*
 - `| Schema | Component | Fields | Owner | Stage | File | Spec |` *(optional data/payload models)*
-- `| Rule | Component | Type | Property | Op | Value | Condition |` *(optional: `BOUND` on `max_file_lines` or AST module constants, `PROHIBITION` on banned imports, or `OBLIGATION`; re-submitting `(Component, Property)` updates in place)*
+- `| Rule | Component | Type | Property | Op | Value | Condition |` *(optional: `BOUND` on `max_file_lines` or AST module constants, or `PROHIBITION` on banned imports; re-submitting `(Component, Property)` updates in place)*
 - **Anti-Tautology `% LAW` Rule:** Reserve `% LAW` for multi-variable boolean state machines, routing tables, or conservation invariants ($k \ge 2$ boolean inputs using `Bool.and`, `Bool.or`, `Bool.not`). Never invent a 1-boolean identity wrapper (`MOD.is_ok(x) == x`) just to mark a component `STALE` for a bug fix — use `lattice_slice(..., mark_stale=True)` or update the `$ INTERFACE`/`# SCHEMA`/`Rule` row instead.
 
 ## Step 3 — Implement the `STALE` WorkPacket (`lattice_packets` / `edit_file`)

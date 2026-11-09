@@ -109,38 +109,35 @@ Even if an agent forgets a structural rule during coding, `lattice_git_sync(boar
 
 ---
 
-## 4. Setting Rules & Policies via `lattice_turn` (`BOUND` vs. `PROHIBITION` vs. `POLICY`)
+## 4. Setting Enforced Rules (`BOUND` & `PROHIBITION`) vs. Design Rationale (`Charter` & `Why`)
 
-Every rule or policy in Lattice is submitted using the same `| Rule | Component | Type | Property | Op | Value | Condition | Spec |` pipe table via `lattice_turn`.
+Every `| Rule | Component | Type | Property | Op | Value | Condition | Spec |` entry in Lattice is **mechanically enforced by the pre-commit AST gate** (`lattice_git_sync(mode="pre")`). Never use the `Rule` table for prose guidelines that cannot be verified by the AST—high-level principles belong in `Charter`, and component rationale belongs in `Component.Why`.
 
-The **`Type`** column tells Lattice whether the rule is **mechanically enforced by the pre-commit AST gate** or is a **semantic standing instruction** surfaced to coding and QA agents in slices, `WorkPacket`s, and living specs:
-
-| Rule `Type` | What It Is | Enforced by Pre-Commit AST Gate? | When to Use |
+| Mechanism | Table / Column | Enforced by Pre-Commit AST Gate? | When to Use |
 | :--- | :--- | :--- | :--- |
-| **`BOUND`** | A numeric threshold on file length (`max_file_lines`) or a module-level Python constant (`MAX_RETRIES <= 3`). | **Yes** — blocks commits when a file exceeds `max_file_lines` or a top-level constant violates `Op Value`. | File size limits, timeouts, retry caps, batch sizes, latency/budget constants. |
-| **`PROHIBITION`** | A banned Python import or module dependency (`Property = requests`, `Op = !=`, `Value = imported`). | **Yes** — blocks commits if any `.py` file imports the prohibited package. | Layer boundaries (e.g., keeping `sqlalchemy` or `requests` out of pure domain logic). |
-| **`POLICY`** *(or `OBLIGATION`)* | A semantic engineering rule or architectural convention that requires human/LLM judgment rather than a brittle AST regex. | **No** — stored on the board and surfaced in `lattice_atlas` (for `global_defaults`) or `lattice_slice` / `lattice_packets` (for component-scoped rules). | Architectural principles (e.g., no silent output truncation, UTC-only timestamps, idempotent retries). |
+| **`BOUND` Rule** | `\| Rule \| ... \| BOUND \|` | **Yes** — blocks commits when a file exceeds `max_file_lines` or a top-level Python constant violates `Op Value`. | File size limits (`max_file_lines <= 500`), timeouts, retry caps (`MAX_RETRIES <= 3`), batch sizes. |
+| **`PROHIBITION` Rule** | `\| Rule \| ... \| PROHIBITION \|` | **Yes** — parses AST `import` / `from ... import` nodes and blocks commits if any `.py` file imports the banned module. | Layer boundaries (e.g., keeping `sqlalchemy` or `requests` out of pure domain logic). |
+| **Project `Charter`** | `\| Charter \| Summary \| Principles \|` | **No** — displayed once at the top of `lattice_atlas` and `lattice_atlas(spec=True)`. | Repo-wide architectural principles (e.g., zero external dependencies, no silent output truncation). |
+| **Component `Why`** | `\| Component \| Role \| Why \| ... \|` | **No** — displayed on the component in `lattice_atlas` and `lattice_slice`. | Why a component exists and what responsibility boundary it owns. |
 
-### Scope: Repo-Wide (`global_defaults`) vs. Single Component
+### Scope for `BOUND` & `PROHIBITION` Rules: Repo-Wide (`global_defaults`) vs. Single Component
 
-- **Repo-Wide (`Component = global_defaults`):** Displayed **once** at the top of `lattice_atlas` (under `@ CHARTER` as `* GLOBAL_RULE`) and in `lattice_atlas(spec=True)`, so calling `lattice_slice` 10 times during a session never repeats global rules 10 times in the agent's context window.
-- **Single Component (`Component = <component_name>`):** Displayed **only** when slicing or pulling a `WorkPacket` for that specific component (`lattice_slice(component="...")` or `lattice_packets`), keeping rules scoped to where they actually apply.
+- **Repo-Wide (`Component = global_defaults`):** Enforced across all components on the board and displayed once at the top of `lattice_atlas` (as `* GLOBAL_RULE`), so calling `lattice_slice` 10 times during a session never repeats global rules 10 times in the agent's context window.
+- **Single Component (`Component = <component_name>`):** Enforced on that component's files and displayed only when slicing or pulling a `WorkPacket` for that component (`lattice_slice(component="...")` or `lattice_packets`).
 
-### Example: Submitting `BOUND`, `PROHIBITION`, and `POLICY` Rules (`lattice_turn`)
+### Example: Submitting `BOUND` and `PROHIBITION` Rules (`lattice_turn`)
 
 ```markdown
 | Rule | Component | Type | Property | Op | Value | Condition | Spec |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | max_file_lines | global_defaults | BOUND | max_file_lines | <= | 500 | — | Every source file must be at most 500 lines |
-| no_silent_truncation | global_defaults | POLICY | no_silent_truncation | == | true | — | Never silently truncate strings, lists, or diagnostic outputs ([:N]) to hide data |
 | max_retries | billing_service | BOUND | MAX_RETRIES | <= | 3 | — | Billing webhook delivery must cap retries at 3 attempts |
 | no_orm_in_auth | auth_service | PROHIBITION | sqlalchemy | != | imported | — | Auth token verification must stay stateless and never import sqlalchemy |
-| utc_timestamps | billing_service | POLICY | utc_timestamps | == | true | — | All billing ledger timestamps must be stored and compared in UTC |
 ```
 
 ### Updating or Overwriting an Existing Rule
 
-To change a rule later (for example, tightening `max_file_lines` from `500` to `400` or updating a `POLICY`), submit a `Rule` table with the **same `Component`, `Property`, and `Condition`**. Lattice performs a **Markovian overwrite** in place rather than accumulating conflicting duplicate rules.
+To change a rule later (for example, tightening `max_file_lines` from `500` to `400`), submit a `Rule` table with the **same `Component`, `Property`, and `Condition`**. Lattice performs a **Markovian overwrite** in place rather than accumulating conflicting duplicate rules.
 
 ---
 
@@ -157,6 +154,6 @@ PYTHONPATH=/path/to/lattice python3 -m lattice.cli --board my_board atlas --spec
 ```
 
 This compiles a complete Markdown document containing:
-1. **Project Charter & Standing Global Rules** (`Summary`, `Principles`, global `OBLIGATION` / `PROHIBITION` rules).
+1. **Project Charter & Standing Global Rules** (`Summary`, `Principles`, global `BOUND` / `PROHIBITION` rules).
 2. **System Topology Mermaid Diagram (`flowchart LR`) & Flow Table** showing every component, its verification status and owner, and every typed `> FLOW` edge.
 3. **Per-Component Reference** with `Purpose (Role)`, `Why It Exists (Rationale)`, `Depends On`, `Files`, `#L<start>-L<end>` `Interfaces`, `Schemas`, `Formal Laws (Bend 2)`, and `Bounds`.
