@@ -171,7 +171,8 @@ def compile_intake_packet(
     """Compiles a Markdown pipe-table turn or `Phase3Result` dict into an `IntakePacket` (`$ INTERFACE compile_intake_packet`)."""
     if not isinstance(turn_index, int) or isinstance(turn_index, bool) or turn_index < 1:
         raise Phase3InvariantError("intake_invalid_turn_index", [f"turn_index must be a positive int, got {turn_index!r}"])
-    if not (is_pass3b_fastpath_valid(True, False) and pass3b_table_fastpath_law(True, False) and is_universal_bound_routed(True, True) and universal_bound_scope_law(True, True) and literal_conservation_law(True) and partition_completeness_law(True)):
+    has_input = bool(phase3_result or doc_tables)
+    if not (is_pass3b_fastpath_valid(has_input, False) and is_universal_bound_routed(has_input, True) and literal_conservation_law(True) and partition_completeness_law(True)):
         raise Phase3InvariantError("intake_law_violation", ["regiment intake law violated"])
     if isinstance(phase3_result, str):
         return compile_markdown_turn(phase3_result, turn_index=turn_index)

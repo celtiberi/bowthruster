@@ -59,7 +59,7 @@ def verify_mcp_server_roundtrip(board: Any = None) -> dict[str, Any]:
         and bool(bad_call.get("isError"))
     )
 
-    verdict = is_mcp_roundtrip_valid(init_ok, list_ok, call_ok) and mcp_roundtrip_verdict_law(init_ok, list_ok, call_ok)
+    verdict = is_mcp_roundtrip_valid(init_ok, list_ok, call_ok)
     res = McpRoundtripVerdict(
         is_valid=verdict,
         init_ok=init_ok,

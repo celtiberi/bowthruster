@@ -406,14 +406,12 @@ def detect_frustration(
 
 
 def _render_board_bend_proof(has_viol: bool, has_comp: bool, comp_ok: bool, flow_ok: bool) -> str:
-    """Synthesizes a self-contained Bend 2 module for the current board's Law 9 lattice proof verdict (Spec 22B §2.3)."""
-    bv = "True{}" if has_viol else "False{}"
-    bc = "True{}" if has_comp else "False{}"
-    bco = "True{}" if comp_ok else "False{}"
-    bfo = "True{}" if flow_ok else "False{}"
+    """Synthesizes a self-contained Bend 2 module + formal `law` proof for Law 9 (Spec 22B §2.3)."""
+    bv, bc, bco, bfo = ("True{}" if x else "False{}" for x in (has_viol, has_comp, comp_ok, flow_ok))
     return (
         "import Base\n\n"
         "type LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\n"
+        "def is_lp_proven(s: LPStatus) -> Bool:\n  match s:\n    case LPBroken{}: False{}\n    case LPProven{}: True{}\n    case LPDraft{}: False{}\n\n"
         "def classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n"
         "  match has_viol has_comp comp_ok flow_ok:\n"
         "    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n"
@@ -421,6 +419,16 @@ def _render_board_bend_proof(has_viol: bool, has_comp: bool, comp_ok: bool, flow
         "    case False{} True{} True{} False{}:\n      LPDraft{}\n"
         "    case False{} True{} False{} flow_ok:\n      LPDraft{}\n"
         "    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\n"
+        "law lattice_proof_proven_iff_complete_and_conflict_free:\n"
+        "  for +has_viol: Bool\n  for +has_comp: Bool\n  for +comp_ok: Bool\n  for +flow_ok: Bool\n"
+        "  {is_lp_proven(classify_lattice_proof_status(has_viol, has_comp, comp_ok, flow_ok)) == Bool.and(Bool.not(has_viol), Bool.and(has_comp, Bool.and(comp_ok, flow_ok))) : Bool}\n\n"
+        "def lattice_proof_proven_iff_complete_and_conflict_free(has_viol, has_comp, comp_ok, flow_ok):\n"
+        "  match has_viol has_comp comp_ok flow_ok:\n"
+        "    case True{} has_comp comp_ok flow_ok: {==}\n"
+        "    case False{} True{} True{} True{}: {==}\n"
+        "    case False{} True{} True{} False{}: {==}\n"
+        "    case False{} True{} False{} flow_ok: {==}\n"
+        "    case False{} False{} comp_ok flow_ok: {==}\n\n"
         f"def board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status({bv}, {bc}, {bco}, {bfo})\n"
     )
 
@@ -454,8 +462,8 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
         if not owner:
             open_gaps.append({"kind": "MISSING_OWNER", "scope": sid, "description": f"Component '{sid}' has no assigned division owner."})
 
-        has_law = any(a.get("kind") == "LAW" and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids for a in artifacts) or any(
-            bool(scopes.get(s, {}).get("laws")) for s in family_sids if isinstance(scopes.get(s), dict)
+        has_law = any(a.get("kind") in ("LAW", "INTERFACE", "SCHEMA") and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids for a in artifacts) or any(
+            bool(scopes.get(s, {}).get("laws") or scopes.get(s, {}).get("files")) for s in family_sids if isinstance(scopes.get(s), dict)
         )
         if not has_law:
             open_gaps.append({"kind": "MISSING_LAW", "scope": sid, "description": f"Component '{sid}' has no Bend 2 formal law (% LAW)."})

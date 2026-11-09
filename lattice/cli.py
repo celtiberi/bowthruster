@@ -181,7 +181,7 @@ def _py_ast_extractor(fp: Path) -> tuple[dict[str, tuple[int, int]], dict[str, l
     calls = {fn.name: sorted({f"{c}#L{syms[c][0]}-L{syms[c][1]}" for s in ast.walk(fn) if isinstance(s, ast.Call) and isinstance(s.func, ast.Name) and (c := s.func.id) in syms and c != fn.name and c.startswith("_")}) for fn in fn_nodes}
     _PY_AST_CACHE[ckey] = res = (syms, {k: v for k, v in calls.items() if v})
     return res
-from lattice.nlp import _extract_generic_source_symbols
+import importlib, lattice.nlp as _nlp_mod; _extract_generic_source_symbols, verify_python_ast_laws_with_bend = (importlib.reload(_nlp_mod) if not hasattr(_nlp_mod, "verify_python_ast_laws_with_bend") else _nlp_mod)._extract_generic_source_symbols, _nlp_mod.verify_python_ast_laws_with_bend
 AST_EXTRACTORS: dict[str, Any] = {".py": _py_ast_extractor, **{e: _extract_generic_source_symbols for e in (".ts", ".tsx", ".js", ".jsx", ".mjs", ".go", ".rs", ".java", ".kt", ".c", ".cpp", ".cc", ".h", ".hpp", ".cs", ".swift", ".rb", ".bend")}}
 def register_ast_extractor(ext: str, extractor_fn: Any) -> None: AST_EXTRACTORS[ext if ext.startswith(".") else f".{ext}"] = extractor_fn
 def _extract_py_ast_symbols(fp: Path) -> dict[str, tuple[int, int]]:
@@ -264,9 +264,9 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
                 files.append({"status": "M", "path": cp, "scope": sid_hit, "contract_changed": fp.suffix in AST_EXTRACTORS, **({"line_count": len(fp.read_text(encoding="utf-8", errors="ignore").splitlines())} if cp.endswith((".py", ".bend")) else {}), "file_hash": hashlib.sha256(fp.read_bytes()).hexdigest()[:16], **({"ast_symbols": _extract_py_ast_symbols(fp), "source": fp.read_text(encoding="utf-8", errors="ignore")} if fp.suffix in AST_EXTRACTORS else {})})
     if not is_baseline_stamp_clean(is_base, bool(files)): raise ValueError("initial_baseline_stamp_law violated")
     cfg_mlb = (next((json.loads(p.read_text(encoding="utf-8")) for p in DEFAULT_CONFIG_PATHS if p.is_file()), {}).get("gate") or {}).get("max_file_lines")
-    ast_by_f = {cp: _extract_py_ast_symbols(eff_root / cp) for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()} if mode in ("post", "baseline") else {}
-    calls_by_f = {cp: _extract_ast_local_calls(eff_root / cp) for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()} if mode in ("post", "baseline") else {}
-    return {"commit_sha": sha, "files": files, **({"file_hashes": file_hashes} if file_hashes else {}), **({"ast_symbols_by_file": ast_by_f} if ast_by_f else {}), **({"ast_calls_by_file": calls_by_f} if calls_by_f else {}), **({"max_file_lines": cfg_mlb} if cfg_mlb is not None else {})}
+    ast_by_f, calls_by_f = ({cp: _extract_py_ast_symbols(eff_root / cp) for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()}, {cp: _extract_ast_local_calls(eff_root / cp) for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()}) if mode in ("post", "baseline") else ({}, {})
+    bend_rep = verify_python_ast_laws_with_bend(list((graph or {}).get("lattice_artifacts") or []), files, (graph or {}).get("scopes")) if mode == "pre" else {"bend_proofs_ok": True, "failed_laws": []}
+    return {"commit_sha": sha, "files": files, "bend_proofs_ok": bend_rep["bend_proofs_ok"], **({"failed_laws": bend_rep["failed_laws"]} if bend_rep["failed_laws"] else {}), **({"file_hashes": file_hashes} if file_hashes else {}), **({"ast_symbols_by_file": ast_by_f} if ast_by_f else {}), **({"ast_calls_by_file": calls_by_f} if calls_by_f else {}), **({"max_file_lines": cfg_mlb} if cfg_mlb is not None else {})}
 _read_transcript = lambda p: [json.loads(ln) for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()] if p.is_file() else []
 def _append_transcript(p: Path, record: dict[str, Any]) -> None:
     with p.open("a", encoding="utf-8") as fh: fh.write(json.dumps(record, ensure_ascii=False) + "\n")

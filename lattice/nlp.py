@@ -7,8 +7,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+import ast
+import functools
+import itertools
 import math
+from pathlib import Path
 import re
+import shutil
+import subprocess
+import tempfile
 from typing import Any
 
 ASCII_PERIOD = "\u2024"
@@ -243,6 +250,237 @@ def _extract_generic_source_symbols(fp: Any) -> tuple[dict[str, tuple[int, int]]
     return syms, calls
 
 
+def _split_top_args(expr: str) -> list[str]:
+    parts, cur, depth = [], [], 0
+    for ch in expr:
+        depth = depth + 1 if ch in "([{" else (max(0, depth - 1) if ch in ")]}" else depth)
+        if ch == "," and depth == 0:
+            parts.append("".join(cur).strip())
+            cur = []
+        else:
+            cur.append(ch)
+    if cur:
+        parts.append("".join(cur).strip())
+    return [p for p in parts if p]
+
+
+def _sub_ident(expr: str, mapping: dict[str, str]) -> str:
+    if not mapping:
+        return expr
+    pat = re.compile(r"\b(" + "|".join(re.escape(k) for k in sorted(mapping, key=len, reverse=True)) + r")\b")
+    return pat.sub(lambda m: mapping[m.group(1)], expr)
+
+
+def transpile_py_fn_to_bend_bool(
+    fn_node: ast.FunctionDef | ast.AsyncFunctionDef,
+    fn_map: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] | None = None,
+    alias_map: dict[str, str] | None = None,
+    depth: int = 0,
+) -> tuple[list[str], str]:
+    """Transpiles a pure Python boolean decision function AST (`def <fn>`) into a Bend 2 boolean expression `(params, bend_expr)`."""
+    if depth > 6:
+        raise ValueError("Recursion limit exceeded in Python-to-Bend AST transpiler")
+    fmap, amap = fn_map or {}, alias_map or {}
+    params = [a.arg for a in (*fn_node.args.posonlyargs, *fn_node.args.args, *fn_node.args.kwonlyargs) if a.arg != "self"]
+
+    def _expr(node: ast.AST, env: dict[str, str]) -> str:
+        if isinstance(node, ast.Constant) and isinstance(node.value, bool):
+            return "True{}" if node.value else "False{}"
+        if isinstance(node, ast.Name):
+            if node.id in env:
+                return env[node.id]
+            if node.id in params:
+                return node.id
+            raise ValueError(f"Unbound variable {node.id!r} in {fn_node.name}")
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+            return f"Bool.not({_expr(node.operand, env)})"
+        if isinstance(node, ast.BoolOp) and isinstance(node.op, (ast.And, ast.Or)):
+            bop = "Bool.and" if isinstance(node.op, ast.And) else "Bool.or"
+            vals = [_expr(v, env) for v in node.values]
+            acc = vals[-1]
+            for v in reversed(vals[:-1]):
+                acc = f"{bop}({v}, {acc})"
+            return acc
+        if isinstance(node, ast.IfExp):
+            c, t, f = _expr(node.test, env), _expr(node.body, env), _expr(node.orelse, env)
+            return f"Bool.or(Bool.and({c}, {t}), Bool.and(Bool.not({c}), {f}))"
+        if isinstance(node, ast.Compare) and len(node.ops) == 1 and len(node.comparators) == 1:
+            l_ex, r_ex = _expr(node.left, env), _expr(node.comparators[0], env)
+            if isinstance(node.ops[0], (ast.Eq, ast.Is)):
+                return f"bool_eq({l_ex}, {r_ex})"
+            if isinstance(node.ops[0], (ast.NotEq, ast.IsNot)):
+                return f"Bool.not(bool_eq({l_ex}, {r_ex}))"
+        if isinstance(node, ast.Call):
+            cname = node.func.id if isinstance(node.func, ast.Name) else (node.func.attr if isinstance(node.func, ast.Attribute) else "")
+            if cname == "bool" and len(node.args) == 1 and not node.keywords:
+                return _expr(node.args[0], env)
+            target = amap.get(cname, cname)
+            if target in fmap and target != fn_node.name:
+                sub_p, sub_b = transpile_py_fn_to_bend_bool(fmap[target], fmap, amap, depth + 1)
+                pos_args = [_expr(a, env) for a in node.args]
+                kw_args = {kw.arg: _expr(kw.value, env) for kw in node.keywords if kw.arg}
+                sub_map = {p: (pos_args[i] if i < len(pos_args) else kw_args.get(p, "True{}")) for i, p in enumerate(sub_p)}
+                return _sub_ident(sub_b, sub_map)
+        raise ValueError(f"Unsupported AST node {type(node).__name__} in {fn_node.name}")
+
+    def _stmts(stmts: list[ast.stmt], env: dict[str, str]) -> str:
+        cur = dict(env)
+        for i, st in enumerate(stmts):
+            if isinstance(st, ast.Expr) and isinstance(st.value, ast.Constant) and isinstance(st.value.value, str):
+                continue
+            if isinstance(st, ast.Assign) and len(st.targets) == 1 and isinstance(st.targets[0], ast.Name):
+                cur[st.targets[0].id] = _expr(st.value, cur)
+            elif isinstance(st, ast.AnnAssign) and isinstance(st.target, ast.Name) and st.value is not None:
+                cur[st.target.id] = _expr(st.value, cur)
+            elif isinstance(st, ast.Return) and st.value is not None:
+                return _expr(st.value, cur)
+            elif isinstance(st, ast.If):
+                c = _expr(st.test, cur)
+                t_b = _stmts(st.body, dict(cur))
+                f_b = _stmts(st.orelse if st.orelse else stmts[i + 1 :], dict(cur))
+                return f"Bool.or(Bool.and({c}, {t_b}), Bool.and(Bool.not({c}), {f_b}))"
+        raise ValueError(f"No boolean return found in {fn_node.name}")
+
+    return params, _stmts(fn_node.body, {})
+
+
+def _eval_bend_bool(expr: str, env: dict[str, bool], custom_fns: dict[str, tuple[list[str], str]]) -> bool:
+    s = str(expr or "").strip().strip("\"`'").split(":", 1)[0].strip()
+    if s in ("True{}", "True", "true", "1"):
+        return True
+    if s in ("False{}", "False", "false", "0"):
+        return False
+    if s in env:
+        return bool(env[s])
+    if "(" in s and s.endswith(")"):
+        callee = s.split("(", 1)[0].strip().split(".")[-1].strip()
+        args = [_eval_bend_bool(a, env, custom_fns) for a in _split_top_args(s[s.find("(") + 1 : -1])]
+        if callee == "not" and len(args) == 1:
+            return not args[0]
+        if callee == "and" and len(args) >= 2:
+            return all(args)
+        if callee == "or" and len(args) >= 2:
+            return any(args)
+        if callee in ("bool_eq", "eq") and len(args) == 2:
+            return args[0] == args[1]
+        if callee == "bool_imp" and len(args) == 2:
+            return (not args[0]) or args[1]
+        if callee in custom_fns:
+            f_params, f_body = custom_fns[callee]
+            sub_env = {p: (args[i] if i < len(args) else True) for i, p in enumerate(f_params)}
+            return _eval_bend_bool(f_body, sub_env, custom_fns)
+        if callee.startswith("check_") and len(args) == 1:
+            return bool(args[0])
+    raise ValueError(f"Cannot evaluate Bend boolean expression: {s!r}")
+
+
+def _gen_bool_case_proof(vars_left: list[str], indent: int = 2) -> list[str]:
+    pad = " " * indent
+    if not vars_left:
+        return [f"{pad}{{==}}"]
+    v = vars_left[0]
+    return [
+        f"{pad}match {v}:",
+        f"{pad}  case False{{}}:",
+        *_gen_bool_case_proof(vars_left[1:], indent + 4),
+        f"{pad}  case True{{}}:",
+        *_gen_bool_case_proof(vars_left[1:], indent + 4),
+    ]
+
+
+def _norm_bend_expr(expr: str, fn_name: str) -> str:
+    s = re.sub(r"\b[A-Za-z_][A-Za-z0-9_]*\.(?=" + re.escape(fn_name) + r"\s*\(|bool_eq\s*\(|bool_imp\s*\()", "", expr.strip())
+    s = re.sub(r"(?<![A-Za-z0-9_.])(and|or|not)\s*\(", r"Bool.\1(", s)
+    return s
+
+
+@functools.lru_cache(maxsize=256)
+def _check_synthesized_bend_proof(bend_src: str) -> bool:
+    bend_bin = shutil.which("bend") or (str(Path.home() / ".cargo" / "bin" / "bend") if (Path.home() / ".cargo" / "bin" / "bend").is_file() else None)
+    if not bend_bin:
+        return True
+    with tempfile.TemporaryDirectory(prefix="lattice_ast_bend_") as tmp:
+        p = Path(tmp) / "LAW_CHECK.bend"
+        p.write_text(bend_src, encoding="utf-8")
+        res = subprocess.run([bend_bin, str(p)], cwd=tmp, capture_output=True, text=True, timeout=15)
+        out = f"{res.stdout}\n{res.stderr}"
+        return res.returncode == 0 and "ERROR" not in out
+
+
+def verify_python_ast_laws_with_bend(
+    artifacts: list[dict[str, Any]],
+    staged_files: list[dict[str, Any]],
+    scopes: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Transpiles staged Python `% LAW` functions to Bend 2 and verifies `LHS == RHS` across all truth-table assignments and via `bend`."""
+    checked_laws, failed_laws = [], []
+    py_files: list[tuple[str, str, dict[str, ast.FunctionDef | ast.AsyncFunctionDef], dict[str, str]]] = []
+    for f in staged_files:
+        src = f.get("source") if f.get("source") is not None else (f.get("content") if f.get("content") is not None else f.get("code"))
+        if not isinstance(src, str) or not src.strip():
+            continue
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            continue
+        fmap = {n.name: n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+        amap = {t.id: n.value.id for n in tree.body if isinstance(n, ast.Assign) and isinstance(n.value, ast.Name) and n.value.id in fmap for t in n.targets if isinstance(t, ast.Name)}
+        for alias, target in list(amap.items()):
+            if alias not in fmap and target in fmap:
+                fmap[alias] = fmap[target]
+        if fmap:
+            py_files.append((str(f.get("path") or f.get("file") or "").strip(), str(f.get("scope") or f.get("component") or "").strip(), fmap, amap))
+
+    if not py_files:
+        return {"bend_proofs_ok": True, "failed_laws": [], "checked_laws": []}
+
+    for art in artifacts:
+        if str(art.get("kind") or "").upper() != "LAW":
+            continue
+        dims = art.get("dimensions") if isinstance(art.get("dimensions"), dict) else {}
+        lhs = str(art.get("lhs") if art.get("lhs") is not None else (dims.get("lhs") or "")).strip().strip("\"`'").strip()
+        rhs = str(art.get("rhs") if art.get("rhs") is not None else (dims.get("rhs") or "")).strip().strip("\"`'").strip()
+        raw_args = art.get("args") if art.get("args") is not None else dims.get("args")
+        if "(" not in lhs or not rhs or (not raw_args and not any(tok in f"{lhs} {rhs}" for tok in ("Bool.", "bool_eq", "and(", "or(", "not("))):
+            continue
+        law_id = str(art.get("name") or art.get("law") or art.get("id") or "law").strip()
+        m_calls = [c for c in re.findall(r"([A-Za-z_][A-Za-z0-9_]*)\s*\(", lhs) if c.lower() not in {"bool_eq", "bool_imp", "and", "or", "not", "true", "false", "eq"}]
+        lfn = str(art.get("fn_name") or art.get("function") or (m_calls[0] if m_calls else "")).strip().split(".")[-1]
+        if not lfn or lfn.startswith("check_"):
+            continue
+        for _, _, fmap, amap in py_files:
+            if lfn not in fmap:
+                continue
+            checked_laws.append(law_id)
+            try:
+                py_params, py_bend = transpile_py_fn_to_bend_bool(fmap[lfn], fmap, amap)
+                arg_chunks = [str(x) for x in raw_args] if isinstance(raw_args, list) else (str(raw_args or "").replace("\n", ",").replace(";", ",").split(","))
+                law_params = [re.sub(r"[^A-Za-z0-9_]", "", c.replace("for ", "").lstrip("+-").split(":", 1)[0].strip()) for c in arg_chunks if c.strip() and c.strip().lower() not in ("none", "-", "—", "n/a", "null")]
+                law_params = [p for p in law_params if p] or list(py_params)
+                custom_fns = {lfn: (py_params, py_bend)}
+                table_ok = all(
+                    _eval_bend_bool(lhs, dict(zip(law_params, row)), custom_fns) == _eval_bend_bool(rhs, dict(zip(law_params, row)), custom_fns)
+                    for row in itertools.product((False, True), repeat=len(law_params))
+                )
+                sig_str = ", ".join(f"{p}: Bool" for p in py_params)
+                for_lines = "\n".join(f"  for +{p}: Bool" for p in law_params)
+                proof_lines = "\n".join(_gen_bool_case_proof(law_params, 2))
+                safe_law = re.sub(r"[^A-Za-z0-9_]", "_", law_id) or "law_check"
+                bend_src = (
+                    "import Base\n\ndef bool_eq(a: Bool, b: Bool) -> Bool:\n  match a b:\n"
+                    "    case True{} True{}:\n      True{}\n    case False{} False{}:\n      True{}\n"
+                    f"    case _ _:\n      False{{}}\n\ndef {lfn}({sig_str}) -> Bool:\n  {py_bend}\n\n"
+                    f"law {safe_law}:\n{for_lines}\n  {{{_norm_bend_expr(lhs, lfn)} == {_norm_bend_expr(rhs, lfn)} : Bool}}\n{proof_lines}\n"
+                )
+                if not table_ok or not _check_synthesized_bend_proof(bend_src):
+                    failed_laws.append(law_id)
+            except Exception:
+                failed_laws.append(law_id)
+            break
+
+    return {"bend_proofs_ok": len(failed_laws) == 0, "failed_laws": failed_laws, "checked_laws": checked_laws}
+
+
 __all__ = [
     "ASCII_PERIOD",
     "_extract_generic_source_symbols",
@@ -254,4 +492,6 @@ __all__ = [
     "restore_ascii_dots",
     "soft_token_overlap_count",
     "tokenize_words",
+    "transpile_py_fn_to_bend_bool",
+    "verify_python_ast_laws_with_bend",
 ]

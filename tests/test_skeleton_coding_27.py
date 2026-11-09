@@ -446,6 +446,23 @@ def verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report):
         self.assertFalse(gate_reject["contracts_ok"])
         self.assertGreaterEqual(gate_reject["disconnected_law_functions"], 1)
 
+        bad_law_body_src = (
+            "class CallGraphCheckReport:\n"
+            "    is_valid: bool\n"
+            "    disconnected_law_functions: int\n\n"
+            "def is_call_graph_skeleton_valid(interface_defined: bool, law_fn_defined: bool, interface_calls_law: bool) -> bool:\n"
+            "    return True\n\n"
+            "def verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report):\n"
+            "    a, b, c = bool(whiteboard_graph), bool(staged_diff_report), True\n"
+            "    ok = is_call_graph_skeleton_valid(a, b, c)\n"
+            "    return {'is_valid': ok, 'disconnected_law_functions': 0}\n"
+        )
+        gate_bad_law = EXEC_GATE.evaluate_git_commit_gate(
+            graph,
+            {"staged_files": [{"path": target_path, "content": bad_law_body_src, "disconnected_law_functions": 0}]},
+        )
+        self.assertEqual((gate_bad_law["allowed"], gate_bad_law["decision"], gate_bad_law["bend_proofs_ok"], gate_bad_law["bounce_reason"]), (False, "REJECT_COMMIT", False, "BEND_PROOF_FAILURE"))
+
     def test_05_verify_skeleton_coding_roundtrip_and_self_call_graph_compliance(self) -> None:
         rep = verify_skeleton_coding_roundtrip()
         self.assertTrue(rep["passed"])

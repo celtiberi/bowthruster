@@ -103,6 +103,7 @@ Even if an agent forgets a structural rule during coding, `lattice_git_sync(boar
 | **`VERIFIED_SCOPE_EDIT_VIOLATION`** | Edited a file in a `VERIFIED` component without marking it `STALE` first (`mark_stale=True` or `lattice_turn`). | Rejects the commit and lists the modified `VERIFIED` file path. |
 | **`CONTRACT_VIOLATION`** | Renamed/deleted a declared `$ INTERFACE` function or `# SCHEMA` class, or dropped a required parameter. | Parses the staged file's AST and reports the missing symbol or parameter. |
 | **`CALL_GRAPH_LAW_VIOLATION`** | Wrote a `% LAW` helper function (`is_token_valid`) but never called it inside `verify_token`, or discarded its result (`_ = is_token_valid(...)`). | Walks the static AST call graph across the component's files and rejects disconnected or discarded law calls. |
+| **`BEND_PROOF_FAILURE`** | Changed a Python `% LAW` helper (`is_token_valid`) to `return True` or `not exp or sig` instead of `not exp and sig`. | Transpiles the staged Python function's AST into Bend 2, checks `LHS == RHS` across all boolean assignments and via `bend`, and rejects the commit. |
 | **`BOUND_VIOLATION`** | Exceeded `max_file_lines` (e.g., `<= 500`) or set a module constant `MAX_RETRIES = 10` when a `Rule` requires `MAX_RETRIES <= 3`. | Checks file line counts and top-level AST numeric constants against active `BOUND` rules. |
 | **`PROHIBITION_VIOLATION`** | Added `import requests` or `import torch` in a component with a `PROHIBITION` rule on that library. | Parses AST `import` / `from ... import` nodes and blocks prohibited modules. |
 

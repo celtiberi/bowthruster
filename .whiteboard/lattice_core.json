@@ -210,6 +210,12 @@
         "link_id": "link_regiment_f44ee27a7c86",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/lattice/regiment/markdown_tables.py#L204-L243"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_regiment_b717a5746a17",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/regiment/intake_packet.py#L165-L207"
       }
     ],
     "runtime_foundation": [
@@ -355,7 +361,7 @@
         "artifact_kind": "doc",
         "link_id": "link_whiteboard_4e07791ebe4e",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/whiteboard/ingest.py#L437-L437"
+        "target_uri": "uri://file/lattice/whiteboard/ingest.py#L438-L438"
       },
       {
         "artifact_kind": "doc",
@@ -383,15 +389,15 @@
       },
       {
         "artifact_kind": "doc",
-        "link_id": "link_whiteboard_4e07791ebe4e",
+        "link_id": "link_whiteboard_963375b286bb",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/whiteboard/ingest.py#L278-L340"
+        "target_uri": "uri://file/lattice/whiteboard/ingest.py#L278-L341"
       },
       {
         "artifact_kind": "doc",
-        "link_id": "link_whiteboard_5ce9a081d521",
+        "link_id": "link_whiteboard_b12dd7ab3b70",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/whiteboard/ingest.py#L373-L434"
+        "target_uri": "uri://file/lattice/whiteboard/ingest.py#L374-L435"
       }
     ]
   },
@@ -885,7 +891,7 @@
       "dimensions": {
         "_from_table": true,
         "component": "regiment",
-        "file": "lattice/regiment/intake_packet.py#L165-L206",
+        "file": "lattice/regiment/intake_packet.py#L165-L207",
         "inputs": "phase3_result",
         "interface": "compile_intake_packet",
         "outputs": "IntakePacket",
@@ -893,7 +899,7 @@
         "spec": "Compiles Phase 3 output into IntakePacket for the_executive and whiteboard",
         "stage": "18"
       },
-      "file": "lattice/regiment/intake_packet.py#L165-L206",
+      "file": "lattice/regiment/intake_packet.py#L165-L207",
       "id": "interface_regiment_compile_intake_packet",
       "inputs": [
         "phase3_result",
@@ -916,7 +922,7 @@
     {
       "calls": [
         "_format_tool_result#L247-L251",
-        "_hot_reload_if_changed#L430-L455",
+        "_hot_reload_if_changed#L429-L454",
         "_read_doc_resource#L215-L227",
         "_resolve_project_root#L230-L244"
       ],
@@ -924,12 +930,12 @@
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "lattice/mcp_server.py#L254-L426",
+        "file": "lattice/mcp_server.py#L254-L425",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "lattice/mcp_server.py#L254-L426",
+      "file": "lattice/mcp_server.py#L254-L425",
       "id": "interface_runtime_foundation_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -1304,9 +1310,9 @@
       "created_turn": 14,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/ingest.py#L278-L340"
+        "file": "lattice/whiteboard/ingest.py#L278-L341"
       },
-      "file": "lattice/whiteboard/ingest.py#L278-L340",
+      "file": "lattice/whiteboard/ingest.py#L278-L341",
       "id": "interface_whiteboard_compile_python_skeleton",
       "inputs": [
         "scope_id",
@@ -1328,14 +1334,14 @@
     },
     {
       "calls": [
-        "_build_slice_packet#L343-L370"
+        "_build_slice_packet#L344-L371"
       ],
       "created_turn": 14,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/ingest.py#L373-L434"
+        "file": "lattice/whiteboard/ingest.py#L374-L435"
       },
-      "file": "lattice/whiteboard/ingest.py#L373-L434",
+      "file": "lattice/whiteboard/ingest.py#L374-L435",
       "id": "interface_whiteboard_compile_work_packets",
       "inputs": [
         "graph",
@@ -2139,12 +2145,77 @@
       "text": "Single-owner URI healer for renames, line_shifts, AST #Lstart-Lend anchors, and local helper call-tree pointers",
       "turn": 21,
       "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_expr#L286-L324",
+        "_stmts#L326-L342",
+        "_sub_ident#L267-L271"
+      ],
+      "created_turn": 31,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/nlp.py#L274-L344"
+      },
+      "file": "lattice/nlp.py#L274-L344",
+      "id": "interface_runtime_foundation_transpile_py_fn_to_bend_bool",
+      "inputs": [
+        "fn_node",
+        "fn_map",
+        "alias_map"
+      ],
+      "kind": "INTERFACE",
+      "name": "transpile_py_fn_to_bend_bool",
+      "outputs": [
+        "tuple"
+      ],
+      "owner": "bethe",
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "Transpile pure Python boolean decision function AST into a Bend 2 boolean expression",
+      "stage": "Stage 28",
+      "text": "Transpile pure Python boolean decision function AST into a Bend 2 boolean expression",
+      "turn": 31,
+      "updated_turn": 31
+    },
+    {
+      "calls": [
+        "_check_synthesized_bend_proof#L398-L407",
+        "_eval_bend_bool#L347-L374",
+        "_gen_bool_case_proof#L377-L388",
+        "_norm_bend_expr#L391-L394"
+      ],
+      "created_turn": 31,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/nlp.py#L410-L481"
+      },
+      "file": "lattice/nlp.py#L410-L481",
+      "id": "interface_runtime_foundation_verify_python_ast_laws_with_bend",
+      "inputs": [
+        "artifacts",
+        "staged_files",
+        "scopes"
+      ],
+      "kind": "INTERFACE",
+      "name": "verify_python_ast_laws_with_bend",
+      "outputs": [
+        "dict"
+      ],
+      "owner": "bethe",
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "Transpile staged Python % LAW functions to Bend 2 and verify LHS == RHS across all truth-table assignments and via bend",
+      "stage": "Stage 28",
+      "text": "Transpile staged Python % LAW functions to Bend 2 and verify LHS == RHS across all truth-table assignments and via bend",
+      "turn": 31,
+      "updated_turn": 31
     }
   ],
   "lattice_proof": {
-    "bend_proof_source": "import Base\n\ntype LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\ndef classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n    case False{} True{} True{} True{}:\n      LPProven{}\n    case False{} True{} True{} False{}:\n      LPDraft{}\n    case False{} True{} False{} flow_ok:\n      LPDraft{}\n    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\ndef board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status(False{}, True{}, True{}, True{})\n",
+    "bend_proof_source": "import Base\n\ntype LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\ndef is_lp_proven(s: LPStatus) -> Bool:\n  match s:\n    case LPBroken{}: False{}\n    case LPProven{}: True{}\n    case LPDraft{}: False{}\n\ndef classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n    case False{} True{} True{} True{}:\n      LPProven{}\n    case False{} True{} True{} False{}:\n      LPDraft{}\n    case False{} True{} False{} flow_ok:\n      LPDraft{}\n    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\nlaw lattice_proof_proven_iff_complete_and_conflict_free:\n  for +has_viol: Bool\n  for +has_comp: Bool\n  for +comp_ok: Bool\n  for +flow_ok: Bool\n  {is_lp_proven(classify_lattice_proof_status(has_viol, has_comp, comp_ok, flow_ok)) == Bool.and(Bool.not(has_viol), Bool.and(has_comp, Bool.and(comp_ok, flow_ok))) : Bool}\n\ndef lattice_proof_proven_iff_complete_and_conflict_free(has_viol, has_comp, comp_ok, flow_ok):\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok: {==}\n    case False{} True{} True{} True{}: {==}\n    case False{} True{} True{} False{}: {==}\n    case False{} True{} False{} flow_ok: {==}\n    case False{} False{} comp_ok flow_ok: {==}\n\ndef board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status(False{}, True{}, True{}, True{})\n",
     "component_count": 7,
-    "contract_count": 33,
+    "contract_count": 35,
     "flow_count": 8,
     "hard_violations": [],
     "is_proven": true,
@@ -2447,7 +2518,7 @@
         "depends_on": "runtime_foundation",
         "file_hashes": {
           "lattice/regiment/__init__.py": "51ed764b25109489",
-          "lattice/regiment/intake_packet.py": "c5bdc2d8008fb855",
+          "lattice/regiment/intake_packet.py": "22abda8736dcfa39",
           "lattice/regiment/markdown_tables.py": "882e6e296869665d"
         },
         "files": [
@@ -2472,7 +2543,7 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/regiment/__init__.py": "51ed764b25109489",
-        "lattice/regiment/intake_packet.py": "c5bdc2d8008fb855",
+        "lattice/regiment/intake_packet.py": "22abda8736dcfa39",
         "lattice/regiment/markdown_tables.py": "882e6e296869665d"
       },
       "files": [
@@ -2516,10 +2587,10 @@
         "depends_on": "",
         "file_hashes": {
           "lattice/__init__.py": "837c54c33cd000b4",
-          "lattice/cli.py": "7a70269e375279ca",
-          "lattice/mcp_server.py": "a9193495844e1bc7",
-          "lattice/mcp_verifier.py": "a015087de6656801",
-          "lattice/nlp.py": "bfdfb1a1a0687299",
+          "lattice/cli.py": "1084a9dfbcce204e",
+          "lattice/mcp_server.py": "f6e66b0bd4ef8653",
+          "lattice/mcp_verifier.py": "dd930b6575fca206",
+          "lattice/nlp.py": "c1dc02d09eac65ba",
           "lattice/types.py": "2172d10c1427d1b2"
         },
         "files": [
@@ -2545,10 +2616,10 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/__init__.py": "837c54c33cd000b4",
-        "lattice/cli.py": "7a70269e375279ca",
-        "lattice/mcp_server.py": "a9193495844e1bc7",
-        "lattice/mcp_verifier.py": "a015087de6656801",
-        "lattice/nlp.py": "bfdfb1a1a0687299",
+        "lattice/cli.py": "1084a9dfbcce204e",
+        "lattice/mcp_server.py": "f6e66b0bd4ef8653",
+        "lattice/mcp_verifier.py": "dd930b6575fca206",
+        "lattice/nlp.py": "c1dc02d09eac65ba",
         "lattice/types.py": "2172d10c1427d1b2"
       },
       "files": [
@@ -2597,7 +2668,7 @@
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
           "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-          "lattice/the_executive/gate.py": "ba11dddbc6398e1c",
+          "lattice/the_executive/gate.py": "26eba9931c0ef4ec",
           "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
           "lattice/the_executive/preflight.py": "5be08f3f57952191",
           "lattice/the_executive/voice.py": "5fb44eaba9171d58"
@@ -2628,7 +2699,7 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-        "lattice/the_executive/gate.py": "ba11dddbc6398e1c",
+        "lattice/the_executive/gate.py": "26eba9931c0ef4ec",
         "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
         "lattice/the_executive/preflight.py": "5be08f3f57952191",
         "lattice/the_executive/voice.py": "5fb44eaba9171d58"
@@ -2766,8 +2837,8 @@
         "depends_on": "graph_core, regiment",
         "file_hashes": {
           "lattice/whiteboard/__init__.py": "b2f8f6dc53be6844",
-          "lattice/whiteboard/frustration.py": "15531d66350e0fd1",
-          "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
+          "lattice/whiteboard/frustration.py": "21f3f6f81adf47cd",
+          "lattice/whiteboard/ingest.py": "b60109fe44620856",
           "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
           "lattice/whiteboard/mutations.py": "41a72335950cd737",
           "lattice/whiteboard/read_engine.py": "912bd6313ada32bd",
@@ -2802,8 +2873,8 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/whiteboard/__init__.py": "b2f8f6dc53be6844",
-        "lattice/whiteboard/frustration.py": "15531d66350e0fd1",
-        "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
+        "lattice/whiteboard/frustration.py": "21f3f6f81adf47cd",
+        "lattice/whiteboard/ingest.py": "b60109fe44620856",
         "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
         "lattice/whiteboard/mutations.py": "41a72335950cd737",
         "lattice/whiteboard/read_engine.py": "912bd6313ada32bd",
@@ -2840,7 +2911,7 @@
       "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves <2KB 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },
-  "turn": 30,
-  "turn_index": 30,
+  "turn": 31,
+  "turn_index": 31,
   "version": 1
 }

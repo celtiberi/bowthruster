@@ -106,7 +106,7 @@
     {
       "calls": [
         "_format_tool_result#L247-L251",
-        "_hot_reload_if_changed#L430-L455",
+        "_hot_reload_if_changed#L429-L454",
         "_read_doc_resource#L215-L227",
         "_resolve_project_root#L230-L244"
       ],
@@ -114,12 +114,12 @@
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "lattice/mcp_server.py#L254-L426",
+        "file": "lattice/mcp_server.py#L254-L425",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "lattice/mcp_server.py#L254-L426",
+      "file": "lattice/mcp_server.py#L254-L425",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -141,19 +141,19 @@
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L430-L455",
+        "_hot_reload_if_changed#L429-L454",
         "_read_doc_resource#L215-L227"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "lattice/mcp_server.py#L458-L480",
+        "file": "lattice/mcp_server.py#L457-L479",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "lattice/mcp_server.py#L458-L480",
+      "file": "lattice/mcp_server.py#L457-L479",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -447,7 +447,7 @@
         "_table_role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
         "depends_on": "mcp_server",
         "file_hashes": {
-          "lattice/mcp_verifier.py": "a015087de6656801"
+          "lattice/mcp_verifier.py": "dd930b6575fca206"
         },
         "files": [
           "lattice/mcp_verifier.py"
@@ -468,7 +468,7 @@
       ],
       "failure_diagnostic": null,
       "file_hashes": {
-        "lattice/mcp_verifier.py": "a015087de6656801"
+        "lattice/mcp_verifier.py": "dd930b6575fca206"
       },
       "files": [
         "lattice/mcp_verifier.py"
@@ -504,7 +504,7 @@
         "fields": "content, isError, structuredContent",
         "file": "lattice/mcp_server.py",
         "file_hashes": {
-          "lattice/mcp_server.py": "a9193495844e1bc7"
+          "lattice/mcp_server.py": "f6e66b0bd4ef8653"
         },
         "files": [
           "lattice/mcp_server.py"
@@ -525,7 +525,7 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "lattice/mcp_server.py": "a9193495844e1bc7"
+        "lattice/mcp_server.py": "f6e66b0bd4ef8653"
       },
       "files": [
         "lattice/mcp_server.py"

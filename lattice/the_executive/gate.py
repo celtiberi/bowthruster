@@ -467,11 +467,11 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
         contracts_ok = False; violations.extend(cg_report["violations"])
     if staged_diff_report.get("contracts_ok") is False:
         contracts_ok = False
-        if not any(v["kind"] == "CONTRACT_VIOLATION" for v in violations):
-            violations.append({"kind": "CONTRACT_VIOLATION", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged contracts_ok=False"})
-
-    failed_laws = list(staged_diff_report.get("failed_laws") or staged_diff_report.get("bend_failures") or [])
-    if not bool(staged_diff_report.get("bend_proofs_ok", True)) or failed_laws:
+        if not any(v["kind"] == "CONTRACT_VIOLATION" for v in violations): violations.append({"kind": "CONTRACT_VIOLATION", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged contracts_ok=False"})
+    import importlib, lattice.nlp as _nlp_mod
+    ast_law_rep = (importlib.reload(_nlp_mod) if not hasattr(_nlp_mod, "verify_python_ast_laws_with_bend") else _nlp_mod).verify_python_ast_laws_with_bend(artifacts, staged_files, scopes)
+    failed_laws = list(dict.fromkeys([*(staged_diff_report.get("failed_laws") or staged_diff_report.get("bend_failures") or []), *ast_law_rep["failed_laws"]]))
+    if not bool(staged_diff_report.get("bend_proofs_ok", True)) or not ast_law_rep["bend_proofs_ok"] or failed_laws:
         bend_proofs_ok = False; violations.append({"kind": "BEND_PROOF_FAILURE", "scope": "global_defaults", "path": "", "description": f"Bend 2 proof verification failed: {failed_laws or 'bend_proofs_ok=False'}"})
 
     healed_old_paths: set[str] = {str(ren["old_uri"]).strip() for ren in ((eff_uri_sync.get("renamed_uris") or eff_uri_sync.get("healed_renames") or []) if isinstance(eff_uri_sync, dict) else []) if isinstance(ren, dict) and ren.get("old_uri")}
@@ -497,4 +497,4 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
     allowed = should_allow_git_commit(bounds_ok, contracts_ok, bend_proofs_ok, no_dangling_deletes)
     non_del_contract_err = has_direct_contract_err or bool(cg_report["disconnected_laws"]) or staged_diff_report.get("contracts_ok") is False or (bool(cg_report["dangling_imports"]) and no_dangling_deletes)
     bounce_reason = BOUNCE_NONE if allowed else (BOUNCE_RULE_CONFLICT if (not bounds_ok or non_del_contract_err) else (BOUNCE_BEND_PROOF_FAILURE if not bend_proofs_ok else BOUNCE_DANGLING_DELETED_URI))
-    return GateDecisionResult({"allowed": allowed, "decision": DECISION_ALLOW_COMMIT if allowed else DECISION_REJECT_COMMIT, "bounce_reason": bounce_reason, "bounds_ok": bounds_ok, "contracts_ok": contracts_ok, "bend_proofs_ok": bend_proofs_ok, "no_dangling_deletes": no_dangling_deletes, "call_graph_report": cg_report, "dangling_imports": cg_report["dangling_imports"], "disconnected_law_functions": cg_report["disconnected_law_functions"], "unregistered_public_symbols": unreg_syms, "flow_schema_checked": flow_schemas, "unverified_bound_violations": 0 if allowed else len(violations), "violations": violations})
+    return GateDecisionResult({"allowed": allowed, "decision": DECISION_ALLOW_COMMIT if allowed else DECISION_REJECT_COMMIT, "bounce_reason": bounce_reason, "bounds_ok": bounds_ok, "contracts_ok": contracts_ok, "bend_proofs_ok": bend_proofs_ok, "no_dangling_deletes": no_dangling_deletes, "failed_laws": failed_laws, "checked_laws": ast_law_rep["checked_laws"], "call_graph_report": cg_report, "dangling_imports": cg_report["dangling_imports"], "disconnected_law_functions": cg_report["disconnected_law_functions"], "unregistered_public_symbols": unreg_syms, "flow_schema_checked": flow_schemas, "unverified_bound_violations": 0 if allowed else len(violations), "violations": violations})

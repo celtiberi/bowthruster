@@ -256,11 +256,10 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
     _hot_reload_if_changed()
     t0 = time.perf_counter()
     args = dict(arguments) if isinstance(arguments, dict) else {}
-    name = str(tool_name or "").strip()
-    board = str(args.get("board") or "lattice_core").strip()
-    has_name = name in KNOWN_TOOL_NAMES
-    board_ok = bool(board)
-    valid = is_mcp_tool_call_valid(has_name, board_ok) and mcp_tool_dispatch_law(has_name, board_ok) and is_table_file_indexed(True, True) and pipe_table_ref_map_law(True, True) and is_baseline_stamp_clean(True, False) and initial_baseline_stamp_law(True, False) and is_skills_section_routed(True, True) and skills_section_routing_law(True, True)
+    name, board = str(tool_name or "").strip(), str(args.get("board") or "lattice_core").strip()
+    has_name, board_ok = (name in KNOWN_TOOL_NAMES), bool(board)
+    is_skills_sec, is_init_base = (str(args.get("section") or "").strip().lower() == "skills"), (str(args.get("mode") or "").strip().lower() == "baseline")
+    valid = is_mcp_tool_call_valid(has_name, board_ok) and is_table_file_indexed(has_name, board_ok) and is_baseline_stamp_clean(is_init_base, False) and is_skills_section_routed(is_skills_sec, has_name)
     if not valid:
         err_msg = f"Invalid MCP tool call: tool_name={name!r} (recognized={has_name}), board={board!r}"
         err_obj = {"type": "InvalidToolCall", "file": __file__, "line": 0, "message": err_msg, "traceback": ""}
@@ -433,7 +432,7 @@ def _hot_reload_if_changed() -> None:
     cur = max((p.stat().st_mtime for p in (LATTICE_HOME / "lattice").rglob("*.py") if p.is_file()), default=0.0)
     if _LAST_MTIME and cur > _LAST_MTIME:
         _LAST_MTIME = cur
-        for pkg in ("lattice.graph_core", "lattice.regiment", "lattice.ai_memory", "lattice.whiteboard", "lattice.the_table", "lattice.the_executive"):
+        for pkg in ("lattice.nlp", "lattice.types", "lattice.graph_core", "lattice.regiment", "lattice.ai_memory", "lattice.whiteboard", "lattice.the_table", "lattice.the_executive"):
             for mname in sorted([k for k in list(sys.modules) if k.startswith(f"{pkg}.") and k != "lattice.graph_core.sqlite_store"]):
                 if (mod := sys.modules.get(mname)) is not None and getattr(mod, "__file__", None):
                     try: importlib.reload(mod)

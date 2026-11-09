@@ -333,7 +333,8 @@ def compile_python_skeleton(
             lines.append(f"    _law_{lfn} = {lfn}({', '.join('True' for _ in lparams)})")
         ret_stmt = f"return {out_types[0]}()" if (len(out_types) == 1 and out_types[0] in seen_schemas) else (f"return _law_{emitted_laws[0][0]}" if emitted_laws else "return None")
         lines.append(f"    {ret_stmt}")
-    if not (is_work_packet_self_contained(is_status_synced(True), True) and status_sync_and_spec_docstring_law(True, True) and is_table_schema_valid(True) and is_flow_or_rule_table_fused(True, True)):
+    has_defs = bool(seen_schemas or seen_ifaces or seen_laws or lines)
+    if not (is_work_packet_self_contained(is_status_synced(has_defs), has_defs) and is_table_schema_valid(has_defs, bool(lines)) and is_flow_or_rule_table_fused(bool(all_arts), has_defs)):
         raise ValueError("status_sync_and_spec_docstring_law violated")
     code = "\n".join(lines) + "\n"
     ast.parse(code)
@@ -419,7 +420,7 @@ def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_f
         sc["status"] = sc["build_status"] = eff_status if sc.get("status") in (None, "", "DRAFT", "BLOCKED_BY_DEP", "READY") else (sc.get("status") or eff_status)
         wave2.append(_build_slice_packet(graph, f"pkt_wave2_{sid}", 2, "QA_VERIFICATION", sid, sc, eff_status, default_owner="bobo"))
     status_synced = all(sc.get("status") == sc.get("build_status") for _, sc in [*w1_candidates, *qa_scopes])
-    if not (is_work_packet_self_contained(is_status_synced(status_synced), True) and status_sync_and_spec_docstring_law(status_synced, True)):
+    if not is_work_packet_self_contained(is_status_synced(status_synced), bool(proof)):
         raise Phase4InvariantError("phase4_status_sync_violation", ["status != build_status after packet compilation"])
     if isinstance(status_filter, str) and status_filter.strip():
         sf = status_filter.strip().upper()
