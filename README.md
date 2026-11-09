@@ -36,27 +36,41 @@ When you use an AI coding agent on a growing project, three things start going w
 
 ## Part 2: Onboarding & Daily Workflow (`lattice-mcp`)
 
-### 2.0 Registering `lattice-mcp` as a First-Class MCP Tool
+### 2.0 Install & Register `lattice-mcp` in 30 Seconds (Zero `pip` Dependencies)
 
-So your AI coding agent calls `lattice_atlas`, `lattice_slice`, `lattice_turn`, `lattice_packets`, `lattice_git_sync`, `lattice_status`, `lattice_logs`, and `lattice_readme` as native first-class MCP tools (instead of falling back to raw shell commands or `read_file`), register `lattice.mcp_server` in your AI host's MCP server configuration using this standard stdio server spec:
+`lattice-mcp` is implemented **100% in the Python 3.11+ standard library** (`json`, `sqlite3`, `ast`, `pathlib`, `hashlib`, `subprocess`) — **no `pip install`, no virtual environment, and no API keys are required**.
 
-```json
-{
-  "mcpServers": {
-    "lattice": {
-      "command": "<ABSOLUTE_PATH_TO_PYTHON>",
-      "args": ["-m", "lattice.mcp_server"],
-      "env": {
-        "PYTHONPATH": "<ABSOLUTE_PATH_TO_LATTICE_DIR>",
-        "LATTICE_PROJECT_ROOT": "<ABSOLUTE_PATH_TO_TARGET_REPO>"
+#### 1. Clone the repository
+```bash
+git clone https://github.com/celtiberi/lattice.git
+```
+*(Optional: run `python3 -m lattice.mcp_verifier` inside `lattice/` to verify the stdio JSON-RPC 2.0 server in `< 1s`, or install `pip install -e .` if you want the `lattice` and `lattice-mcp` CLI entrypoints on your `PATH`.)*
+
+#### 2. Connect `lattice-mcp` to your AI coding agent
+Register `lattice.mcp_server` in your AI host (Claude Code, Cursor, Antigravity, Windsurf, etc.):
+
+- **Claude Code (one command):**
+  ```bash
+  claude mcp add lattice -e PYTHONPATH=/ABSOLUTE/PATH/TO/lattice -- python3 -m lattice.mcp_server
+  ```
+
+- **Standard MCP JSON Config (`.mcp.json`, `mcp_config.json`, Cursor, Antigravity, Windsurf):**
+  ```json
+  {
+    "mcpServers": {
+      "lattice": {
+        "command": "python3",
+        "args": ["-m", "lattice.mcp_server"],
+        "env": {
+          "PYTHONPATH": "/ABSOLUTE/PATH/TO/lattice"
+        }
       }
     }
   }
-}
-```
-- **`command` / `args`:** Runs the stdio MCP server (`python3 -m lattice.mcp_server`) using the Python environment where `mcp` and `pydantic` are installed.
-- **`PYTHONPATH`:** Path to the `lattice/` package root so `import lattice` resolves from any working directory.
-- **`LATTICE_PROJECT_ROOT`:** Root directory of the repository being tracked (where `.whiteboard/<board>.json` and the tracked source files live).
+  ```
+  - **`command` / `args`:** Runs the stdio MCP server (`python3 -m lattice.mcp_server`) using any stock Python 3.11+ interpreter.
+  - **`PYTHONPATH`:** Path to the cloned `lattice` directory so `import lattice` resolves from any working directory.
+  - **`LATTICE_PROJECT_ROOT` *(optional)*:** Root directory of a specific target repository. If omitted, `lattice-mcp` automatically discovers the right repository from `.whiteboard/<board>.json` or the file paths passed to `lattice_turn`.
 
 Once registered, the server exposes **8 first-class MCP tools**:
 
@@ -265,7 +279,7 @@ Although the Lattice engine itself is implemented in zero-dependency Python + SQ
 
 Every Lattice operation (`lattice_readme`, `lattice_atlas`, `lattice_slice`, `lattice_packets`, `lattice_turn`, `lattice_git_sync`, `lattice_status`, `lattice_logs`) is **100% deterministic Python, SQLite, Python `ast`, and Bend 2**:
 - **`0` LLM API calls & `0` API keys required**
-- **`0 GB` local model weights / GPU RAM (`mcp` + `pydantic` only)**
+- **`0 GB` local model weights / GPU RAM (`100%` Python 3.11+ standard library)**
 - **`< 50ms` turn compilation and pre-commit verification**
 
 All gate policies and working-memory budgets live in [`config.json`](config.json):
