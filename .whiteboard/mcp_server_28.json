@@ -101,7 +101,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "ac04d5fd5200d0813650929023b8890718fae300",
+  "last_commit_sha": "f096d6e6772d3493d10386eaa7a2c81db8da9330",
   "lattice_artifacts": [
     {
       "calls": [
@@ -199,7 +199,7 @@
       "stage": null,
       "text": "verify_mcp_server_roundtrip (mcp_protocol_verifier).",
       "turn": 1,
-      "updated_turn": 8
+      "updated_turn": 10
     },
     {
       "args": "has_name, board_nonempty",
@@ -479,7 +479,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ac04d5fd5200d0813650929023b8890718fae300",
+      "last_commit_sha": "f096d6e6772d3493d10386eaa7a2c81db8da9330",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -536,7 +536,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ac04d5fd5200d0813650929023b8890718fae300",
+      "last_commit_sha": "f096d6e6772d3493d10386eaa7a2c81db8da9330",
       "outputs": [],
       "owner": "groves",
       "parent": null,
