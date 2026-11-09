@@ -163,6 +163,12 @@
         "link_id": "link_graph_core_f9d0970ff5c0",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/lattice/graph_core/propagation.py#L371-L426"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_graph_core_f7207d9d0b19",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/graph_core/sqlite_store.py#L105-L494"
       }
     ],
     "regiment": [
@@ -485,7 +491,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+  "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -709,9 +715,9 @@
       "created_turn": 3,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/graph_core/sqlite_store.py#L105-L493"
+        "file": "lattice/graph_core/sqlite_store.py#L105-L494"
       },
-      "file": "lattice/graph_core/sqlite_store.py#L105-L493",
+      "file": "lattice/graph_core/sqlite_store.py#L105-L494",
       "id": "schema_graph_core_sqlitegraphstore",
       "inputs": [
         "db_path"
@@ -882,20 +888,20 @@
     },
     {
       "calls": [
-        "_format_tool_result#L258-L261",
-        "_read_doc_resource#L226-L238",
-        "_resolve_project_root#L241-L255"
+        "_format_tool_result#L259-L262",
+        "_read_doc_resource#L227-L239",
+        "_resolve_project_root#L242-L256"
       ],
       "created_turn": 8,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "lattice/mcp_server.py#L264-L433",
+        "file": "lattice/mcp_server.py#L265-L434",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "lattice/mcp_server.py#L264-L433",
+      "file": "lattice/mcp_server.py#L265-L434",
       "id": "interface_runtime_foundation_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -1594,9 +1600,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/mcp_server.py#L51-L55"
+        "file": "lattice/mcp_server.py#L52-L56"
       },
-      "file": "lattice/mcp_server.py#L51-L55",
+      "file": "lattice/mcp_server.py#L52-L56",
       "id": "schema_runtime_foundation_mcpjsonrpcrequest",
       "inputs": [
         "method",
@@ -2185,7 +2191,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+      "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2284,7 +2290,7 @@
           "lattice/graph_core/activation.py": "ff6ff5ce2e53310f",
           "lattice/graph_core/formatting.py": "40cfd2570aec979b",
           "lattice/graph_core/propagation.py": "6cc40ae7cbf800bf",
-          "lattice/graph_core/sqlite_store.py": "1cd194f5e67218c0"
+          "lattice/graph_core/sqlite_store.py": "6d1323280473c608"
         },
         "files": [
           "lattice/graph_core/__init__.py",
@@ -2310,7 +2316,7 @@
         "lattice/graph_core/activation.py": "ff6ff5ce2e53310f",
         "lattice/graph_core/formatting.py": "40cfd2570aec979b",
         "lattice/graph_core/propagation.py": "6cc40ae7cbf800bf",
-        "lattice/graph_core/sqlite_store.py": "1cd194f5e67218c0"
+        "lattice/graph_core/sqlite_store.py": "6d1323280473c608"
       },
       "files": [
         "lattice/graph_core/__init__.py",
@@ -2329,7 +2335,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+      "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2395,7 +2401,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+      "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2423,8 +2429,8 @@
         "depends_on": "None",
         "file_hashes": {
           "lattice/__init__.py": "837c54c33cd000b4",
-          "lattice/cli.py": "0f1a7b8efd51249a",
-          "lattice/mcp_server.py": "384f7a36f70e64ca",
+          "lattice/cli.py": "5b7c41ed67c4fa65",
+          "lattice/mcp_server.py": "55a686d339bb3c13",
           "lattice/mcp_verifier.py": "a015087de6656801",
           "lattice/nlp.py": "bfdfb1a1a0687299",
           "lattice/types.py": "2172d10c1427d1b2"
@@ -2451,8 +2457,8 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/__init__.py": "837c54c33cd000b4",
-        "lattice/cli.py": "0f1a7b8efd51249a",
-        "lattice/mcp_server.py": "384f7a36f70e64ca",
+        "lattice/cli.py": "5b7c41ed67c4fa65",
+        "lattice/mcp_server.py": "55a686d339bb3c13",
         "lattice/mcp_verifier.py": "a015087de6656801",
         "lattice/nlp.py": "bfdfb1a1a0687299",
         "lattice/types.py": "2172d10c1427d1b2"
@@ -2471,7 +2477,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+      "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2553,7 +2559,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+      "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2634,7 +2640,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+      "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
@@ -2728,7 +2734,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+      "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
       "outputs": [],
       "owner": "eng2",
       "parent": null,

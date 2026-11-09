@@ -84,24 +84,24 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+  "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
   "lattice_artifacts": [
     {
       "calls": [
-        "_format_tool_result#L258-L261",
-        "_read_doc_resource#L226-L238",
-        "_resolve_project_root#L241-L255"
+        "_format_tool_result#L259-L262",
+        "_read_doc_resource#L227-L239",
+        "_resolve_project_root#L242-L256"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "lattice/mcp_server.py#L264-L433",
+        "file": "lattice/mcp_server.py#L265-L434",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "lattice/mcp_server.py#L264-L433",
+      "file": "lattice/mcp_server.py#L265-L434",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -123,19 +123,19 @@
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L437-L452",
-        "_read_doc_resource#L226-L238"
+        "_hot_reload_if_changed#L438-L453",
+        "_read_doc_resource#L227-L239"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "lattice/mcp_server.py#L455-L477",
+        "file": "lattice/mcp_server.py#L456-L478",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "lattice/mcp_server.py#L455-L477",
+      "file": "lattice/mcp_server.py#L456-L478",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -242,10 +242,10 @@
       "dimensions": {
         "description": "JSON-RPC 2.0 MCP request envelope",
         "fields": "jsonrpc, id, method, params",
-        "file": "lattice/mcp_server.py#L51-L55",
+        "file": "lattice/mcp_server.py#L52-L56",
         "schema": "McpJsonRpcRequest"
       },
-      "file": "lattice/mcp_server.py#L51-L55",
+      "file": "lattice/mcp_server.py#L52-L56",
       "id": "schema_mcp_server_mcpjsonrpcrequest",
       "inputs": [],
       "kind": "SCHEMA",
@@ -384,7 +384,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+      "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -408,7 +408,7 @@
         "fields": "content, isError, structuredContent",
         "file": "lattice/mcp_server.py",
         "file_hashes": {
-          "lattice/mcp_server.py": "384f7a36f70e64ca"
+          "lattice/mcp_server.py": "55a686d339bb3c13"
         },
         "files": [
           "lattice/mcp_server.py"
@@ -428,7 +428,7 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "lattice/mcp_server.py": "384f7a36f70e64ca"
+        "lattice/mcp_server.py": "55a686d339bb3c13"
       },
       "files": [
         "lattice/mcp_server.py"
@@ -439,7 +439,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
+      "last_commit_sha": "4baa5eda26b7833f1c081e50eec9ab2ea8c729f6",
       "outputs": [],
       "owner": "groves",
       "parent": null,

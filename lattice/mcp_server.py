@@ -23,6 +23,7 @@ from lattice.ai_memory import sync_git_diff_uris
 from lattice.cli import (
     LATTICE_HOME,
     REPO_ROOT,
+    _board_lock,
     _build_git_manifest,
     _call_compile_packets,
     _execute_turn,
@@ -278,156 +279,156 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
         return resp
 
     import lattice.cli as _cli
-    prev_root, prev_env = _cli.REPO_ROOT, os.environ.get("LATTICE_PROJECT_ROOT")
-    active_root = _resolve_project_root(board, args.get("project_root"), args.get("message"))
-    _cli.REPO_ROOT = active_root
-    os.environ["LATTICE_PROJECT_ROOT"] = str(active_root)
-    try:
-        if name == "lattice_readme":
-            sec = str(args.get("section") or "readme").strip().lower()
-            doc = _read_doc_resource(sec)
-            is_sk = sec in ("skill", "skills", "change", "navigate", "qa", "all")
-            if not (is_skills_section_routed(is_sk, bool(doc.get("skills"))) and skills_section_routing_law(is_sk, bool(doc.get("skills")))):
-                raise ValueError(f"skills_section_routing_law violated for section={sec!r}")
-            doc_txt = doc.get("quickstart") if sec == "readme" else (doc.get("readme") if sec == "full_readme" else (doc.get("guide") if sec == "guide" else ((doc.get("skills") or {}).get("lattice") if sec in ("skill", "skills", "change", "navigate", "qa") else None)))
-            resp, nbytes = _format_tool_result(doc, text=doc_txt)
-            record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
-            return resp
-
-        if name == "lattice_logs":
-            entries = read_flight_logs(limit=int(args.get("limit") or 20), board=args.get("board"), status=args.get("status"))
-            log_txt = "\n".join(f"[{e.get('timestamp')}] board={e.get('board')} cmd={e.get('tool_or_cmd')} status={e.get('status')} decision={e.get('decision')} ({e.get('duration_ms')}ms, bytes={e.get('response_bytes', 0)}) violations={len(e.get('violations') or [])}" for e in entries) or "(no flight log entries)"
-            resp, nbytes = _format_tool_result({"entries": entries, "count": len(entries)}, text=log_txt)
-            record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
-            return resp
-
-        if name == "lattice_atlas":
-            boards_dict = _load_atlas_boards(board, args.get("boards"), bool(args.get("load_all", False)))
-            view = _get_render_lattice_atlas()(boards_dict, has_local_seed_cues=False, explicit_atlas_request=True)
-            atlas_txt = f"```text\n{view.get('atlas_schematic') or ''}\n[Atlas Metrics]: {json.dumps(view.get('atlas_metrics') or {}, sort_keys=True)}\n```" + (f"\n\n```mermaid\n{view['atlas_mermaid']}\n```" if args.get("mermaid") and view.get("atlas_mermaid") else "")
-            resp, nbytes = _format_tool_result({
-                "boards": list(boards_dict.keys()), "atlas_mounted": view.get("atlas_mounted"), "atlas_schematic": view.get("atlas_schematic"),
-                "atlas_metrics": view.get("atlas_metrics"), **({"atlas_mermaid": view.get("atlas_mermaid")} if args.get("mermaid") else {}),
-            }, text=atlas_txt)
-            record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
-            return resp
-
-        if name == "lattice_slice":
-            graph, wb_json, wb_sqlite, _ = _load_board(board)
-            view = slice_lattice(
-                graph, query=str(args.get("query") or ""), component=args.get("component"), division=args.get("division"),
-                stage=args.get("stage"), schema=args.get("schema"), kind=args.get("kind"), include_code=bool(args.get("include_code", False)),
-            )
-            if not view.get("matched_symbols") and not view.get("component_specs") and (args.get("query") or args.get("component")) and (wb_dir := active_root / ".whiteboard").is_dir():
-                for p in sorted(wb_dir.glob("*.json")):
-                    if (cand_b := p.stem) != board:
-                        cg, c_json, c_sql, _ = _load_board(cand_b)
-                        cv = slice_lattice(cg, query=str(args.get("query") or ""), component=args.get("component"), division=args.get("division"), stage=args.get("stage"), schema=args.get("schema"), kind=args.get("kind"), include_code=bool(args.get("include_code", False)))
-                        if cv.get("matched_symbols") or cv.get("component_specs"):
-                            board, graph, wb_json, wb_sqlite, view = cand_b, cg, c_json, c_sql, cv
-                            break
-            stale_sids: list[str] = []
-            if bool(args.get("mark_stale", False)):
-                scopes_map, c_arg = graph.get("scopes") or {}, str(args.get("component") or "").strip()
-                cands = [c_arg] if c_arg and c_arg in scopes_map else sorted({str(m.get("scope")) for m in (view.get("matched_symbols") or []) if isinstance(m, dict) and m.get("scope") in scopes_map} or {str(c.get("id")) for c in (view.get("component_specs") or []) if isinstance(c, dict) and c.get("id") in scopes_map and c.get("id") != "global_defaults"})
-                trans_fn = _get_transition_build_status()
-                for sid in cands: trans_fn(graph, sid, "STALE"); stale_sids.append(sid)
-                if stale_sids: _save_board(graph, wb_json, wb_sqlite)
-            payload = dict(view) if bool(args.get("include_raw", False)) else {
-                "status": view.get("status"), "board": board, "token_cost": view.get("token_cost"), "line_count": view.get("line_count"),
-                "matched_symbols": [{k: v for k, v in m.items() if k != "code"} for m in (view.get("matched_symbols") or [])],
-                "compact_view": view.get("compact_view"), **({"marked_stale_scopes": stale_sids} if stale_sids else {}),
-            }
-            raw_cv = (view.get("compact_view") or view.get("text") or "[EMPTY_SLICE]") + (f"\n[MARKED STALE]: {stale_sids}" if stale_sids else "")
-            parts = raw_cv.split("\n[CODE ")
-            sl_txt = f"```text\n{parts[0]}\n```" + "".join(f"\n```python\n# [CODE {p}\n```" for p in parts[1:])
-            resp, nbytes = _format_tool_result(payload, text=None if bool(args.get("include_raw", False)) else sl_txt)
-            record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", modified_scopes=stale_sids or None, response_bytes=nbytes)
-            return resp
-
-        if name == "lattice_packets":
-            graph, _, _, _ = _load_board(board)
-            status_f = str(args["status"]).upper() if args.get("status") else None
-            res = _call_compile_packets(graph, force=bool(args.get("force", False)), status_filter=status_f)
-            wave_f, comp_f = args.get("wave"), args.get("component")
-            pkts = [p for p in (res.get("packets") or []) if (wave_f is None or p.get("wave") == int(wave_f)) and (not comp_f or p.get("component") == comp_f) and (not status_f or str(p.get("build_status") or "").upper() == status_f)]
-            payload = {**res, "packets": pkts} if bool(args.get("include_raw", False)) else {"status": res.get("status"), "is_proven": res.get("is_proven"), "ready_to_emit": res.get("ready_to_emit"), "packets": [{k: p.get(k) for k in COMPACT_PACKET_KEYS} for p in pkts]}
-            resp, nbytes = _format_tool_result(payload)
-            record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK" if res.get("ready_to_emit") or args.get("force") else "REJECTED", decision=res.get("status"), response_bytes=nbytes)
-            return resp
-
-        if name == "lattice_turn":
-            msg = str(args.get("message") or "").strip()
-            if not msg:
-                err_obj = {"type": "ValueError", "file": __file__, "line": 0, "message": "lattice_turn requires a non-empty 'message'", "traceback": ""}
-                resp, nbytes = _format_tool_result({"error": err_obj["message"], "error_details": err_obj}, is_error=True, text=f"[ERROR] {err_obj['message']}")
-                record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "REJECTED", response_bytes=nbytes, error=err_obj)
+    with _board_lock(board):
+        prev_root, prev_env = _cli.REPO_ROOT, os.environ.get("LATTICE_PROJECT_ROOT")
+        active_root = _resolve_project_root(board, args.get("project_root"), args.get("message"))
+        _cli.REPO_ROOT, os.environ["LATTICE_PROJECT_ROOT"] = active_root, str(active_root)
+        try:
+            if name == "lattice_readme":
+                sec = str(args.get("section") or "readme").strip().lower()
+                doc = _read_doc_resource(sec)
+                is_sk = sec in ("skill", "skills", "change", "navigate", "qa", "all")
+                if not (is_skills_section_routed(is_sk, bool(doc.get("skills"))) and skills_section_routing_law(is_sk, bool(doc.get("skills")))):
+                    raise ValueError(f"skills_section_routing_law violated for section={sec!r}")
+                doc_txt = doc.get("quickstart") if sec == "readme" else (doc.get("readme") if sec == "full_readme" else (doc.get("guide") if sec == "guide" else ((doc.get("skills") or {}).get("lattice") if sec in ("skill", "skills", "change", "navigate", "qa") else None)))
+                resp, nbytes = _format_tool_result(doc, text=doc_txt)
+                record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
                 return resp
-            speaker, buf = str(args.get("speaker") or "agent").strip().lower(), io.StringIO()
-            with redirect_stdout(buf): rc = _execute_turn(board, speaker, msg, args.get("round_num"), args.get("profile"), args.get("config"))
-            graph, _, _, _ = _load_board(board)
-            eval_fn = _get_evaluate_lattice_proof()
-            proof, cli_out = eval_fn(graph) if eval_fn else graph.get("lattice_proof"), buf.getvalue().strip()
-            resp, nbytes = _format_tool_result({"return_code": rc, "board": board, "turn": graph.get("turn", 0), "lattice_proof": proof, "cli_output": cli_out}, is_error=(rc != 0), text=cli_out)
-            record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK" if rc == 0 else "REJECTED", decision=(proof or {}).get("status") if isinstance(proof, dict) else None, response_bytes=nbytes)
-            return resp
 
-        if name == "lattice_git_sync":
-            mode = str(args.get("mode") or "drift").strip().lower()
-            graph, wb_json, wb_sqlite, _ = _load_board(board)
-            manifest = _build_git_manifest(mode if mode in ("pre", "post", "baseline") else "drift", args.get("manifest"), graph)
-            if mode == "pre":
-                gate_res = dict(evaluate_git_commit_gate(graph, manifest, uri_sync_report=sync_git_diff_uris(copy.deepcopy(graph), manifest)))
-                allow = bool(gate_res.get("allowed", True))
-                if allow and bool(args.get("mark_verified", False)) and can_transition_to_verified(True, True, True) and verified_status_files_exist_law(True, True, True):
-                    stale_sids = [sid for sid, sc in sorted((graph.get("scopes") or {}).items()) if isinstance(sc, dict) and sid != "global_defaults" and str(sc.get("status") or sc.get("build_status") or "").upper() == "STALE"]
+            if name == "lattice_logs":
+                entries = read_flight_logs(limit=int(args.get("limit") or 20), board=args.get("board"), status=args.get("status"))
+                log_txt = "\n".join(f"[{e.get('timestamp')}] board={e.get('board')} cmd={e.get('tool_or_cmd')} status={e.get('status')} decision={e.get('decision')} ({e.get('duration_ms')}ms, bytes={e.get('response_bytes', 0)}) violations={len(e.get('violations') or [])}" for e in entries) or "(no flight log entries)"
+                resp, nbytes = _format_tool_result({"entries": entries, "count": len(entries)}, text=log_txt)
+                record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
+                return resp
+
+            if name == "lattice_atlas":
+                boards_dict = _load_atlas_boards(board, args.get("boards"), bool(args.get("load_all", False)))
+                view = _get_render_lattice_atlas()(boards_dict, has_local_seed_cues=False, explicit_atlas_request=True)
+                atlas_txt = f"```text\n{view.get('atlas_schematic') or ''}\n[Atlas Metrics]: {json.dumps(view.get('atlas_metrics') or {}, sort_keys=True)}\n```" + (f"\n\n```mermaid\n{view['atlas_mermaid']}\n```" if args.get("mermaid") and view.get("atlas_mermaid") else "")
+                resp, nbytes = _format_tool_result({
+                    "boards": list(boards_dict.keys()), "atlas_mounted": view.get("atlas_mounted"), "atlas_schematic": view.get("atlas_schematic"),
+                    "atlas_metrics": view.get("atlas_metrics"), **({"atlas_mermaid": view.get("atlas_mermaid")} if args.get("mermaid") else {}),
+                }, text=atlas_txt)
+                record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
+                return resp
+
+            if name == "lattice_slice":
+                graph, wb_json, wb_sqlite, _ = _load_board(board)
+                view = slice_lattice(
+                    graph, query=str(args.get("query") or ""), component=args.get("component"), division=args.get("division"),
+                    stage=args.get("stage"), schema=args.get("schema"), kind=args.get("kind"), include_code=bool(args.get("include_code", False)),
+                )
+                if not view.get("matched_symbols") and not view.get("component_specs") and (args.get("query") or args.get("component")) and (wb_dir := active_root / ".whiteboard").is_dir():
+                    for p in sorted(wb_dir.glob("*.json")):
+                        if (cand_b := p.stem) != board:
+                            cg, c_json, c_sql, _ = _load_board(cand_b)
+                            cv = slice_lattice(cg, query=str(args.get("query") or ""), component=args.get("component"), division=args.get("division"), stage=args.get("stage"), schema=args.get("schema"), kind=args.get("kind"), include_code=bool(args.get("include_code", False)))
+                            if cv.get("matched_symbols") or cv.get("component_specs"):
+                                board, graph, wb_json, wb_sqlite, view = cand_b, cg, c_json, c_sql, cv
+                                break
+                stale_sids: list[str] = []
+                if bool(args.get("mark_stale", False)):
+                    scopes_map, c_arg = graph.get("scopes") or {}, str(args.get("component") or "").strip()
+                    cands = [c_arg] if c_arg and c_arg in scopes_map else sorted({str(m.get("scope")) for m in (view.get("matched_symbols") or []) if isinstance(m, dict) and m.get("scope") in scopes_map} or {str(c.get("id")) for c in (view.get("component_specs") or []) if isinstance(c, dict) and c.get("id") in scopes_map and c.get("id") != "global_defaults"})
                     trans_fn = _get_transition_build_status()
-                    for sid in stale_sids: _verify_component_files(graph, sid); trans_fn(graph, sid, "VERIFIED")
+                    for sid in cands: trans_fn(graph, sid, "STALE"); stale_sids.append(sid)
                     if stale_sids: _save_board(graph, wb_json, wb_sqlite)
-                    gate_res["marked_verified_scopes"] = stale_sids
-                unreg = gate_res.get("unregistered_public_symbols") or []
-                unreg_str = ", ".join(f"{u.get('scope')}:{u.get('symbol')}" for u in unreg[:12])
-                pre_txt = f"[GIT PRE-COMMIT GATE '{board}'] allowed={allow} decision={gate_res.get('decision')} bounds_ok={gate_res.get('bounds_ok')} contracts_ok={gate_res.get('contracts_ok')} bend_proofs_ok={gate_res.get('bend_proofs_ok')} no_dangling_deletes={gate_res.get('no_dangling_deletes')} flow_schema_checked={gate_res.get('flow_schema_checked')}" + (f" marked_verified={gate_res['marked_verified_scopes']}" if gate_res.get("marked_verified_scopes") else "") + (f"\nviolations={json.dumps(gate_res.get('violations'))}" if gate_res.get("violations") else "") + (f"\nunregistered_public_symbols ({len(unreg)}): {unreg_str}" if unreg else "")
-                resp, nbytes = _format_tool_result(gate_res, is_error=not allow, text=pre_txt)
-                record_flight_event(board, "lattice_git_sync:pre", (time.perf_counter() - t0) * 1000.0, "OK" if allow else "REJECTED", decision=gate_res.get("decision"), violations=gate_res.get("violations"), modified_scopes=gate_res.get("marked_verified_scopes"), response_bytes=nbytes)
+                payload = dict(view) if bool(args.get("include_raw", False)) else {
+                    "status": view.get("status"), "board": board, "token_cost": view.get("token_cost"), "line_count": view.get("line_count"),
+                    "matched_symbols": [{k: v for k, v in m.items() if k != "code"} for m in (view.get("matched_symbols") or [])],
+                    "compact_view": view.get("compact_view"), **({"marked_stale_scopes": stale_sids} if stale_sids else {}),
+                }
+                raw_cv = (view.get("compact_view") or view.get("text") or "[EMPTY_SLICE]") + (f"\n[MARKED STALE]: {stale_sids}" if stale_sids else "")
+                parts = raw_cv.split("\n[CODE ")
+                sl_txt = f"```text\n{parts[0]}\n```" + "".join(f"\n```python\n# [CODE {p}\n```" for p in parts[1:])
+                resp, nbytes = _format_tool_result(payload, text=None if bool(args.get("include_raw", False)) else sl_txt)
+                record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", modified_scopes=stale_sids or None, response_bytes=nbytes)
                 return resp
-            if mode in ("post", "baseline"):
-                sync_res = dict(sync_post_commit_to_lattice(graph, manifest, store=SQLiteGraphStore(wb_sqlite)))
-                wb_out = sync_res.get("whiteboard_graph") or graph
-                if sync_res.get("commit_sha"): wb_out["last_commit_sha"] = sync_res["commit_sha"]
-                _save_board(wb_out, wb_json, wb_sqlite)
-                out_d = {k: v for k, v in sync_res.items() if k != "whiteboard_graph"}
-                post_txt = f"[GIT POST-COMMIT SYNC '{board}'] sha={out_d.get('commit_sha')} modified={out_d.get('modified_scopes')} cascaded_stale={out_d.get('cascaded_stale_scopes')}"
-                resp, nbytes = _format_tool_result(out_d, text=post_txt)
-                record_flight_event(board, "lattice_git_sync:post", (time.perf_counter() - t0) * 1000.0, "OK", modified_scopes=out_d.get("modified_scopes"), stale_cascaded_scopes=out_d.get("cascaded_stale_scopes"), response_bytes=nbytes)
-                return resp
-            drift_res = dict(detect_working_tree_drift(graph, manifest))
-            drift_txt = f"[GIT DRIFT '{board}'] has_drift={drift_res.get('has_drift')} drifted_scopes={drift_res.get('drifted_scopes')} uncommitted={len(drift_res.get('uncommitted_files') or [])} dangling_uris={drift_res.get('dangling_uris')}"
-            resp, nbytes = _format_tool_result(drift_res, text=drift_txt)
-            record_flight_event(board, "lattice_git_sync:drift", (time.perf_counter() - t0) * 1000.0, "OK", modified_scopes=drift_res.get("drifted_scopes"), response_bytes=nbytes)
-            return resp
 
-        if name == "lattice_status":
-            comp, new_st = str(args.get("component") or "").strip(), str(args.get("new_status") or "").strip().upper()
-            trans_fn = _get_transition_build_status()
-            graph, wb_json, wb_sqlite, _ = _load_board(board)
-            if new_st == "VERIFIED" and can_transition_to_verified(True, True, True) and verified_status_files_exist_law(True, True, True):
-                _verify_component_files(graph, comp)
-            snode = trans_fn(graph, comp, new_st, build_tag=args.get("build_tag"), core_tag=args.get("core_tag"), failure_diagnostic=args.get("reason"))
-            _save_board(graph, wb_json, wb_sqlite)
-            st_txt = f"[STATUS '{board}'] {comp} -> status={snode.get('status')} build_tag={snode.get('build_tag')} core_tag={snode.get('core_tag')} failure_diagnostic={snode.get('failure_diagnostic')!r}"
-            resp, nbytes = _format_tool_result({"board": board, "component": comp, "status": snode.get("status"), "build_tag": snode.get("build_tag"), "core_tag": snode.get("core_tag"), "failure_diagnostic": snode.get("failure_diagnostic")}, text=st_txt)
-            record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", decision=snode.get("status"), modified_scopes=[comp], response_bytes=nbytes)
+            if name == "lattice_packets":
+                graph, _, _, _ = _load_board(board)
+                status_f = str(args["status"]).upper() if args.get("status") else None
+                res = _call_compile_packets(graph, force=bool(args.get("force", False)), status_filter=status_f)
+                wave_f, comp_f = args.get("wave"), args.get("component")
+                pkts = [p for p in (res.get("packets") or []) if (wave_f is None or p.get("wave") == int(wave_f)) and (not comp_f or p.get("component") == comp_f) and (not status_f or str(p.get("build_status") or "").upper() == status_f)]
+                payload = {**res, "packets": pkts} if bool(args.get("include_raw", False)) else {"status": res.get("status"), "is_proven": res.get("is_proven"), "ready_to_emit": res.get("ready_to_emit"), "packets": [{k: p.get(k) for k in COMPACT_PACKET_KEYS} for p in pkts]}
+                resp, nbytes = _format_tool_result(payload)
+                record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK" if res.get("ready_to_emit") or args.get("force") else "REJECTED", decision=res.get("status"), response_bytes=nbytes)
+                return resp
+
+            if name == "lattice_turn":
+                msg = str(args.get("message") or "").strip()
+                if not msg:
+                    err_obj = {"type": "ValueError", "file": __file__, "line": 0, "message": "lattice_turn requires a non-empty 'message'", "traceback": ""}
+                    resp, nbytes = _format_tool_result({"error": err_obj["message"], "error_details": err_obj}, is_error=True, text=f"[ERROR] {err_obj['message']}")
+                    record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "REJECTED", response_bytes=nbytes, error=err_obj)
+                    return resp
+                speaker, buf = str(args.get("speaker") or "agent").strip().lower(), io.StringIO()
+                with redirect_stdout(buf): rc = _execute_turn(board, speaker, msg, args.get("round_num"), args.get("profile"), args.get("config"))
+                graph, _, _, _ = _load_board(board)
+                eval_fn = _get_evaluate_lattice_proof()
+                proof, cli_out = eval_fn(graph) if eval_fn else graph.get("lattice_proof"), buf.getvalue().strip()
+                resp, nbytes = _format_tool_result({"return_code": rc, "board": board, "turn": graph.get("turn", 0), "lattice_proof": proof, "cli_output": cli_out}, is_error=(rc != 0), text=cli_out)
+                record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK" if rc == 0 else "REJECTED", decision=(proof or {}).get("status") if isinstance(proof, dict) else None, response_bytes=nbytes)
+                return resp
+
+            if name == "lattice_git_sync":
+                mode = str(args.get("mode") or "drift").strip().lower()
+                graph, wb_json, wb_sqlite, _ = _load_board(board)
+                manifest = _build_git_manifest(mode if mode in ("pre", "post", "baseline") else "drift", args.get("manifest"), graph)
+                if mode == "pre":
+                    gate_res = dict(evaluate_git_commit_gate(graph, manifest, uri_sync_report=sync_git_diff_uris(copy.deepcopy(graph), manifest)))
+                    allow = bool(gate_res.get("allowed", True))
+                    if allow and bool(args.get("mark_verified", False)) and can_transition_to_verified(True, True, True) and verified_status_files_exist_law(True, True, True):
+                        stale_sids = [sid for sid, sc in sorted((graph.get("scopes") or {}).items()) if isinstance(sc, dict) and sid != "global_defaults" and str(sc.get("status") or sc.get("build_status") or "").upper() == "STALE"]
+                        trans_fn = _get_transition_build_status()
+                        for sid in stale_sids: _verify_component_files(graph, sid); trans_fn(graph, sid, "VERIFIED")
+                        if stale_sids: _save_board(graph, wb_json, wb_sqlite)
+                        gate_res["marked_verified_scopes"] = stale_sids
+                    unreg = gate_res.get("unregistered_public_symbols") or []
+                    unreg_str = ", ".join(f"{u.get('scope')}:{u.get('symbol')}" for u in unreg[:12])
+                    pre_txt = f"[GIT PRE-COMMIT GATE '{board}'] allowed={allow} decision={gate_res.get('decision')} bounds_ok={gate_res.get('bounds_ok')} contracts_ok={gate_res.get('contracts_ok')} bend_proofs_ok={gate_res.get('bend_proofs_ok')} no_dangling_deletes={gate_res.get('no_dangling_deletes')} flow_schema_checked={gate_res.get('flow_schema_checked')}" + (f" marked_verified={gate_res['marked_verified_scopes']}" if gate_res.get("marked_verified_scopes") else "") + (f"\nviolations={json.dumps(gate_res.get('violations'))}" if gate_res.get("violations") else "") + (f"\nunregistered_public_symbols ({len(unreg)}): {unreg_str}" if unreg else "")
+                    resp, nbytes = _format_tool_result(gate_res, is_error=not allow, text=pre_txt)
+                    record_flight_event(board, "lattice_git_sync:pre", (time.perf_counter() - t0) * 1000.0, "OK" if allow else "REJECTED", decision=gate_res.get("decision"), violations=gate_res.get("violations"), modified_scopes=gate_res.get("marked_verified_scopes"), response_bytes=nbytes)
+                    return resp
+                if mode in ("post", "baseline"):
+                    sync_res = dict(sync_post_commit_to_lattice(graph, manifest, store=SQLiteGraphStore(wb_sqlite)))
+                    wb_out = sync_res.get("whiteboard_graph") or graph
+                    if sync_res.get("commit_sha"): wb_out["last_commit_sha"] = sync_res["commit_sha"]
+                    _save_board(wb_out, wb_json, wb_sqlite)
+                    out_d = {k: v for k, v in sync_res.items() if k != "whiteboard_graph"}
+                    post_txt = f"[GIT POST-COMMIT SYNC '{board}'] sha={out_d.get('commit_sha')} modified={out_d.get('modified_scopes')} cascaded_stale={out_d.get('cascaded_stale_scopes')}"
+                    resp, nbytes = _format_tool_result(out_d, text=post_txt)
+                    record_flight_event(board, "lattice_git_sync:post", (time.perf_counter() - t0) * 1000.0, "OK", modified_scopes=out_d.get("modified_scopes"), stale_cascaded_scopes=out_d.get("cascaded_stale_scopes"), response_bytes=nbytes)
+                    return resp
+                drift_res = dict(detect_working_tree_drift(graph, manifest))
+                drift_txt = f"[GIT DRIFT '{board}'] has_drift={drift_res.get('has_drift')} drifted_scopes={drift_res.get('drifted_scopes')} uncommitted={len(drift_res.get('uncommitted_files') or [])} dangling_uris={drift_res.get('dangling_uris')}"
+                resp, nbytes = _format_tool_result(drift_res, text=drift_txt)
+                record_flight_event(board, "lattice_git_sync:drift", (time.perf_counter() - t0) * 1000.0, "OK", modified_scopes=drift_res.get("drifted_scopes"), response_bytes=nbytes)
+                return resp
+
+            if name == "lattice_status":
+                comp, new_st = str(args.get("component") or "").strip(), str(args.get("new_status") or "").strip().upper()
+                trans_fn = _get_transition_build_status()
+                graph, wb_json, wb_sqlite, _ = _load_board(board)
+                if new_st == "VERIFIED" and can_transition_to_verified(True, True, True) and verified_status_files_exist_law(True, True, True):
+                    _verify_component_files(graph, comp)
+                snode = trans_fn(graph, comp, new_st, build_tag=args.get("build_tag"), core_tag=args.get("core_tag"), failure_diagnostic=args.get("reason"))
+                _save_board(graph, wb_json, wb_sqlite)
+                st_txt = f"[STATUS '{board}'] {comp} -> status={snode.get('status')} build_tag={snode.get('build_tag')} core_tag={snode.get('core_tag')} failure_diagnostic={snode.get('failure_diagnostic')!r}"
+                resp, nbytes = _format_tool_result({"board": board, "component": comp, "status": snode.get("status"), "build_tag": snode.get("build_tag"), "core_tag": snode.get("core_tag"), "failure_diagnostic": snode.get("failure_diagnostic")}, text=st_txt)
+                record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", decision=snode.get("status"), modified_scopes=[comp], response_bytes=nbytes)
+                return resp
+        except Exception as exc:
+            err_dict = format_exception_error(exc)
+            resp, nbytes = _format_tool_result({"error": f"{type(exc).__name__}: {exc}", "error_details": err_dict}, is_error=True, text=f"[ERROR] {type(exc).__name__}: {exc}")
+            record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "ERROR", response_bytes=nbytes, error=err_dict)
             return resp
-    except Exception as exc:
-        err_dict = format_exception_error(exc)
-        resp, nbytes = _format_tool_result({"error": f"{type(exc).__name__}: {exc}", "error_details": err_dict}, is_error=True, text=f"[ERROR] {type(exc).__name__}: {exc}")
-        record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "ERROR", response_bytes=nbytes, error=err_dict)
-        return resp
-    finally:
-        _cli.REPO_ROOT = prev_root
-        if prev_env is None: os.environ.pop("LATTICE_PROJECT_ROOT", None)
-        else: os.environ["LATTICE_PROJECT_ROOT"] = prev_env
+        finally:
+            _cli.REPO_ROOT = prev_root
+            if prev_env is None: os.environ.pop("LATTICE_PROJECT_ROOT", None)
+            else: os.environ["LATTICE_PROJECT_ROOT"] = prev_env
 
     resp, _ = _format_tool_result({"error": f"Unhandled tool {name!r}"}, is_error=True)
     return resp

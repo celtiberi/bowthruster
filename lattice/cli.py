@@ -2,7 +2,9 @@
 """Multi-Round Executive <-> Whiteboard Dogfooding CLI (`scripts/whiteboard_session.py`)."""
 from __future__ import annotations
 
-import argparse, ast, copy, hashlib, importlib.util, inspect, json, os, re, shutil, subprocess, sys, time, traceback, urllib.request
+import argparse, ast, contextlib, copy, hashlib, importlib.util, inspect, json, os, re, shutil, subprocess, sys, threading, time, traceback, urllib.request
+try: import fcntl
+except ImportError: fcntl = None  # type: ignore[assignment]
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -108,6 +110,21 @@ def _print_proof_radar(proof: dict[str, Any] | None) -> None:
         for v in viols: print(f"  ! [VIOLATION] {v.get('id', 'conflict')}: {v.get('text', v)}")
         for g in gaps: print(f"  - [{g.get('kind', 'GAP')}] scope={g.get('scope')}: {g.get('description', '')}")
 
+_META_LOCK, _RLOCKS, _LOCK_DEPTH = threading.Lock(), {}, {}
+@contextlib.contextmanager
+def _board_lock(board: str):
+    bdir = SESSIONS_ROOT / ("".join(c for c in board.strip() if c.isalnum() or c in ("_", "-")) or "default"); bdir.mkdir(parents=True, exist_ok=True); key = str(bdir)
+    with _META_LOCK: rlock = _RLOCKS.setdefault(key, threading.RLock())
+    with rlock:
+        depth, fh = _LOCK_DEPTH.get(key) or (0, None)
+        if depth == 0:
+            fh = (bdir / ".board.lock").open("a+", encoding="utf-8")
+            if fcntl is not None: fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+        _LOCK_DEPTH[key] = (depth + 1, fh)
+        try: yield
+        finally:
+            if depth == 0: _LOCK_DEPTH.pop(key, None); (fcntl.flock(fh.fileno(), fcntl.LOCK_UN) if fcntl is not None else None); fh.close()
+            else: _LOCK_DEPTH[key] = (depth, fh)
 def _board_paths(board: str) -> tuple[Path, Path, Path, Path]:
     slug, wb_local = "".join(c for c in board.strip() if c.isalnum() or c in ("_", "-")) or "default", REPO_ROOT / ".whiteboard" / f"{board}.json"
     bdir = SESSIONS_ROOT / slug; bdir.mkdir(parents=True, exist_ok=True)
@@ -116,21 +133,18 @@ def _board_paths(board: str) -> tuple[Path, Path, Path, Path]:
     return bdir, (wb_local if use_local else bdir / "whiteboard.json"), bdir / "whiteboard.sqlite", bdir / "transcript.jsonl"
 def _save_board(graph: dict[str, Any], wb_json: Path, wb_sqlite: Path) -> None:
     if isinstance(graph, ContextGraph): object.__setattr__(graph, "_sqlite_store", SQLiteGraphStore(wb_sqlite))
-    sync_to_sqlite(graph)
-    wb_json.write_text(json.dumps(copy.deepcopy({k: v for k, v in dict(graph).items() if k != "_sqlite_store"}), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    sync_to_sqlite(graph); tmp_p = wb_json.with_name(f".{wb_json.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp_p.write_text(json.dumps(copy.deepcopy({k: v for k, v in dict(graph).items() if k != "_sqlite_store"}), indent=2, sort_keys=True) + "\n", encoding="utf-8"); os.replace(tmp_p, wb_json)
 def _load_board(board: str) -> tuple[ContextGraph, Path, Path, Path]:
-    _, wb_json, wb_sqlite, transcript_path = _board_paths(board)
-    store = SQLiteGraphStore(wb_sqlite)
-    if wb_json.is_file():
-        raw_data = json.loads(wb_json.read_text(encoding="utf-8"))
-        graph = ContextGraph(raw_data, store=store)
-        for sid, raw_sc in (raw_data.get("scopes") or {}).items():
-            if isinstance(raw_sc, dict) and raw_sc.get("active_ticket_id") and sid in graph.get("scopes", {}):
-                graph["scopes"][sid]["active_ticket_id"] = raw_sc["active_ticket_id"]
-        sync_to_sqlite(graph)
-    else:
-        graph = create_empty_context_graph(store=store); _save_board(graph, wb_json, wb_sqlite)
-    return graph, wb_json, wb_sqlite, transcript_path
+    with _board_lock(board):
+        _, wb_json, wb_sqlite, transcript_path = _board_paths(board); store = SQLiteGraphStore(wb_sqlite)
+        if wb_json.is_file():
+            raw_data = json.loads(wb_json.read_text(encoding="utf-8")); graph = ContextGraph(raw_data, store=store)
+            for sid, raw_sc in (raw_data.get("scopes") or {}).items():
+                if isinstance(raw_sc, dict) and raw_sc.get("active_ticket_id") and sid in graph.get("scopes", {}): graph["scopes"][sid]["active_ticket_id"] = raw_sc["active_ticket_id"]
+            sync_to_sqlite(graph)
+        else: graph = create_empty_context_graph(store=store); _save_board(graph, wb_json, wb_sqlite)
+        return graph, wb_json, wb_sqlite, transcript_path
 def _load_atlas_boards(explicit_board: str | None, boards_csv: str | None, load_all: bool) -> dict[str, dict[str, Any]]:
     vault_wb = REPO_ROOT / ".whiteboard"
     if boards_csv: names = [x.strip() for x in boards_csv.split(",") if x.strip()]
@@ -292,47 +306,33 @@ def _remove_item_from_board(graph: dict[str, Any], target_id: str) -> list[str]:
 def _execute_turn(board: str, speaker: str, raw_text: str, round_num: int | None, profile: str | None = None, config_path: str | None = None) -> int:
     _ = (profile, config_path)
     from lattice.the_executive import run_executive_turn
-    graph, wb_json, wb_sqlite, transcript_path = _load_board(board)
-    history = _read_transcript(transcript_path)
-    if round_num is None:
-        last_turn = next((h for h in reversed(history) if h.get("event", "turn") == "turn"), None)
-        round_num = int(last_turn.get("round", 1)) + 1 if (last_turn and last_turn.get("decision") == "SEND_BACK_TO_USER") else 1
-    t0 = time.perf_counter()
-    res = run_executive_turn(graph, raw_text, db_path=wb_sqlite)
-    elapsed_s = round(time.perf_counter() - t0, 3)
-    if res["whiteboard_mutated"]:
-        _save_board(res["whiteboard_graph"], wb_json, wb_sqlite)
-    eval_fn = _get_evaluate_lattice_proof()
-    proof = res.get("lattice_proof") or (eval_fn(res["whiteboard_graph"]) if eval_fn else None)
-    parsed_mcus = res.get("intake_packet", {}).get("parsed_mcus", [])
-    _append_transcript(transcript_path, {"event": "turn", "timestamp_utc": datetime.now(timezone.utc).isoformat(), "speaker": speaker, "round": round_num, "turn_index": res["turn_index"], "raw_text": raw_text, "decision": res["decision"], "bounce_reason": res["bounce_reason"], "whiteboard_mutated": res["whiteboard_mutated"], "user_message": res["user_message"], "cited_items": res["cited_items"], "committed_items": res.get("committed_items", []), "conflicts": res.get("conflicts", []), "flawed_ideas": res.get("flawed_ideas", []), "clarification_questions": res.get("clarification_questions", []), "open_questions": res.get("open_questions", []), "parsed_mcus": parsed_mcus, "lattice_proof_status": proof.get("status") if isinstance(proof, dict) else None, "elapsed_s": elapsed_s})
+    with _board_lock(board):
+        graph, wb_json, wb_sqlite, transcript_path = _load_board(board); history = _read_transcript(transcript_path)
+        if round_num is None:
+            last_turn = next((h for h in reversed(history) if h.get("event", "turn") == "turn"), None)
+            round_num = int(last_turn.get("round", 1)) + 1 if (last_turn and last_turn.get("decision") == "SEND_BACK_TO_USER") else 1
+        t0 = time.perf_counter(); res = run_executive_turn(graph, raw_text, db_path=wb_sqlite); elapsed_s = round(time.perf_counter() - t0, 3)
+        if res["whiteboard_mutated"]: _save_board(res["whiteboard_graph"], wb_json, wb_sqlite)
+        eval_fn = _get_evaluate_lattice_proof(); proof = res.get("lattice_proof") or (eval_fn(res["whiteboard_graph"]) if eval_fn else None); parsed_mcus = res.get("intake_packet", {}).get("parsed_mcus", [])
+        _append_transcript(transcript_path, {"event": "turn", "timestamp_utc": datetime.now(timezone.utc).isoformat(), "speaker": speaker, "round": round_num, "turn_index": res["turn_index"], "raw_text": raw_text, "decision": res["decision"], "bounce_reason": res["bounce_reason"], "whiteboard_mutated": res["whiteboard_mutated"], "user_message": res["user_message"], "cited_items": res["cited_items"], "committed_items": res.get("committed_items", []), "conflicts": res.get("conflicts", []), "flawed_ideas": res.get("flawed_ideas", []), "clarification_questions": res.get("clarification_questions", []), "open_questions": res.get("open_questions", []), "parsed_mcus": parsed_mcus, "lattice_proof_status": proof.get("status") if isinstance(proof, dict) else None, "elapsed_s": elapsed_s})
     record_flight_event(board, "turn", elapsed_s * 1000.0, "OK" if res["decision"] == "COMMIT_TO_WHITEBOARD" else "REJECTED", decision=res["decision"], violations=list(res.get("conflicts") or []) + list(res.get("flawed_ideas") or []))
     print(f"=== EXECUTIVE TURN {res['turn_index']} (Round {round_num} | Speaker: {speaker}) ===\nDecision:          {res['decision']}\nBounce Reason:     {res['bounce_reason']}\nWhiteboard Mutated:{res['whiteboard_mutated']} (elapsed {elapsed_s:.2f}s)\nExecutive Reply:   {res['user_message']}" + (f"\nCited Items:       {', '.join(str(x) for x in res['cited_items'])}" if res["cited_items"] else "") + f"\nParsed MCUs ({len(parsed_mcus)}):")
-    for m in parsed_mcus:
-        print(f"  - [mcu_{m.get('mcu_id')}] {m.get('type')} scope={m.get('scope_hint') or 'auto'} prop={m.get('target_prop')!r}: {m.get('text')}")
+    for m in parsed_mcus: print(f"  - [mcu_{m.get('mcu_id')}] {m.get('type')} scope={m.get('scope_hint') or 'auto'} prop={m.get('target_prop')!r}: {m.get('text')}")
     for label, key in (("Conflicts", "conflicts"), ("Flawed Ideas", "flawed_ideas"), ("Clarification Questions", "clarification_questions"), ("Open Questions", "open_questions")):
-        if res.get(key):
-            print(f"{label} ({len(res[key])}):\n" + "\n".join(f"  * {json.dumps(item, ensure_ascii=False) if isinstance(item, dict) else item}" for item in res[key]))
+        if res.get(key): print(f"{label} ({len(res[key])}):\n" + "\n".join(f"  * {json.dumps(item, ensure_ascii=False) if isinstance(item, dict) else item}" for item in res[key]))
     _print_proof_radar(proof)
     return 0
-
-
 def _assemble_board_summary(graph: dict[str, Any], scope_filter: str | None = None) -> dict[str, Any]:
-    annotate_active_tasks(graph)
-    scopes_out, standing, facts, goals, actions = {}, [], [], [], []
+    annotate_active_tasks(graph); scopes_out, standing, facts, goals, actions = {}, [], [], [], []
     for sid, snode in sorted(graph.get("scopes", {}).items()):
-        if not isinstance(snode, dict) or (scope_filter and sid != scope_filter and not sid.startswith(f"{scope_filter}::")):
-            continue
-        attrs = {k: v for k, v in (snode.get("attributes") or {}).items() if k not in ("updated_turn", "heading_path")}
-        rules = [dict(r) for r in snode.get("rules", []) if isinstance(r, dict)]
+        if not isinstance(snode, dict) or (scope_filter and sid != scope_filter and not sid.startswith(f"{scope_filter}::")): continue
+        attrs, rules = {k: v for k, v in (snode.get("attributes") or {}).items() if k not in ("updated_turn", "heading_path")}, [dict(r) for r in snode.get("rules", []) if isinstance(r, dict)]
         scopes_out[sid] = {**{k: snode.get(k) for k in ("parent", "role", "owner", "stage", "status", "build_tag", "core_tag", "failure_diagnostic", "active_ticket_id")}, "children": list(snode.get("children", [])), "attributes": attrs, "rules": rules}
         for r in rules:
             rtype = str(r.get("type", "OBLIGATION"))
             (standing if rtype in STANDING_TYPES else facts if rtype == "FACT" else goals if rtype == "GOAL" else actions).append(r)
     eval_fn, raw_arts = _get_evaluate_lattice_proof(), graph.get("lattice_artifacts") or {}
     return {"turn": graph.get("turn", 0), "scopes": scopes_out, "standing_rules": standing, "facts": facts, "goals": goals, "actions": actions, "flows": list(graph.get("flows", [])), "lattice_artifacts": list(raw_arts.values()) if isinstance(raw_arts, dict) else list(raw_arts), "active_tasks": list(graph.get("active_tasks", [])), "open_blockers": list(graph.get("open_blockers", [])), "lattice_proof": eval_fn(graph) if eval_fn else graph.get("lattice_proof"), "assemble_context_pack": expand_node(copy.deepcopy(graph), scope_filter) if scope_filter else scan_graph(copy.deepcopy(graph))}
-
-
 def main() -> int:
     common, parser = argparse.ArgumentParser(add_help=False), argparse.ArgumentParser(description="Multi-Round Executive <-> Whiteboard Dogfooding CLI")
     for flg in ("--board", "--profile", "--config"):
