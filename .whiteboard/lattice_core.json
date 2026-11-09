@@ -1941,9 +1941,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/read_engine.py#L408-L491"
+        "file": "lattice/whiteboard/read_engine.py#L408-L492"
       },
-      "file": "lattice/whiteboard/read_engine.py#L408-L491",
+      "file": "lattice/whiteboard/read_engine.py#L408-L492",
       "id": "interface_whiteboard_slice_lattice",
       "inputs": [
         "graph",
@@ -2841,7 +2841,7 @@
           "lattice/whiteboard/ingest.py": "b60109fe44620856",
           "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
           "lattice/whiteboard/mutations.py": "41a72335950cd737",
-          "lattice/whiteboard/read_engine.py": "6b1ee8cf60ada7e3",
+          "lattice/whiteboard/read_engine.py": "35e560eab7d7ce33",
           "lattice/whiteboard/rewriter.py": "d23258b838777950",
           "lattice/whiteboard/schema.py": "2094567fa1041c95"
         },
@@ -2877,7 +2877,7 @@
         "lattice/whiteboard/ingest.py": "b60109fe44620856",
         "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
         "lattice/whiteboard/mutations.py": "41a72335950cd737",
-        "lattice/whiteboard/read_engine.py": "6b1ee8cf60ada7e3",
+        "lattice/whiteboard/read_engine.py": "35e560eab7d7ce33",
         "lattice/whiteboard/rewriter.py": "d23258b838777950",
         "lattice/whiteboard/schema.py": "2094567fa1041c95"
       },

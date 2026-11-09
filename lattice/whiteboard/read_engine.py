@@ -472,7 +472,7 @@ def slice_lattice(
         active_flows = [copy.deepcopy(fl) for fl in graph.get("flows", []) if isinstance(fl, dict) and (fl.get("source") in exact_sids or fl.get("target") in exact_sids)]
         sc_arts = [copy.deepcopy(a) for a in graph.get("lattice_artifacts", []) if isinstance(a, dict) and str(a.get("scope_id") or a.get("scope") or "") in exact_sids]
         active_artifacts = ([a for a in sc_arts if str(a.get("name") or a.get("id") or "").lower() in exact_syms] or [a for a in sc_arts if any(any(es in str(c).lower() for es in exact_syms) for c in (a.get("calls") or []))] or sc_arts) if include_code else sc_arts
-        active_rules = [r for r in active_rules if str(r.get("scope") or "") in exact_sids]
+        active_rules = [copy.deepcopy(r) for s in exact_sids for r in (scopes.get(s, {}).get("rules") or []) if isinstance(r, dict)]
     else:
         comp_ids = {str(c.get("id") or "") for c in component_specs if isinstance(c, dict)}
         for m in matched_symbols:
@@ -481,6 +481,7 @@ def slice_lattice(
                 component_specs.append(copy.deepcopy(scopes[msid]))
                 active_flows.extend(copy.deepcopy(fl) for fl in graph.get("flows", []) if isinstance(fl, dict) and msid in (fl.get("source"), fl.get("target")) and fl not in active_flows)
                 active_artifacts.extend(copy.deepcopy(a) for a in graph.get("lattice_artifacts", []) if isinstance(a, dict) and str(a.get("scope_id") or a.get("scope") or "") == msid and a not in active_artifacts)
+                active_rules.extend(copy.deepcopy(r) for r in (scopes[msid].get("rules") or []) if isinstance(r, dict) and r not in active_rules)
     open_blockers = [copy.deepcopy(b) for b in graph.get("open_blockers", []) if isinstance(b, dict) and b.get("status") != "RESOLVED"]
     all_blockers = list(conflicts) + [b for b in open_blockers if b.get("type") != "CONFLICT"]
 
