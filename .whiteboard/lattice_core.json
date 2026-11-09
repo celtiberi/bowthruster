@@ -1936,14 +1936,14 @@
       "calls": [
         "_enrich_view_compact_lines#L35-L79",
         "_node_matches_slice_dims#L229-L339",
-        "_scan_ast_symbols_on_disk#L359-L406"
+        "_scan_ast_symbols_on_disk#L358-L405"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/read_engine.py#L409-L492"
+        "file": "lattice/whiteboard/read_engine.py#L408-L491"
       },
-      "file": "lattice/whiteboard/read_engine.py#L409-L492",
+      "file": "lattice/whiteboard/read_engine.py#L408-L491",
       "id": "interface_whiteboard_slice_lattice",
       "inputs": [
         "graph",
@@ -2588,7 +2588,7 @@
         "file_hashes": {
           "lattice/__init__.py": "837c54c33cd000b4",
           "lattice/cli.py": "1084a9dfbcce204e",
-          "lattice/mcp_server.py": "f6e66b0bd4ef8653",
+          "lattice/mcp_server.py": "bf72c6bd877788f8",
           "lattice/mcp_verifier.py": "dd930b6575fca206",
           "lattice/nlp.py": "c1dc02d09eac65ba",
           "lattice/types.py": "2172d10c1427d1b2"
@@ -2617,7 +2617,7 @@
       "file_hashes": {
         "lattice/__init__.py": "837c54c33cd000b4",
         "lattice/cli.py": "1084a9dfbcce204e",
-        "lattice/mcp_server.py": "f6e66b0bd4ef8653",
+        "lattice/mcp_server.py": "bf72c6bd877788f8",
         "lattice/mcp_verifier.py": "dd930b6575fca206",
         "lattice/nlp.py": "c1dc02d09eac65ba",
         "lattice/types.py": "2172d10c1427d1b2"
@@ -2668,8 +2668,8 @@
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
           "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-          "lattice/the_executive/gate.py": "26eba9931c0ef4ec",
-          "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
+          "lattice/the_executive/gate.py": "ac175a0f3e75f692",
+          "lattice/the_executive/orchestrator.py": "f88814b3f93e0b36",
           "lattice/the_executive/preflight.py": "5be08f3f57952191",
           "lattice/the_executive/voice.py": "5fb44eaba9171d58"
         },
@@ -2699,8 +2699,8 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-        "lattice/the_executive/gate.py": "26eba9931c0ef4ec",
-        "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
+        "lattice/the_executive/gate.py": "ac175a0f3e75f692",
+        "lattice/the_executive/orchestrator.py": "f88814b3f93e0b36",
         "lattice/the_executive/preflight.py": "5be08f3f57952191",
         "lattice/the_executive/voice.py": "5fb44eaba9171d58"
       },
@@ -2841,7 +2841,7 @@
           "lattice/whiteboard/ingest.py": "b60109fe44620856",
           "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
           "lattice/whiteboard/mutations.py": "41a72335950cd737",
-          "lattice/whiteboard/read_engine.py": "912bd6313ada32bd",
+          "lattice/whiteboard/read_engine.py": "6b1ee8cf60ada7e3",
           "lattice/whiteboard/rewriter.py": "d23258b838777950",
           "lattice/whiteboard/schema.py": "2094567fa1041c95"
         },
@@ -2877,7 +2877,7 @@
         "lattice/whiteboard/ingest.py": "b60109fe44620856",
         "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
         "lattice/whiteboard/mutations.py": "41a72335950cd737",
-        "lattice/whiteboard/read_engine.py": "912bd6313ada32bd",
+        "lattice/whiteboard/read_engine.py": "6b1ee8cf60ada7e3",
         "lattice/whiteboard/rewriter.py": "d23258b838777950",
         "lattice/whiteboard/schema.py": "2094567fa1041c95"
       },

@@ -504,7 +504,7 @@
         "fields": "content, isError, structuredContent",
         "file": "lattice/mcp_server.py",
         "file_hashes": {
-          "lattice/mcp_server.py": "f6e66b0bd4ef8653"
+          "lattice/mcp_server.py": "bf72c6bd877788f8"
         },
         "files": [
           "lattice/mcp_server.py"
@@ -525,7 +525,7 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "lattice/mcp_server.py": "f6e66b0bd4ef8653"
+        "lattice/mcp_server.py": "bf72c6bd877788f8"
       },
       "files": [
         "lattice/mcp_server.py"

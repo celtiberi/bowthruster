@@ -355,6 +355,7 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
         r_ver = call_lattice_tool("lattice_git_sync", {"board": "mcp_server_28", "mode": "pre", "mark_verified": True})["structuredContent"]
         r_readme = call_lattice_tool("lattice_readme", {"section": "readme"})
         r_full = call_lattice_tool("lattice_readme", {"section": "full_readme"})
+        wb_slice_txt = call_lattice_tool("lattice_slice", {"board": "lattice_core", "component": "whiteboard"})["content"][0]["text"]
         sib_root = Path(tmp) / "ws_parent"
         fake_lat_home = sib_root / "workspace" / "lattice"
         sib_repo = sib_root / "sib_project"
@@ -404,6 +405,7 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             and r_stale.get("marked_stale_scopes") == ["mcp_server"] and "mcp_server" in (r_ver.get("marked_verified_scopes") or [])
             and "# Lattice Agent Quickstart & Brownfield Onboarding" in readme_inline_txt
             and full_readme_txt == r_readme["structuredContent"]["readme"] and len(full_readme_txt) > len(readme_inline_txt)
+            and all(sym in wb_slice_txt for sym in ("fuse_table_attributes", "WhiteboardGraph", "ingest_intake_packet", "slice_lattice", "compile_laws_bend", "transition_component_build_status", "_slugify_scope_id#L"))
             and disc_board == sib_repo.resolve() and disc_msg == sib_repo.resolve() and not r_sib["isError"] and restored_cli_root
             and "unregistered_public_symbols" in pre_gate and "flow_schema_checked" in pre_gate
             and callable(getattr(CLI, "register_ast_extractor", None))

@@ -172,7 +172,7 @@ def run_executive_turn(whiteboard_graph: dict[str, Any] | None = None, raw_text:
         if lattice_proof.get("is_proven") is True:
             voice_reply["user_message"] = user_msg + "\n[Lattice Proof: PROVEN_COMPLETE — all components, flows, contracts, and Bend 2 laws verified; parallel Work Packets unlocked.]"
         elif lattice_proof.get("status") == "INCOMPLETE_DRAFT" and (gaps := list(lattice_proof.get("open_gaps") or [])):
-            voice_reply["user_message"] = user_msg + f"\n[Lattice Proof: INCOMPLETE_DRAFT ({len(gaps)} gap(s) remaining before Work Packets unlock: {'; '.join(str(g.get('description') if isinstance(g, dict) else g) for g in gaps[:3])})]"
+            voice_reply["user_message"] = user_msg + f"\n[Lattice Proof: INCOMPLETE_DRAFT ({len(gaps)} gap(s) remaining before Work Packets unlock: {'; '.join(str(g.get('description') if isinstance(g, dict) else g) for g in gaps)})]"
 
     return ExecutiveTurnResult({
         "turn_index": cur_turn, "decision": gate_result["decision"], "bounce_reason": gate_result["bounce_reason"], "should_commit": gate_result["should_commit"],

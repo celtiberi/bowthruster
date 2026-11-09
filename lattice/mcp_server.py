@@ -378,7 +378,7 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
                         if stale_sids: _save_board(graph, wb_json, wb_sqlite)
                         gate_res["marked_verified_scopes"] = stale_sids
                     unreg = gate_res.get("unregistered_public_symbols") or []
-                    unreg_str = ", ".join(f"{u.get('scope')}:{u.get('symbol')}" for u in unreg[:12])
+                    unreg_str = ", ".join(f"{u.get('scope')}:{u.get('symbol')}" for u in unreg)
                     pre_txt = f"[GIT PRE-COMMIT GATE '{board}'] allowed={allow} decision={gate_res.get('decision')} bounds_ok={gate_res.get('bounds_ok')} contracts_ok={gate_res.get('contracts_ok')} bend_proofs_ok={gate_res.get('bend_proofs_ok')} no_dangling_deletes={gate_res.get('no_dangling_deletes')} flow_schema_checked={gate_res.get('flow_schema_checked')}" + (f" marked_verified={gate_res['marked_verified_scopes']}" if gate_res.get("marked_verified_scopes") else "") + (f"\nviolations={json.dumps(gate_res.get('violations'))}" if gate_res.get("violations") else "") + (f"\nunregistered_public_symbols ({len(unreg)}): {unreg_str}" if unreg else "")
                     resp, nbytes = _format_tool_result(gate_res, is_error=not allow, text=pre_txt)
                     record_flight_event(board, "lattice_git_sync:pre", (time.perf_counter() - t0) * 1000.0, "OK" if allow else "REJECTED", decision=gate_res.get("decision"), violations=gate_res.get("violations"), modified_scopes=gate_res.get("marked_verified_scopes"), response_bytes=nbytes)

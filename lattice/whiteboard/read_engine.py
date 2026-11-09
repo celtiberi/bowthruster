@@ -61,7 +61,7 @@ def _enrich_view_compact_lines(graph: dict[str, Any], view: dict[str, Any], *, e
             if (fval := str((art or {}).get("file") or ((art or {}).get("dimensions") or {}).get("file") or "").strip()) and "file=" not in ln:
                 cand_ln = _insert_tag_into_line(ln, f"file={fval}")
             if isinstance(calls := (art or {}).get("calls"), list) and calls and "calls=[" not in cand_ln:
-                cand_ln = _insert_tag_into_line(cand_ln, f"calls=[{', '.join(str(x) for x in calls[:6])}]")
+                cand_ln = _insert_tag_into_line(cand_ln, f"calls=[{', '.join(str(x) for x in calls)}]")
         elif ln.startswith("% LAW [") and "]" in ln and (art := law_by_name.get(ln[len("% LAW [") : ln.find("]")].lower())):
             dims = art.get("dimensions") if isinstance(art.get("dimensions"), dict) else {}
             if ltags := [f"{k}={v}" for k in ("bend_dir", "args", "lhs", "rhs") if (v := str(art.get(k) or dims.get(k) or "").strip()) and f"{k}=" not in ln]:
@@ -343,13 +343,12 @@ def _format_code_window(src_lines: list[str], s: int, e: int, q_sub: list[str]) 
     for tok in q_sub:
         if "-" in tok and all(p.lstrip("l").isdigit() for p in tok.split("-", 1)):
             ws, we = (max(1, min(len(src_lines), int(p.lstrip("l")))) for p in tok.split("-", 1))
-            we_eff = min(we, ws + 139)
-            return f"[WINDOW #L{ws}-L{we_eff}]\n" + "\n".join(src_lines[ws - 1 : we_eff])
+            return f"[WINDOW #L{ws}-L{we}]\n" + "\n".join(src_lines[ws - 1 : we])
     if q_sub and (hit := next((i + 1 for i in range(max(0, s - 1), min(len(src_lines), e)) if any(k in src_lines[i].lower() for k in q_sub)), None)):
         ws, we = max(s, hit - 5), min(e, max(s, hit - 5) + 90)
         return f"[WINDOW #L{ws}-L{we}]\n" + "\n".join(src_lines[ws - 1 : we])
     full_blk = "\n".join(src_lines[max(0, s - 1) : e])
-    if e - s + 1 <= 160 and len(full_blk) <= 13000: return full_blk
+    if len(full_blk) <= 15000: return full_blk
     head = src_lines[max(0, s - 1) : min(e, s + 59)]
     lms = [f"#   L{i}: {st[:76]}" for i in range(s + 60, min(len(src_lines), e) + 1) if (st := src_lines[i - 1].strip()).startswith(("if ", "elif ", "else:", "for ", "while ", "try:", "except", "def ", "class "))][:20]
     return "\n".join([*head, f"# ... [LANDMARKS #L{s + 60}-L{e} — pass query='<symbol> <keyword>' or '<symbol> <start>-<end>' for exact window]:", *lms])
@@ -394,7 +393,7 @@ def _scan_ast_symbols_on_disk(scopes: dict[str, Any], raw_query_low: str, compon
         if any(m.get("exact") for m in matched):
             matched = [m for m in matched if m.get("exact")]
     if include_code and not matched:
-        for art in active_artifacts[:3]:
+        for art in active_artifacts:
             if isinstance(art, dict) and (af := str(art.get("file") or "").strip()) and "#L" in af:
                 cp, rng = af.split("#L", 1)
                 if "-" in rng and all(p.lstrip("Ll").isdigit() for p in rng.split("-", 1)) and (fp := res_fp(cp)).is_file():
@@ -403,13 +402,13 @@ def _scan_ast_symbols_on_disk(scopes: dict[str, Any], raw_query_low: str, compon
                     if (cp, sym) not in seen:
                         seen.add((cp, sym))
                         matched.append({"symbol": sym, "scope": str(art.get("scope_id") or art.get("scope") or ""), "file": af, "start_line": s, "end_line": e, "code": _format_code_window(fp.read_text(encoding="utf-8", errors="ignore").splitlines(), s, e, [])})
-    return matched[:3]
+    return matched
 
 
 def slice_lattice(
     graph: dict[str, Any], query: str = "", *, component: str | None = None, scope: str | None = None,
     division: str | None = None, stage: str | None = None, schema: str | None = None,
-    kind: str | None = None, token_budget: int = 400, max_lines: int = 35, include_code: bool = False,
+    kind: str | None = None, token_budget: int = 2400, max_lines: int = 120, include_code: bool = False,
 ) -> dict[str, Any]:
     """Computes an nD Hyperplane Slice over `graph` governed by Spec 21 Law 10 (`matches_nd_slice`, Spec 22C §2.1)."""
     if not isinstance(graph, dict):
@@ -472,7 +471,7 @@ def slice_lattice(
         component_specs = [copy.deepcopy(scopes[s]) for s in exact_sids if s in scopes]
         active_flows = [copy.deepcopy(fl) for fl in graph.get("flows", []) if isinstance(fl, dict) and (fl.get("source") in exact_sids or fl.get("target") in exact_sids)]
         sc_arts = [copy.deepcopy(a) for a in graph.get("lattice_artifacts", []) if isinstance(a, dict) and str(a.get("scope_id") or a.get("scope") or "") in exact_sids]
-        active_artifacts = (([a for a in sc_arts if str(a.get("name") or a.get("id") or "").lower() in exact_syms] or [a for a in sc_arts if any(any(es in str(c).lower() for es in exact_syms) for c in (a.get("calls") or []))])[:2] or sc_arts[:2]) if include_code else sc_arts
+        active_artifacts = ([a for a in sc_arts if str(a.get("name") or a.get("id") or "").lower() in exact_syms] or [a for a in sc_arts if any(any(es in str(c).lower() for es in exact_syms) for c in (a.get("calls") or []))] or sc_arts) if include_code else sc_arts
         active_rules = [r for r in active_rules if str(r.get("scope") or "") in exact_sids]
     else:
         comp_ids = {str(c.get("id") or "") for c in component_specs if isinstance(c, dict)}
