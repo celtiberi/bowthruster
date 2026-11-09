@@ -84,7 +84,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "67fb126909abd60a72a9adadf4b54fa9648d0a8b",
+  "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
   "lattice_artifacts": [
     {
       "calls": [
@@ -384,7 +384,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "67fb126909abd60a72a9adadf4b54fa9648d0a8b",
+      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -439,7 +439,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "67fb126909abd60a72a9adadf4b54fa9648d0a8b",
+      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
       "outputs": [],
       "owner": "groves",
       "parent": null,

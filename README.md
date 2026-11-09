@@ -237,7 +237,6 @@ AI agents fail when they have either **tunnel vision** (seeing only one function
 - **`lattice.regiment` (`< 5ms` Deterministic Pipe-Table Compiler):**
   - Because AI coding agents generate structured Markdown effortlessly, `lattice.regiment` parses only structured Markdown pipe tables (`Component`, `Flow`, `Interface`, `Law`, `Schema`, `Rule`) plus canonical `FLOW` lines (`The <source> component sends <Payload> to <target>.`) in **`< 5ms` with zero LLM calls, zero `spacy`/`torch` dependencies, and zero API keys**.
   - If an agent passes unstructured prose or unrecognized table headers to `lattice_turn`, `lattice.regiment` immediately fails fast (`< 1ms`) with an explicit schema guide listing all 6 canonical pipe-table headers.
-  - *(Note: The 4-phase free-form human natural-language compiler — `Phase 0` clause splitting $\rightarrow$ `Phase 1` speech-act sieve $\rightarrow$ `Phase 2` AGM belief linking $\rightarrow$ `Phase 3` MCU synthesis with `StartLux-Decision` `/v1/systemone` — lives in the standalone [`regiment_nlp/`](../regiment_nlp/) project.)*
 
 ### 3.5 Multi-Language & Polyglot Codebases (Not Just Python)
 

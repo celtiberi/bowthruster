@@ -47,7 +47,7 @@ $$\varepsilon_k(B) = \big(1 - p_k^{(0)}\big)\big(1 - \alpha_k \beta_k\big)^B + p
 
 $$\text{raw\_text} \xrightarrow{\text{`lattice.regiment`}} \text{IntakePacket} \xrightarrow{\text{`lattice.the\_executive`}} \text{`lattice.whiteboard`} \xleftrightarrow{\text{`lattice.ai\_memory` + `lattice.the\_table`}} \text{Bounded TableView & WorkPackets}$$
 
-1. **`lattice.regiment` (`phase0`..`phase3`, Specs 15–18):** Stateless linguistic & discourse intake parser with deterministic Markdown pipe-table extraction (`extract_markdown_tables`), cohesion-locked Stage 0A windowing (`bge_small_en_v15_int8`), 4-pass `/v1/systemone` speech-act sieve (`Phase 1`), AGM belief revision (`Phase 2`), and EARS decontextualization (`Phase 3`).
+1. **`lattice.regiment` (`intake_packet.py`, `markdown_tables.py`):** Deterministic `< 5ms` Markdown pipe-table and canonical flow-sentence compiler (`extract_markdown_tables`, `compile_intake_packet`) with zero LLM calls.
 2. **`lattice.whiteboard` (`Stage 22`):** n-Dimensional SBF constraint lattice (`@ COMPONENT`, `> FLOW`, `# SCHEMA`, `$ INTERFACE`, `% LAW`, `* BOUND`), Spin-Glass frustration detector, `LATTICE_PROOF.bend` synthesizer, and `WorkPacket` + `python_skeleton` compiler.
 3. **`lattice.the_executive` (`Stage 23`, `26`, `27`):** Preflight trial router, conflict gate, Story-calibrated Executive Voice, AST call-graph verifier (`verify_ast_call_graph_skeleton`), and Git pre-commit/post-commit gate (`evaluate_git_commit_gate`, `sync_post_commit_to_lattice`).
 4. **`lattice.ai_memory` (`Stage 24`):** Deterministic cue extractor, directed multi-cue Steiner push Hippocampal index (`recall_concepts`, $F_1 = 0.989$), and Git-synchronized URI resolver (`uri_resolver`).
