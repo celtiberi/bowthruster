@@ -271,18 +271,6 @@ AI agents fail when they have either **tunnel vision** (seeing only one function
   - Because AI coding agents generate structured Markdown effortlessly, `lattice.regiment` parses only structured Markdown pipe tables (`Component`, `Flow`, `Interface`, `Law`, `Schema`, `Rule`) plus canonical `FLOW` lines (`The <source> component sends <Payload> to <target>.`) with **zero LLM calls, zero `spacy`/`torch` dependencies, and zero API keys**.
   - If an agent passes unstructured prose or unrecognized table headers to `lattice_turn`, `lattice.regiment` immediately fails fast with an explicit schema guide listing all 6 canonical pipe-table headers.
 
-### 3.5 Multi-Language & Polyglot Codebases (Not Just Python)
-
-Although the Lattice engine itself is implemented in zero-dependency Python + SQLite + Bend 2, **Lattice is not a Python-only tool**. It is designed to track and verify repositories in **any programming language** (`.ts`, `.tsx`, `.js`, `.go`, `.rs`, `.java`, `.kt`, `.c`, `.cpp`, `.cs`, `.swift`, `.rb`, `.py`, `.bend`, or polyglot monorepos):
-
-| Capability | Works Across All Languages (`.ts`, `.go`, `.rs`, `.cpp`, `.java`, `.py`, etc.) | How It Works |
-| :--- | :---: | :--- |
-| **Architecture Circuit & Pre-Flight Conflict Gate (`lattice_turn`, `lattice_atlas`)** | **Yes (`100%`)** | `@ COMPONENT`, `> FLOW`, `$ INTERFACE`, `# SCHEMA`, `% LAW`, and `* BOUND` rules track any file path (`src/auth.ts`, `pkg/router.go`, `src/lib.rs`, `src/auth.py`). |
-| **Formal Theorem Proving in Bend 2 (`LAWS.bend` & `LATTICE_PROOF.bend`)** | **Yes (`100%`)** | `% LAW` boolean state-machine and routing invariants are proven in **Bend 2**, independent of the target application language. |
-| **One-Shot Symbol + Code Slicing (`lattice_slice(query="...", include_code=True)`)** | **Yes (`100%`)** | Built-in extractors (`AST_EXTRACTORS`) resolve functions, classes, interfaces, structs, enums, and arrow exports (`#L<start>-L<end>` spans + intra-file `_helper#L<start>-L<end>` call trees) across `.py`, `.ts`/`.tsx`/`.js`/`.jsx`/`.mjs`, `.go`, `.rs`, `.java`/`.kt`, `.c`/`.cpp`/`.h`, `.cs`, `.swift`, `.rb`, and `.bend` (extensible via `register_ast_extractor(ext, fn)`). |
-| **Git Edit Guard, Rename Healing, Line Shifts & `STALE` Cascades (`lattice_git_sync`)** | **Yes (`100%`)** | `verified_scope_edit_guard_law` (blocking edits to `VERIFIED` files of any extension unless marked `STALE`), `git mv` URI healing, `git diff` `#L<start>-L<end>` line-shift healing, `max_file_lines` bounds, `> FLOW` schema checks, and downstream `STALE` cascades are completely language-independent. |
-| **WorkPacket Skeletons (`lattice_packets`) & Deep Call-Graph Verification** | **Polyglot (`LAWS.bend` + `prompt_slice` universal; `python_skeleton` for `.py`)** | Every `WorkPacket` emits the universal `prompt_slice`, `baseline_commit_sha`, and formal `LAWS.bend` (`laws_skeleton`), plus a reference `python_skeleton` stub. On `lattice_git_sync(mode="pre")`, deep `ast.parse` signature + `% LAW` call-graph reachability runs on `.py` files while all language-general gates and symbol extractors run on every language. |
-
 ---
 
 ## Part 4: Zero-LLM Runtime & Configuration (`config.json`)
