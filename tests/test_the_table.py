@@ -104,8 +104,8 @@ class TestTheTableStage25(unittest.TestCase):
         bend_exe = bend_gate.find_bend_bin()
         bend_25a_dir = _find_path("laws/bend_table_25a", "eng1/bend_table_25a", "lattice/bend_table_25a")
         bend_25b_dir = _find_path("laws/bend_table_25b", "eng2/bend_table_25b", "lattice/bend_table_25b")
-        laws_25a = _find_path("docs/specs/the_table/25a_LAWS.bend")
-        laws_25b = _find_path("docs/specs/the_table/25b_LAWS.bend")
+        laws_25a = _find_path("laws/bend_table_25a/LAWS.bend", "docs/specs/the_table/25a_LAWS.bend")
+        laws_25b = _find_path("laws/bend_table_25b/LAWS.bend", "docs/specs/the_table/25b_LAWS.bend")
 
         node_bin = shutil.which("node")
         self.assertIsNotNone(node_bin, "node runtime is required for .mjs truth-table parity")

@@ -2517,7 +2517,7 @@
         "file_hashes": {
           "lattice/__init__.py": "837c54c33cd000b4",
           "lattice/cli.py": "7a70269e375279ca",
-          "lattice/mcp_server.py": "f0598d296f5ad634",
+          "lattice/mcp_server.py": "f08adc98cf37e119",
           "lattice/mcp_verifier.py": "a015087de6656801",
           "lattice/nlp.py": "bfdfb1a1a0687299",
           "lattice/types.py": "2172d10c1427d1b2"
@@ -2546,7 +2546,7 @@
       "file_hashes": {
         "lattice/__init__.py": "837c54c33cd000b4",
         "lattice/cli.py": "7a70269e375279ca",
-        "lattice/mcp_server.py": "f0598d296f5ad634",
+        "lattice/mcp_server.py": "f08adc98cf37e119",
         "lattice/mcp_verifier.py": "a015087de6656801",
         "lattice/nlp.py": "bfdfb1a1a0687299",
         "lattice/types.py": "2172d10c1427d1b2"

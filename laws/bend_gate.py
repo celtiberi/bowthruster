@@ -27,20 +27,20 @@ UNSAFE_RE = re.compile(r"(?:@unsafe\b|\?TODO\b|\bdef\s+[A-Za-z0-9_.]+\?\s*\()")
 IMPORT_LAWS_RE = re.compile(r"^\s*import\s+\./LAWS\.bend\b", re.MULTILINE)
 
 CANONICAL_LAWS_MAP: dict[str, Path] = {
-    "laws/bend_wb_22a/LAWS.bend": ROOT / "docs/specs/whiteboard_22a/LAWS.bend",
-    "laws/bend_wb_22b/LAWS.bend": ROOT / "docs/specs/whiteboard_22b/LAWS.bend",
-    "laws/bend_wb_22c/LAWS.bend": ROOT / "docs/specs/whiteboard_22c/LAWS.bend",
-    "laws/bend_exec_23a/LAWS.bend": ROOT / "docs/specs/executive_23a/LAWS.bend",
-    "laws/bend_exec_23b/LAWS.bend": ROOT / "docs/specs/executive_23b/LAWS.bend",
-    "laws/bend_exec_23c/LAWS.bend": ROOT / "docs/specs/executive_23c/LAWS.bend",
-    "laws/bend_mem_24a/LAWS.bend": ROOT / "docs/specs/ai_memory/24a_LAWS.bend",
-    "laws/bend_mem_24b/LAWS.bend": ROOT / "docs/specs/ai_memory/24b_LAWS.bend",
-    "laws/bend_table_25a/LAWS.bend": ROOT / "docs/specs/the_table/25a_LAWS.bend",
-    "laws/bend_table_25b/LAWS.bend": ROOT / "docs/specs/the_table/25b_LAWS.bend",
-    "laws/bend_agm/LAWS.bend": ROOT / "docs/specs/phase2/LAWS.bend",
-    "laws/bend_phase4/LAWS.bend": ROOT / "docs/specs/phase4/LAWS.bend",
-    "laws/bend_poc/LAWS.bend": ROOT / "docs/specs/context_graph/LAWS.bend",
-    "laws/bend_graph_core/LAWS.bend": ROOT / "docs/specs/graph_core/LAWS.bend",
+    "laws/bend_wb_22a/LAWS.bend": ROOT / "laws/bend_wb_22a/LAWS.bend",
+    "laws/bend_wb_22b/LAWS.bend": ROOT / "laws/bend_wb_22b/LAWS.bend",
+    "laws/bend_wb_22c/LAWS.bend": ROOT / "laws/bend_wb_22c/LAWS.bend",
+    "laws/bend_exec_23a/LAWS.bend": ROOT / "laws/bend_exec_23a/LAWS.bend",
+    "laws/bend_exec_23b/LAWS.bend": ROOT / "laws/bend_exec_23b/LAWS.bend",
+    "laws/bend_exec_23c/LAWS.bend": ROOT / "laws/bend_exec_23c/LAWS.bend",
+    "laws/bend_mem_24a/LAWS.bend": ROOT / "laws/bend_mem_24a/LAWS.bend",
+    "laws/bend_mem_24b/LAWS.bend": ROOT / "laws/bend_mem_24b/LAWS.bend",
+    "laws/bend_table_25a/LAWS.bend": ROOT / "laws/bend_table_25a/LAWS.bend",
+    "laws/bend_table_25b/LAWS.bend": ROOT / "laws/bend_table_25b/LAWS.bend",
+    "laws/bend_agm/LAWS.bend": ROOT / "laws/bend_agm/LAWS.bend",
+    "laws/bend_phase4/LAWS.bend": ROOT / "laws/bend_phase4/LAWS.bend",
+    "laws/bend_poc/LAWS.bend": ROOT / "laws/bend_poc/LAWS.bend",
+    "laws/bend_graph_core/LAWS.bend": ROOT / "laws/bend_graph_core/LAWS.bend",
 }
 
 

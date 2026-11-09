@@ -213,7 +213,7 @@ def skills_section_routing_law(is_skills_section: bool = True, returns_skill_tem
 
 
 def _read_doc_resource(section: str = "readme") -> dict[str, Any]:
-    readme_p, guide_p, skills_dir = LATTICE_HOME / "README.md", LATTICE_HOME / "docs" / "00_SYSTEM_ARCHITECTURE_AND_PRODUCT_GUIDE.md", LATTICE_HOME / "docs" / "skills"
+    readme_p, guide_p, skills_dir = LATTICE_HOME / "README.md", LATTICE_HOME / "README.md", LATTICE_HOME / "docs" / "skills"
     sec = str(section or "readme").strip().lower()
     out: dict[str, Any] = {"project_root": str(REPO_ROOT), "lattice_home": str(LATTICE_HOME)}
     uni = (skills_dir / "lattice" / "SKILL.md").read_text(encoding="utf-8") if (skills_dir / "lattice" / "SKILL.md").is_file() else ""

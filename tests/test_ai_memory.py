@@ -110,8 +110,8 @@ class TestAIMemoryStage24(unittest.TestCase):
         bend_exe = bend_gate.find_bend_bin()
         bend_24a_dir = _find_path("laws/bend_mem_24a", "eng0/bend_mem_24a", "lattice/bend_mem_24a")
         bend_24b_dir = _find_path("laws/bend_mem_24b", "eng3/bend_mem_24b", "lattice/bend_mem_24b")
-        laws_24a = _find_path("docs/specs/ai_memory/24a_LAWS.bend")
-        laws_24b = _find_path("docs/specs/ai_memory/24b_LAWS.bend")
+        laws_24a = _find_path("laws/bend_mem_24a/LAWS.bend", "docs/specs/ai_memory/24a_LAWS.bend")
+        laws_24b = _find_path("laws/bend_mem_24b/LAWS.bend", "docs/specs/ai_memory/24b_LAWS.bend")
 
         node_bin = shutil.which("node")
         self.assertIsNotNone(node_bin, "node runtime is required for .mjs truth-table parity")
