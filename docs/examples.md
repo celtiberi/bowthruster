@@ -109,7 +109,42 @@ Even if an agent forgets a structural rule during coding, `lattice_git_sync(boar
 
 ---
 
-## 4. Generating a Living Specification & Mermaid Diagram (`lattice_atlas(spec=True)`)
+## 4. Setting Rules & Policies via `lattice_turn` (`BOUND` vs. `PROHIBITION` vs. `POLICY`)
+
+Every rule or policy in Lattice is submitted using the same `| Rule | Component | Type | Property | Op | Value | Condition | Spec |` pipe table via `lattice_turn`.
+
+The **`Type`** column tells Lattice whether the rule is **mechanically enforced by the pre-commit AST gate** or is a **semantic standing instruction** surfaced to coding and QA agents in slices, `WorkPacket`s, and living specs:
+
+| Rule `Type` | What It Is | Enforced by Pre-Commit AST Gate? | When to Use |
+| :--- | :--- | :--- | :--- |
+| **`BOUND`** | A numeric threshold on file length (`max_file_lines`) or a module-level Python constant (`MAX_RETRIES <= 3`). | **Yes** — blocks commits when a file exceeds `max_file_lines` or a top-level constant violates `Op Value`. | File size limits, timeouts, retry caps, batch sizes, latency/budget constants. |
+| **`PROHIBITION`** | A banned Python import or module dependency (`Property = requests`, `Op = !=`, `Value = imported`). | **Yes** — blocks commits if any `.py` file imports the prohibited package. | Layer boundaries (e.g., keeping `sqlalchemy` or `requests` out of pure domain logic). |
+| **`POLICY`** *(or `OBLIGATION`)* | A semantic engineering rule or architectural convention that requires human/LLM judgment rather than a brittle AST regex. | **No** — stored on the board and surfaced in `lattice_slice`, `lattice_packets`, and `lattice_atlas(spec=True)`. | Architectural principles (e.g., no silent output truncation, UTC-only timestamps, idempotent retries). |
+
+### Scope: Repo-Wide (`global_defaults`) vs. Single Component
+
+- Set `Component = global_defaults` for **standing repo-wide rules** that apply across the entire board.
+- Set `Component = <component_name>` (e.g., `auth_service` or `billing_service`) for rules that apply only to that component (and trigger a `STALE` transition on that component when updated).
+
+### Example: Submitting `BOUND`, `PROHIBITION`, and `POLICY` Rules (`lattice_turn`)
+
+```markdown
+| Rule | Component | Type | Property | Op | Value | Condition | Spec |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| max_file_lines | global_defaults | BOUND | max_file_lines | <= | 500 | — | Every source file must be at most 500 lines |
+| no_silent_truncation | global_defaults | POLICY | no_silent_truncation | == | true | — | Never silently truncate strings, lists, or diagnostic outputs ([:N]) to hide data |
+| max_retries | billing_service | BOUND | MAX_RETRIES | <= | 3 | — | Billing webhook delivery must cap retries at 3 attempts |
+| no_orm_in_auth | auth_service | PROHIBITION | sqlalchemy | != | imported | — | Auth token verification must stay stateless and never import sqlalchemy |
+| utc_timestamps | billing_service | POLICY | utc_timestamps | == | true | — | All billing ledger timestamps must be stored and compared in UTC |
+```
+
+### Updating or Overwriting an Existing Rule
+
+To change a rule later (for example, tightening `max_file_lines` from `500` to `400` or updating a `POLICY`), submit a `Rule` table with the **same `Component`, `Property`, and `Condition`**. Lattice performs a **Markovian overwrite** in place rather than accumulating conflicting duplicate rules.
+
+---
+
+## 5. Generating a Living Specification & Mermaid Diagram (`lattice_atlas(spec=True)`)
 
 Because the Lattice board stores the project `Charter`, component `Role` and `Why`, directed `> FLOW` edges, `#L<start>-L<end>` `Interfaces`, `Schemas`, `Laws`, and `Rules`, you never have to write or update `ARCHITECTURE.md` by hand.
 
