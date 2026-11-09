@@ -1,0 +1,2744 @@
+{
+  "active_tasks": [
+    {
+      "bound_op": null,
+      "bound_val": null,
+      "completed": false,
+      "condition": null,
+      "depends_on": [
+        "whiteboard"
+      ],
+      "governed_by": [],
+      "id": "task_t2_m5",
+      "owner": "eng2",
+      "scope": "the_executive",
+      "stage": "stage 23",
+      "status": "WAITING_ON_DEPENDENCY",
+      "target_prop": null,
+      "text": "`the_executive` sends `IntakePacket` to `whiteboard`.",
+      "turn": 2
+    },
+    {
+      "bound_op": "==",
+      "bound_val": "GraphRecord",
+      "completed": false,
+      "condition": null,
+      "depends_on": [],
+      "governed_by": [],
+      "id": "task_t2_m7",
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "stage": "stage 22",
+      "status": "READY",
+      "target_prop": "graph_core",
+      "text": "`whiteboard` sends `GraphRecord` to `graph_core`.",
+      "turn": 2
+    }
+  ],
+  "alias_index": {
+    "ai_memory": "ai_memory",
+    "bounded_conference_room_working_surface": "bounded_conference_room_working_surface",
+    "component_packet": "component_packet",
+    "duplicate_spacy_calls": "duplicate_spacy_calls",
+    "global_defaults": "global_defaults",
+    "graph_core": "graph_core",
+    "has_markdown_tables": "has_markdown_tables",
+    "hippocampal_concept_index_and_uri_resolver": "hippocampal_concept_index_and_uri_resolver",
+    "intake_packet": "intake_packet",
+    "is_initial_baseline": "is_initial_baseline",
+    "llm_called": "llm_called",
+    "regiment": "regiment",
+    "runtime_foundation": "runtime_foundation",
+    "the_executive": "the_executive",
+    "the_table": "the_table",
+    "whiteboard": "whiteboard"
+  },
+  "ambient_notes": [
+    {
+      "access_turns": [
+        1
+      ],
+      "activation": -0.89588,
+      "id": "ambient_t1_m2",
+      "text": "In regiment, LAWS.bend defines literal_conservation_law and partition_completeness_law for eng3 in stage 18.",
+      "turn": 1
+    },
+    {
+      "access_turns": [
+        4
+      ],
+      "activation": -0.549306,
+      "id": "ambient_t4_m3",
+      "text": "The transition_component_build_status interface of whiteboard takes graph, component_id, and new_status.",
+      "turn": 4
+    },
+    {
+      "access_turns": [
+        4
+      ],
+      "activation": -0.549306,
+      "id": "ambient_t4_m4",
+      "text": "The transition_component_build_status interface returns dict.",
+      "turn": 4
+    },
+    {
+      "access_turns": [
+        7
+      ],
+      "activation": 0.0,
+      "id": "ambient_t7_m1",
+      "text": "The regiment module exposes the extract_structured_table_rows interface taking doc_tables and returning table_records.",
+      "turn": 7
+    },
+    {
+      "access_turns": [
+        7
+      ],
+      "activation": 0.0,
+      "id": "ambient_t7_m4",
+      "text": "The whiteboard module exposes the compile_laws_bend interface taking scope_id and law_records and returning laws_bend_text.",
+      "turn": 7
+    }
+  ],
+  "external_links": {
+    "ai_memory": [
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_ai_memory_5b525f02073d",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/ai_memory/schema.py#L93-L151"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_ai_memory_c4138a39bcca",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/ai_memory/cue_extractor.py#L31-L62"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_ai_memory_9bedeceb9511",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/ai_memory/hippocampal_index.py#L376-L393"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_ai_memory_9227e710f5fc",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/ai_memory/uri_resolver.py#L168-L193"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_ai_memory_aac1c381c17b",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/ai_memory/uri_resolver.py#L426-L483"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_ai_memory_0b36a4dd5f96",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/ai_memory/hippocampal_index.py#L377-L394"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_ai_memory_9a91d47045ef",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/ai_memory/uri_resolver.py#L429-L490"
+      }
+    ],
+    "graph_core": [
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_graph_core_b46c5ba51b11",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/graph_core/sqlite_store.py#L105-L493"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_graph_core_055547fd2838",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/graph_core/propagation.py#L292-L368"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_graph_core_f9d0970ff5c0",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/graph_core/propagation.py#L371-L426"
+      }
+    ],
+    "regiment": [
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_regiment_333aab068a95",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/regiment/intake_packet.py#L47-L59"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_regiment_83d1801c595e",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/regiment/intake_packet.py#L165-L206"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_regiment_3b5cc0a1e959",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/regiment/markdown_tables.py#L201-L238"
+      }
+    ],
+    "runtime_foundation": [
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_runtime_foundation_d7982b77fdb0",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L256-L420"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_runtime_foundation_42cb68082ad5",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L54-L58"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_runtime_foundation_e0a8c66807d7",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L257-L423"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_runtime_foundation_9bc91737703b",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L259-L425"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_runtime_foundation_a393cad05763",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L258-L424"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_runtime_foundation_b8b7c5977f85",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L246-L423"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_runtime_foundation_0cae68206707",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L242-L392"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_runtime_foundation_7a6c247d2ade",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L264-L433"
+      }
+    ],
+    "the_executive": [
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_executive_ef2868354547",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_executive/orchestrator.py#L103-L185"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_executive_917cda8f59b7",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_executive/gate.py#L290-L356"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_executive_00af3d3df90b",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_executive/gate.py#L358-L500"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_executive_01e6f3ed950a",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_executive/gate.py#L34-L38"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_executive_42e7c413808f",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_executive/orchestrator.py#L92-L97"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_executive_21bba10cb635",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_executive/orchestrator.py#L343-L453"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_executive_2f91d0b8ef21",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_executive/orchestrator.py#L284-L392"
+      }
+    ],
+    "the_table": [
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_table_658ce98280c5",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_table/schema.py#L120-L182"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_table_ec7007e5da75",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_table/renderer.py#L249-L290"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_table_db45175c8724",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_table/surface.py#L425-L470"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_table_88122033526e",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_table/renderer.py#L325-L377"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_table_7ed8f66cf2d1",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_table/workspace_sync.py#L226-L262"
+      }
+    ],
+    "whiteboard": [
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_whiteboard_1c63e752cdf7",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/whiteboard/read_engine.py#L15-L16"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_whiteboard_4e07791ebe4e",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/whiteboard/ingest.py#L437-L437"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_whiteboard_21fe3187d71d",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/whiteboard/rewriter.py#L218-L393"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_whiteboard_5b06732df1aa",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/whiteboard/schema.py#L204-L204"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_whiteboard_d191f66cd005",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/whiteboard/read_engine.py#L415-L488"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_whiteboard_29fafc73e596",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/whiteboard/read_engine.py#L16-L17"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_whiteboard_4e07791ebe4e",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/whiteboard/ingest.py#L278-L340"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_whiteboard_5ce9a081d521",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/whiteboard/ingest.py#L373-L434"
+      }
+    ]
+  },
+  "flows": [
+    {
+      "action": null,
+      "condition": null,
+      "created_turn": 2,
+      "dimensions": {},
+      "id": "flow_1",
+      "kind": "FLOW",
+      "payload": "IntakePacket",
+      "source": "regiment",
+      "step": null,
+      "target": "the_executive",
+      "text": "The regiment component sends IntakePacket to the_executive.",
+      "turn": 8,
+      "updated_turn": 8
+    },
+    {
+      "action": null,
+      "condition": null,
+      "created_turn": 2,
+      "dimensions": {},
+      "id": "flow_2",
+      "kind": "FLOW",
+      "payload": "ContextView",
+      "source": "whiteboard",
+      "step": null,
+      "target": "the_executive",
+      "text": "`whiteboard` returns `ContextView` to `the_executive`.",
+      "turn": 2,
+      "updated_turn": 2
+    },
+    {
+      "action": null,
+      "condition": null,
+      "created_turn": 3,
+      "dimensions": {},
+      "id": "flow_3",
+      "kind": "FLOW",
+      "payload": "ContextView",
+      "source": "graph_core",
+      "step": null,
+      "target": "whiteboard",
+      "text": "During retrieval `graph_core` returns `ContextView` to `whiteboard`.",
+      "turn": 3,
+      "updated_turn": 3
+    },
+    {
+      "action": null,
+      "condition": null,
+      "created_turn": 5,
+      "dimensions": {},
+      "id": "flow_4",
+      "kind": "FLOW",
+      "payload": "concept_cues",
+      "source": "the_executive",
+      "step": null,
+      "target": "ai_memory",
+      "text": "During Hippocampal Ignition, the_executive sends concept_cues to ai_memory.",
+      "turn": 5,
+      "updated_turn": 5
+    },
+    {
+      "action": null,
+      "condition": null,
+      "created_turn": 5,
+      "dimensions": {},
+      "id": "flow_5",
+      "kind": "FLOW",
+      "payload": "ConceptFrames",
+      "source": "ai_memory",
+      "step": null,
+      "target": "the_executive",
+      "text": "ai_memory returns ConceptFrames to the_executive.",
+      "turn": 5,
+      "updated_turn": 5
+    },
+    {
+      "action": null,
+      "condition": null,
+      "created_turn": 6,
+      "dimensions": {},
+      "id": "flow_6",
+      "kind": "FLOW",
+      "payload": "ConceptFrames",
+      "source": "ai_memory",
+      "step": null,
+      "target": "the_table",
+      "text": "ai_memory sends ConceptFrames to the_table.",
+      "turn": 6,
+      "updated_turn": 6
+    },
+    {
+      "action": null,
+      "condition": null,
+      "created_turn": 6,
+      "dimensions": {},
+      "id": "flow_7",
+      "kind": "FLOW",
+      "payload": "TableView",
+      "source": "the_table",
+      "step": null,
+      "target": "the_executive",
+      "text": "the_table returns TableView to the_executive.",
+      "turn": 6,
+      "updated_turn": 6
+    },
+    {
+      "action": null,
+      "condition": null,
+      "created_turn": 8,
+      "dimensions": {},
+      "id": "flow_runtime_foundation_to_executive",
+      "kind": "FLOW",
+      "payload": "McpJsonRpcRequest",
+      "source": "runtime_foundation",
+      "step": null,
+      "target": "the_executive",
+      "text": "The runtime_foundation component sends McpJsonRpcRequest to the_executive.",
+      "turn": 8,
+      "updated_turn": 8
+    }
+  ],
+  "k_cap": 5,
+  "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+  "lattice_artifacts": [
+    {
+      "created_turn": 1,
+      "dimensions": {},
+      "id": "law_graph_core_nd_coordinate_slice_exact",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "nd_coordinate_slice_exact",
+      "outputs": [],
+      "owner": "eng0",
+      "scope": "graph_core",
+      "scope_id": "graph_core",
+      "spec": "In graph_core, LAWS.bend defines nd_coordinate_slice_exact and bounded_activation_law for eng0 in stage 21.",
+      "stage": "stage 21",
+      "text": "In graph_core, LAWS.bend defines nd_coordinate_slice_exact and bounded_activation_law for eng0 in stage 21.",
+      "turn": 1,
+      "updated_turn": 1
+    },
+    {
+      "created_turn": 1,
+      "dimensions": {},
+      "id": "law_graph_core_bounded_activation_law",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "bounded_activation_law",
+      "outputs": [],
+      "owner": "eng0",
+      "scope": "graph_core",
+      "scope_id": "graph_core",
+      "spec": "In graph_core, LAWS.bend defines nd_coordinate_slice_exact and bounded_activation_law for eng0 in stage 21.",
+      "stage": "stage 21",
+      "text": "In graph_core, LAWS.bend defines nd_coordinate_slice_exact and bounded_activation_law for eng0 in stage 21.",
+      "turn": 1,
+      "updated_turn": 1
+    },
+    {
+      "created_turn": 2,
+      "dimensions": {},
+      "id": "law_regiment_literal_conservation_law",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "literal_conservation_law",
+      "outputs": [],
+      "owner": "eng3",
+      "scope": "regiment",
+      "scope_id": "regiment",
+      "spec": "In `regiment`, `LAWS.bend` defines `literal_conservation_law` and `partition_completeness_law` for `eng3` in stage 18.",
+      "stage": "stage 18",
+      "text": "In `regiment`, `LAWS.bend` defines `literal_conservation_law` and `partition_completeness_law` for `eng3` in stage 18.",
+      "turn": 2,
+      "updated_turn": 2
+    },
+    {
+      "created_turn": 2,
+      "dimensions": {},
+      "id": "law_regiment_partition_completeness_law",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "partition_completeness_law",
+      "outputs": [],
+      "owner": "eng3",
+      "scope": "regiment",
+      "scope_id": "regiment",
+      "spec": "In `regiment`, `LAWS.bend` defines `literal_conservation_law` and `partition_completeness_law` for `eng3` in stage 18.",
+      "stage": "stage 18",
+      "text": "In `regiment`, `LAWS.bend` defines `literal_conservation_law` and `partition_completeness_law` for `eng3` in stage 18.",
+      "turn": 2,
+      "updated_turn": 2
+    },
+    {
+      "created_turn": 2,
+      "dimensions": {},
+      "id": "law_whiteboard_lattice_delta_routes_sbf_kinds",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "lattice_delta_routes_sbf_kinds",
+      "outputs": [],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "In `whiteboard`, `LAWS.bend` defines `lattice_delta_routes_sbf_kinds` and `lattice_proof_proven_iff_complete_and_conflict_free` for `eng2` in stage 22.",
+      "stage": "stage 22",
+      "text": "In `whiteboard`, `LAWS.bend` defines `lattice_delta_routes_sbf_kinds` and `lattice_proof_proven_iff_complete_and_conflict_free` for `eng2` in stage 22.",
+      "turn": 2,
+      "updated_turn": 2
+    },
+    {
+      "created_turn": 2,
+      "dimensions": {},
+      "id": "law_whiteboard_lattice_proof_proven_iff_complete_and_conflict_free",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "lattice_proof_proven_iff_complete_and_conflict_free",
+      "outputs": [],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "In `whiteboard`, `LAWS.bend` defines `lattice_delta_routes_sbf_kinds` and `lattice_proof_proven_iff_complete_and_conflict_free` for `eng2` in stage 22.",
+      "stage": "stage 22",
+      "text": "In `whiteboard`, `LAWS.bend` defines `lattice_delta_routes_sbf_kinds` and `lattice_proof_proven_iff_complete_and_conflict_free` for `eng2` in stage 22.",
+      "turn": 2,
+      "updated_turn": 2
+    },
+    {
+      "created_turn": 2,
+      "dimensions": {},
+      "id": "law_the_executive_commit_iff_all_clear",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "commit_iff_all_clear",
+      "outputs": [],
+      "owner": "eng2",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "In `the_executive`, `LAWS.bend` defines `commit_iff_all_clear` and `reply_valid_iff_all_four_hold` for `eng2` in stage 23.",
+      "stage": "stage 23",
+      "text": "In `the_executive`, `LAWS.bend` defines `commit_iff_all_clear` and `reply_valid_iff_all_four_hold` for `eng2` in stage 23.",
+      "turn": 2,
+      "updated_turn": 2
+    },
+    {
+      "created_turn": 2,
+      "dimensions": {},
+      "id": "law_the_executive_reply_valid_iff_all_four_hold",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "reply_valid_iff_all_four_hold",
+      "outputs": [],
+      "owner": "eng2",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "In `the_executive`, `LAWS.bend` defines `commit_iff_all_clear` and `reply_valid_iff_all_four_hold` for `eng2` in stage 23.",
+      "stage": "stage 23",
+      "text": "In `the_executive`, `LAWS.bend` defines `commit_iff_all_clear` and `reply_valid_iff_all_four_hold` for `eng2` in stage 23.",
+      "turn": 2,
+      "updated_turn": 2
+    },
+    {
+      "created_turn": 2,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/regiment/intake_packet.py#L47-L59"
+      },
+      "file": "lattice/regiment/intake_packet.py#L47-L59",
+      "id": "schema_regiment_intakepacket",
+      "inputs": [
+        "turn_index",
+        "doc_tables",
+        "parsed_mcus"
+      ],
+      "kind": "SCHEMA",
+      "name": "IntakePacket",
+      "outputs": [],
+      "owner": "eng3",
+      "scope": "regiment",
+      "scope_id": "regiment",
+      "spec": "Deterministic pipe-table and flow turn intake packet",
+      "stage": "Stages 15-18",
+      "text": "Deterministic pipe-table and flow turn intake packet",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 2,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/whiteboard/read_engine.py#L16-L17"
+      },
+      "file": "lattice/whiteboard/read_engine.py#L16-L17",
+      "id": "schema_whiteboard_contextview",
+      "inputs": [
+        "status",
+        "component_specs",
+        "active_flows",
+        "compact_view"
+      ],
+      "kind": "SCHEMA",
+      "name": "ContextView",
+      "outputs": [],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Sliced nD Lattice context view",
+      "stage": "stage 22",
+      "text": "Sliced nD Lattice context view",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_build_conflict_foraging_directives#L48-L61",
+        "_collect_and_index_turn_rules#L64-L89",
+        "_resolve_table_fns#L28-L45"
+      ],
+      "created_turn": 2,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_executive/orchestrator.py#L103-L185"
+      },
+      "file": "lattice/the_executive/orchestrator.py#L103-L185",
+      "id": "interface_the_executive_run_executive_turn",
+      "inputs": [
+        "whiteboard_graph",
+        "raw_text"
+      ],
+      "kind": "INTERFACE",
+      "name": "run_executive_turn",
+      "outputs": [
+        "ExecutiveTurnResult"
+      ],
+      "owner": "eng2",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "Execute deterministic zero-LLM preflight, gate, and voice turn",
+      "stage": "stage 23",
+      "text": "Execute deterministic zero-LLM preflight, gate, and voice turn",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 3,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/graph_core/sqlite_store.py#L105-L493"
+      },
+      "file": "lattice/graph_core/sqlite_store.py#L105-L493",
+      "id": "schema_graph_core_sqlitegraphstore",
+      "inputs": [
+        "db_path"
+      ],
+      "kind": "SCHEMA",
+      "name": "SQLiteGraphStore",
+      "outputs": [],
+      "owner": "eng0",
+      "scope": "graph_core",
+      "scope_id": "graph_core",
+      "spec": "Indexed ACID SQLite graph storage engine",
+      "stage": "stage 21",
+      "text": "Indexed ACID SQLite graph storage engine",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 5,
+      "dimensions": {},
+      "id": "law_ai_memory_pointer_only_storage_law",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "pointer_only_storage_law",
+      "outputs": [],
+      "owner": "eng0",
+      "scope": "ai_memory",
+      "scope_id": "ai_memory",
+      "spec": "In ai_memory, LAWS.bend defines pointer_only_storage_law and recall_hop_bound_law for eng0 in stage 24.",
+      "stage": "stage 24",
+      "text": "In ai_memory, LAWS.bend defines pointer_only_storage_law and recall_hop_bound_law for eng0 in stage 24.",
+      "turn": 5,
+      "updated_turn": 5
+    },
+    {
+      "created_turn": 5,
+      "dimensions": {},
+      "id": "law_ai_memory_recall_hop_bound_law",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "recall_hop_bound_law",
+      "outputs": [],
+      "owner": "eng0",
+      "scope": "ai_memory",
+      "scope_id": "ai_memory",
+      "spec": "In ai_memory, LAWS.bend defines pointer_only_storage_law and recall_hop_bound_law for eng0 in stage 24.",
+      "stage": "stage 24",
+      "text": "In ai_memory, LAWS.bend defines pointer_only_storage_law and recall_hop_bound_law for eng0 in stage 24.",
+      "turn": 5,
+      "updated_turn": 5
+    },
+    {
+      "created_turn": 5,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/ai_memory/schema.py#L93-L151"
+      },
+      "file": "lattice/ai_memory/schema.py#L93-L151",
+      "id": "schema_ai_memory_conceptframe",
+      "inputs": [
+        "concept_id",
+        "lod1_synopsis",
+        "external_links"
+      ],
+      "kind": "SCHEMA",
+      "name": "ConceptFrame",
+      "outputs": [],
+      "owner": "eng0",
+      "scope": "ai_memory",
+      "scope_id": "ai_memory",
+      "spec": "Pointer-only hippocampal concept frame",
+      "stage": "stage 24",
+      "text": "Pointer-only hippocampal concept frame",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 6,
+      "dimensions": {},
+      "id": "law_the_table_table_token_budget_conservation_law",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "table_token_budget_conservation_law",
+      "outputs": [],
+      "owner": "eng1",
+      "scope": "the_table",
+      "scope_id": "the_table",
+      "spec": "In the_table, LAWS.bend defines table_token_budget_conservation_law and pinned_slot_eviction_immunity_law for eng1 in stage 25.",
+      "stage": "stage 25",
+      "text": "In the_table, LAWS.bend defines table_token_budget_conservation_law and pinned_slot_eviction_immunity_law for eng1 in stage 25.",
+      "turn": 6,
+      "updated_turn": 6
+    },
+    {
+      "created_turn": 6,
+      "dimensions": {},
+      "id": "law_the_table_pinned_slot_eviction_immunity_law",
+      "inputs": [],
+      "kind": "LAW",
+      "name": "pinned_slot_eviction_immunity_law",
+      "outputs": [],
+      "owner": "eng1",
+      "scope": "the_table",
+      "scope_id": "the_table",
+      "spec": "In the_table, LAWS.bend defines table_token_budget_conservation_law and pinned_slot_eviction_immunity_law for eng1 in stage 25.",
+      "stage": "stage 25",
+      "text": "In the_table, LAWS.bend defines table_token_budget_conservation_law and pinned_slot_eviction_immunity_law for eng1 in stage 25.",
+      "turn": 6,
+      "updated_turn": 6
+    },
+    {
+      "created_turn": 6,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_table/schema.py#L120-L182"
+      },
+      "file": "lattice/the_table/schema.py#L120-L182",
+      "id": "schema_the_table_tableslot",
+      "inputs": [
+        "slot_id",
+        "concept_id",
+        "lod_tier",
+        "pinned"
+      ],
+      "kind": "SCHEMA",
+      "name": "TableSlot",
+      "outputs": [],
+      "owner": "eng1",
+      "scope": "the_table",
+      "scope_id": "the_table",
+      "spec": "Bounded conference-room working surface slot",
+      "stage": "stage 25",
+      "text": "Bounded conference-room working surface slot",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 8,
+      "dimensions": {
+        "_from_table": true,
+        "component": "regiment",
+        "file": "lattice/regiment/intake_packet.py#L165-L206",
+        "inputs": "phase3_result",
+        "interface": "compile_intake_packet",
+        "outputs": "IntakePacket",
+        "owner": "eng3",
+        "spec": "Compiles Phase 3 output into IntakePacket for the_executive and whiteboard",
+        "stage": "18"
+      },
+      "file": "lattice/regiment/intake_packet.py#L165-L206",
+      "id": "interface_regiment_compile_intake_packet",
+      "inputs": [
+        "phase3_result",
+        "turn_index"
+      ],
+      "kind": "INTERFACE",
+      "name": "compile_intake_packet",
+      "outputs": [
+        "IntakePacket"
+      ],
+      "owner": "eng3",
+      "scope": "regiment",
+      "scope_id": "regiment",
+      "spec": "Compile deterministic Markdown pipe-table rows and flows into an IntakePacket",
+      "stage": "Stages 15-18",
+      "text": "Compile deterministic Markdown pipe-table rows and flows into an IntakePacket",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_format_tool_result#L258-L261",
+        "_read_doc_resource#L226-L238",
+        "_resolve_project_root#L241-L255"
+      ],
+      "created_turn": 8,
+      "dimensions": {
+        "_from_table": true,
+        "description": "Dispatches a validated MCP tool call to the Lattice engine",
+        "file": "lattice/mcp_server.py#L264-L433",
+        "inputs": "tool_name, arguments",
+        "interface": "call_lattice_tool",
+        "outputs": "McpToolCallResult"
+      },
+      "file": "lattice/mcp_server.py#L264-L433",
+      "id": "interface_runtime_foundation_call_lattice_tool",
+      "inputs": [
+        "tool_name: str",
+        "arguments: dict"
+      ],
+      "kind": "INTERFACE",
+      "name": "call_lattice_tool",
+      "outputs": [
+        "McpToolCallResult"
+      ],
+      "owner": "bethe",
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
+      "stage": "28",
+      "text": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
+      "turn": 28,
+      "updated_turn": 28
+    },
+    {
+      "args": "has_name, board_nonempty",
+      "created_turn": 8,
+      "dimensions": {
+        "args": "has_name, board_nonempty",
+        "description": "An MCP tool call is valid iff the tool name is recognized and the board identifier is non-empty",
+        "law": "mcp_tool_dispatch_law",
+        "lhs": "MOD.is_mcp_tool_call_valid(has_name, board_nonempty)",
+        "rhs": "Bool.and(has_name, board_nonempty)"
+      },
+      "id": "law_runtime_foundation_mcp_tool_dispatch_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_mcp_tool_call_valid(has_name, board_nonempty)",
+      "name": "mcp_tool_dispatch_law",
+      "outputs": [],
+      "owner": "groves",
+      "rhs": "Bool.and(has_name, board_nonempty)",
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "mcp_tool_dispatch_law: MOD.is_mcp_tool_call_valid(has_name, board_nonempty) == Bool.and(has_name, board_nonempty)",
+      "stage": "foundation",
+      "text": "mcp_tool_dispatch_law: MOD.is_mcp_tool_call_valid(has_name, board_nonempty) == Bool.and(has_name, board_nonempty).",
+      "turn": 8,
+      "updated_turn": 8
+    },
+    {
+      "args": "is_table_row: Bool, llm_called: Bool",
+      "bend_dir": "bend_phase3_20",
+      "created_turn": 9,
+      "dimensions": {
+        "_from_table": true,
+        "args": "is_table_row: Bool, llm_called: Bool",
+        "bend_dir": "bend_phase3_20",
+        "component": "regiment",
+        "law": "pass3b_table_fastpath_law",
+        "lhs": "MOD.is_pass3b_fastpath_valid(is_table_row, llm_called)",
+        "owner": "eng3",
+        "rhs": "Bool.or(Bool.not(is_table_row), Bool.not(llm_called))",
+        "spec": "Spec 18",
+        "stage": "18"
+      },
+      "id": "law_regiment_pass3b_table_fastpath_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_pass3b_fastpath_valid(is_table_row, llm_called)",
+      "name": "pass3b_table_fastpath_law",
+      "outputs": [],
+      "owner": "eng3",
+      "rhs": "Bool.or(Bool.not(is_table_row), Bool.not(llm_called))",
+      "scope": "regiment",
+      "scope_id": "regiment",
+      "spec": "pass3b_table_fastpath_law: MOD.is_pass3b_fastpath_valid(is_table_row, llm_called) == Bool.or(Bool.not(is_table_row), Bool.not(llm_called))",
+      "stage": "18",
+      "text": "The pass3b_table_fastpath_law applies to regiment eng3 at stage 18 in bend_phase3_20 with is_table_row as the designated table row criterion.",
+      "turn": 9,
+      "updated_turn": 9
+    },
+    {
+      "args": "is_universal_generic_subj: Bool, routed_to_global: Bool",
+      "bend_dir": "bend_phase3_20",
+      "created_turn": 9,
+      "dimensions": {
+        "_from_table": true,
+        "args": "is_universal_generic_subj: Bool, routed_to_global: Bool",
+        "bend_dir": "bend_phase3_20",
+        "component": "regiment",
+        "law": "universal_bound_scope_law",
+        "lhs": "MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global)",
+        "owner": "eng3",
+        "rhs": "Bool.or(Bool.not(is_universal_generic_subj), routed_to_global)",
+        "spec": "Spec 20",
+        "stage": "20"
+      },
+      "id": "law_regiment_universal_bound_scope_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global)",
+      "name": "universal_bound_scope_law",
+      "outputs": [],
+      "owner": "eng3",
+      "rhs": "Bool.or(Bool.not(is_universal_generic_subj), routed_to_global)",
+      "scope": "regiment",
+      "scope_id": "regiment",
+      "spec": "universal_bound_scope_law: MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global) == Bool.or(Bool.not(is_universal_generic_subj), routed_to_global)",
+      "stage": "20",
+      "text": "universal_bound_scope_law: MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global) == Bool.or(Bool.not(is_universal_generic_subj), routed_to_global).",
+      "turn": 9,
+      "updated_turn": 9
+    },
+    {
+      "args": "status_eq_build_status: Bool",
+      "bend_dir": "bend_wb_22a",
+      "created_turn": 9,
+      "dimensions": {
+        "_from_table": true,
+        "args": "status_eq_build_status: Bool",
+        "bend_dir": "bend_wb_22a",
+        "component": "whiteboard",
+        "law": "status_build_sync_law",
+        "lhs": "MOD.is_status_synced(status_eq_build_status)",
+        "owner": "eng1",
+        "rhs": "status_eq_build_status",
+        "spec": "Spec 22A",
+        "stage": "22"
+      },
+      "id": "law_whiteboard_status_build_sync_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_status_synced(status_eq_build_status)",
+      "name": "status_build_sync_law",
+      "outputs": [],
+      "owner": "eng1",
+      "rhs": "status_eq_build_status",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "status_build_sync_law: MOD.is_status_synced(status_eq_build_status) == status_eq_build_status",
+      "stage": "22",
+      "text": "status_build_sync_law: MOD.is_status_synced(status_eq_build_status) == status_eq_build_status.",
+      "turn": 9,
+      "updated_turn": 9
+    },
+    {
+      "args": "has_table_files: Bool, in_ref_map: Bool",
+      "bend_dir": "bend_exec_23c",
+      "created_turn": 9,
+      "dimensions": {
+        "_from_table": true,
+        "args": "has_table_files: Bool, in_ref_map: Bool",
+        "bend_dir": "bend_exec_23c",
+        "component": "runtime_foundation",
+        "law": "pipe_table_ref_map_law",
+        "lhs": "MOD.is_table_file_indexed(has_table_files, in_ref_map)",
+        "owner": "groves",
+        "rhs": "Bool.or(Bool.not(has_table_files), in_ref_map)",
+        "spec": "Spec 26",
+        "stage": "26"
+      },
+      "id": "law_runtime_foundation_pipe_table_ref_map_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_table_file_indexed(has_table_files, in_ref_map)",
+      "name": "pipe_table_ref_map_law",
+      "outputs": [],
+      "owner": "groves",
+      "rhs": "Bool.or(Bool.not(has_table_files), in_ref_map)",
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "pipe_table_ref_map_law: MOD.is_table_file_indexed(has_table_files, in_ref_map) == Bool.or(Bool.not(has_table_files), in_ref_map)",
+      "stage": "26",
+      "text": "pipe_table_ref_map_law: MOD.is_table_file_indexed(has_table_files, in_ref_map) == Bool.or(Bool.not(has_table_files), in_ref_map).",
+      "turn": 9,
+      "updated_turn": 9
+    },
+    {
+      "args": "is_initial_baseline: Bool, diff_files_emitted: Bool",
+      "bend_dir": "bend_exec_23c",
+      "created_turn": 10,
+      "dimensions": {
+        "_from_table": true,
+        "args": "is_initial_baseline: Bool, diff_files_emitted: Bool",
+        "bend_dir": "bend_exec_23c",
+        "component": "runtime_foundation",
+        "law": "initial_baseline_stamp_law",
+        "lhs": "MOD.is_baseline_stamp_clean(is_initial_baseline, diff_files_emitted)",
+        "owner": "groves",
+        "rhs": "Bool.or(Bool.not(is_initial_baseline), Bool.not(diff_files_emitted))",
+        "spec": "Spec 26",
+        "stage": "26"
+      },
+      "id": "law_runtime_foundation_initial_baseline_stamp_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_baseline_stamp_clean(is_initial_baseline, diff_files_emitted)",
+      "name": "initial_baseline_stamp_law",
+      "outputs": [],
+      "owner": "groves",
+      "rhs": "Bool.or(Bool.not(is_initial_baseline), Bool.not(diff_files_emitted))",
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "initial_baseline_stamp_law: MOD.is_baseline_stamp_clean(is_initial_baseline, diff_files_emitted) == Bool.or(Bool.not(is_initial_baseline), Bool.not(diff_files_emitted))",
+      "stage": "26",
+      "text": "The initial_baseline_stamp_law applies to the runtime_foundation component in groves at stage 26 with bend direction bend_exec_23c and determines whether is_initial_baseline holds.",
+      "turn": 10,
+      "updated_turn": 10
+    },
+    {
+      "args": "has_valid_table_headers: Bool, table_accepted: Bool",
+      "bend_dir": "bend_wb_22c",
+      "created_turn": 10,
+      "dimensions": {
+        "_from_table": true,
+        "args": "has_valid_table_headers: Bool, table_accepted: Bool",
+        "bend_dir": "bend_wb_22c",
+        "component": "whiteboard",
+        "law": "table_header_schema_law",
+        "lhs": "MOD.is_table_schema_valid(has_valid_table_headers, table_accepted)",
+        "owner": "eng2",
+        "rhs": "Bool.or(has_valid_table_headers, Bool.not(table_accepted))",
+        "spec": "Spec 22C",
+        "stage": "22"
+      },
+      "id": "law_whiteboard_table_header_schema_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_table_schema_valid(has_valid_table_headers, table_accepted)",
+      "name": "table_header_schema_law",
+      "outputs": [],
+      "owner": "eng2",
+      "rhs": "Bool.or(has_valid_table_headers, Bool.not(table_accepted))",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "table_header_schema_law: MOD.is_table_schema_valid(has_valid_table_headers, table_accepted) == Bool.or(has_valid_table_headers, Bool.not(table_accepted))",
+      "stage": "22",
+      "text": "table_header_schema_law: MOD.is_table_schema_valid(has_valid_table_headers, table_accepted) == Bool.or(has_valid_table_headers, Bool.not(table_accepted)).",
+      "turn": 10,
+      "updated_turn": 10
+    },
+    {
+      "args": "has_comp_attrs_or_refs: Bool, board_has_sbf_comps: Bool",
+      "bend_dir": "bend_table_25a",
+      "created_turn": 11,
+      "dimensions": {
+        "_from_table": true,
+        "args": "has_comp_attrs_or_refs: Bool, board_has_sbf_comps: Bool",
+        "bend_dir": "bend_table_25a",
+        "component": "the_table",
+        "law": "atlas_component_filter_law",
+        "lhs": "MOD.is_atlas_component_scope(has_comp_attrs_or_refs, board_has_sbf_comps)",
+        "owner": "eng1",
+        "rhs": "Bool.or(has_comp_attrs_or_refs, Bool.not(board_has_sbf_comps))",
+        "spec": "Spec 25A",
+        "stage": "25"
+      },
+      "id": "law_the_table_atlas_component_filter_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_atlas_component_scope(has_comp_attrs_or_refs, board_has_sbf_comps)",
+      "name": "atlas_component_filter_law",
+      "outputs": [],
+      "owner": "eng1",
+      "rhs": "Bool.or(has_comp_attrs_or_refs, Bool.not(board_has_sbf_comps))",
+      "scope": "the_table",
+      "scope_id": "the_table",
+      "spec": "atlas_component_filter_law: MOD.is_atlas_component_scope(has_comp_attrs_or_refs, board_has_sbf_comps) == Bool.or(has_comp_attrs_or_refs, Bool.not(board_has_sbf_comps))",
+      "stage": "25",
+      "text": "The atlas_component_filter_law applies to the_table at stage 25 with bend direction bend_table_25a, where the filter condition is MOD.is_atlas_component_scope(has_comp_attrs_or_refs, board_has_sbf_comps) and the result is Bool.or(has_comp_attrs_or_refs, Bool.not(board_has_sbf_comps)).",
+      "turn": 11,
+      "updated_turn": 11
+    },
+    {
+      "args": "has_markdown_tables: Bool, turn_accepted: Bool",
+      "bend_dir": "bend_phase3_20",
+      "created_turn": 12,
+      "dimensions": {
+        "_from_table": true,
+        "args": "has_markdown_tables: Bool, turn_accepted: Bool",
+        "bend_dir": "bend_phase3_20",
+        "component": "regiment",
+        "law": "markdown_only_turn_law",
+        "lhs": "MOD.is_markdown_only_turn_valid(has_markdown_tables, turn_accepted)",
+        "owner": "eng3",
+        "rhs": "Bool.or(has_markdown_tables, Bool.not(turn_accepted))",
+        "spec": "Spec 18",
+        "stage": "18"
+      },
+      "id": "law_regiment_markdown_only_turn_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_markdown_only_turn_valid(has_markdown_tables, turn_accepted)",
+      "name": "markdown_only_turn_law",
+      "outputs": [],
+      "owner": "eng3",
+      "rhs": "Bool.or(has_markdown_tables, Bool.not(turn_accepted))",
+      "scope": "regiment",
+      "scope_id": "regiment",
+      "spec": "markdown_only_turn_law: MOD.is_markdown_only_turn_valid(has_markdown_tables, turn_accepted) == Bool.or(has_markdown_tables, Bool.not(turn_accepted))",
+      "stage": "18",
+      "text": "The markdown_only_turn_law must govern the regiment eng3 component at stage 18 with bend direction bend_phase3_20 based on has_markdown_tables.",
+      "turn": 12,
+      "updated_turn": 12
+    },
+    {
+      "args": "has_flow_or_rule_table: Bool, fused_into_graph: Bool",
+      "bend_dir": "bend_wb_22c",
+      "created_turn": 12,
+      "dimensions": {
+        "_from_table": true,
+        "args": "has_flow_or_rule_table: Bool, fused_into_graph: Bool",
+        "bend_dir": "bend_wb_22c",
+        "component": "whiteboard",
+        "law": "flow_and_rule_table_fusion_law",
+        "lhs": "MOD.is_flow_or_rule_table_fused(has_flow_or_rule_table, fused_into_graph)",
+        "owner": "eng2",
+        "rhs": "Bool.or(Bool.not(has_flow_or_rule_table), fused_into_graph)",
+        "spec": "Spec 22C",
+        "stage": "22"
+      },
+      "id": "law_whiteboard_flow_and_rule_table_fusion_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_flow_or_rule_table_fused(has_flow_or_rule_table, fused_into_graph)",
+      "name": "flow_and_rule_table_fusion_law",
+      "outputs": [],
+      "owner": "eng2",
+      "rhs": "Bool.or(Bool.not(has_flow_or_rule_table), fused_into_graph)",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "flow_and_rule_table_fusion_law: MOD.is_flow_or_rule_table_fused(has_flow_or_rule_table, fused_into_graph) == Bool.or(Bool.not(has_flow_or_rule_table), fused_into_graph)",
+      "stage": "22",
+      "text": "flow_and_rule_table_fusion_law: MOD.is_flow_or_rule_table_fused(has_flow_or_rule_table, fused_into_graph) == Bool.or(Bool.not(has_flow_or_rule_table), fused_into_graph).",
+      "turn": 12,
+      "updated_turn": 12
+    },
+    {
+      "args": "llm_invoked_on_turn: Bool",
+      "bend_dir": "bend_exec_23c",
+      "created_turn": 12,
+      "dimensions": {
+        "_from_table": true,
+        "args": "llm_invoked_on_turn: Bool",
+        "bend_dir": "bend_exec_23c",
+        "component": "the_executive",
+        "law": "zero_llm_turn_orchestration_law",
+        "lhs": "MOD.is_turn_zero_llm(llm_invoked_on_turn)",
+        "owner": "eng2",
+        "rhs": "Bool.not(llm_invoked_on_turn)",
+        "spec": "Spec 23C",
+        "stage": "23"
+      },
+      "id": "law_the_executive_zero_llm_turn_orchestration_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_turn_zero_llm(llm_invoked_on_turn)",
+      "name": "zero_llm_turn_orchestration_law",
+      "outputs": [],
+      "owner": "eng2",
+      "rhs": "Bool.not(llm_invoked_on_turn)",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "zero_llm_turn_orchestration_law: MOD.is_turn_zero_llm(llm_invoked_on_turn) == Bool.not(llm_invoked_on_turn)",
+      "stage": "23",
+      "text": "zero_llm_turn_orchestration_law: MOD.is_turn_zero_llm(llm_invoked_on_turn) == Bool.not(llm_invoked_on_turn).",
+      "turn": 12,
+      "updated_turn": 12
+    },
+    {
+      "calls": [
+        "_extract_item_names#L266-L275",
+        "_extract_law_stub_spec#L236-L263",
+        "_py_ident#L193-L201"
+      ],
+      "created_turn": 14,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/whiteboard/ingest.py#L278-L340"
+      },
+      "file": "lattice/whiteboard/ingest.py#L278-L340",
+      "id": "interface_whiteboard_compile_python_skeleton",
+      "inputs": [
+        "scope_id",
+        "artifacts"
+      ],
+      "kind": "INTERFACE",
+      "name": "compile_python_skeleton",
+      "outputs": [
+        "str"
+      ],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Emit AST-parseable Python stub with Spec docstrings on schemas, laws, and interfaces and # MUST CALL anchors",
+      "stage": "stage 22",
+      "text": "Emit AST-parseable Python stub with Spec docstrings on schemas, laws, and interfaces and # MUST CALL anchors",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_build_slice_packet#L343-L370"
+      ],
+      "created_turn": 14,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/whiteboard/ingest.py#L373-L434"
+      },
+      "file": "lattice/whiteboard/ingest.py#L373-L434",
+      "id": "interface_whiteboard_compile_work_packets",
+      "inputs": [
+        "graph",
+        "force",
+        "status_filter"
+      ],
+      "kind": "INTERFACE",
+      "name": "compile_work_packets",
+      "outputs": [
+        "dict"
+      ],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Compile wave-ordered WorkPackets with baseline_commit_sha and synchronized status and build_status",
+      "stage": "stage 22",
+      "text": "Compile wave-ordered WorkPackets with baseline_commit_sha and synchronized status and build_status",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "args": "status_synced: Bool, spec_in_docstring: Bool",
+      "bend_dir": "bend_core_26",
+      "created_turn": 14,
+      "dimensions": {
+        "_from_table": true,
+        "args": "status_synced: Bool, spec_in_docstring: Bool",
+        "bend_dir": "bend_core_26",
+        "lhs": "MOD.is_work_packet_self_contained(status_synced, spec_in_docstring)",
+        "rhs": "Bool.and(status_synced, spec_in_docstring)"
+      },
+      "id": "law_whiteboard_status_sync_and_spec_docstring_law",
+      "inputs": [
+        "status_synced: Bool",
+        "spec_in_docstring: Bool"
+      ],
+      "kind": "LAW",
+      "lhs": "MOD.is_work_packet_self_contained(status_synced, spec_in_docstring)",
+      "name": "status_sync_and_spec_docstring_law",
+      "outputs": [],
+      "owner": "eng2",
+      "rhs": "Bool.and(status_synced, spec_in_docstring)",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Synchronize status and build_status on edit invalidation and emit Spec docstrings in compile_python_skeleton",
+      "stage": "4",
+      "text": "Synchronize status and build_status on edit invalidation and emit Spec docstrings in compile_python_skeleton",
+      "turn": 14,
+      "updated_turn": 14
+    },
+    {
+      "calls": [
+        "_collect_dangling_imports#L209-L288",
+        "_extract_law_fn_name#L148-L157",
+        "_extract_scope_files#L111-L113",
+        "_parse_file_call_graph#L172-L194",
+        "_paths_match#L102-L105",
+        "_resolve_file_scopes#L115-L123",
+        "_unpack_lattice_and_files#L136-L146"
+      ],
+      "created_turn": 15,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_executive/gate.py#L290-L356"
+      },
+      "file": "lattice/the_executive/gate.py#L290-L356",
+      "id": "interface_the_executive_verify_ast_call_graph_skeleton",
+      "inputs": [
+        "whiteboard_graph",
+        "staged_diff_report"
+      ],
+      "kind": "INTERFACE",
+      "name": "verify_ast_call_graph_skeleton",
+      "outputs": [
+        "dict"
+      ],
+      "owner": "eng3",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "Verify interface-to-law call reachability across all component files while ignoring discarded _ = law(...) assignments",
+      "stage": "stage 23",
+      "text": "Verify interface-to-law call reachability across all component files while ignoring discarded _ = law(...) assignments",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_check_numeric_bound#L107-L109",
+        "_extract_law_fn_name#L148-L157",
+        "_extract_scope_files#L111-L113",
+        "_normalize_symbol_map#L125-L134",
+        "_parse_ast_imports#L196-L207",
+        "_paths_match#L102-L105",
+        "_resolve_file_scopes#L115-L123",
+        "_unpack_lattice_and_files#L136-L146"
+      ],
+      "created_turn": 15,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_executive/gate.py#L358-L500"
+      },
+      "file": "lattice/the_executive/gate.py#L358-L500",
+      "id": "interface_the_executive_evaluate_git_commit_gate",
+      "inputs": [
+        "whiteboard_graph",
+        "staged_diff_report"
+      ],
+      "kind": "INTERFACE",
+      "name": "evaluate_git_commit_gate",
+      "outputs": [
+        "GateDecisionResult"
+      ],
+      "owner": "eng3",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "Verify bounds, contracts, FLOW payload schemas, and unregistered public symbols scoped to modified or non-VERIFIED files",
+      "stage": "stage 23",
+      "text": "Verify bounds, contracts, FLOW payload schemas, and unregistered public symbols scoped to modified or non-VERIFIED files",
+      "turn": 26,
+      "updated_turn": 28
+    },
+    {
+      "args": "file_hash_changed: Bool, scope_still_verified: Bool",
+      "bend_dir": "bend_core_26",
+      "created_turn": 15,
+      "dimensions": {
+        "_from_table": true,
+        "args": "file_hash_changed: Bool, scope_still_verified: Bool",
+        "bend_dir": "bend_core_26",
+        "lhs": "MOD.is_verified_scope_protected(file_hash_changed, scope_still_verified)",
+        "rhs": "Bool.not(Bool.and(file_hash_changed, scope_still_verified))"
+      },
+      "id": "law_the_executive_verified_scope_edit_guard_law",
+      "inputs": [
+        "file_hash_changed: Bool",
+        "scope_still_verified: Bool"
+      ],
+      "kind": "LAW",
+      "lhs": "MOD.is_verified_scope_protected(file_hash_changed, scope_still_verified)",
+      "name": "verified_scope_edit_guard_law",
+      "outputs": [],
+      "owner": "eng3",
+      "rhs": "Bool.not(Bool.and(file_hash_changed, scope_still_verified))",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "Reject commits that modify a baseline-hashed file belonging to a VERIFIED component unless the component was marked STALE",
+      "stage": "26",
+      "text": "Reject commits that modify a baseline-hashed file belonging to a VERIFIED component unless the component was marked STALE",
+      "turn": 15,
+      "updated_turn": 15
+    },
+    {
+      "calls": [
+        "_extract_canonical_and_aliases#L72-L89",
+        "_get_table_cell#L207-L215",
+        "_parse_list_cell#L101-L114",
+        "_parse_scalar_cell#L91-L99",
+        "_register_scope_aliases#L120-L127",
+        "_resolve_or_register_scope#L130-L149",
+        "_slugify_scope_id#L64-L70"
+      ],
+      "created_turn": 16,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/whiteboard/rewriter.py#L218-L393"
+      },
+      "file": "lattice/whiteboard/rewriter.py#L218-L393",
+      "id": "interface_whiteboard_fuse_table_attributes",
+      "inputs": [
+        "graph",
+        "doc_tables"
+      ],
+      "kind": "INTERFACE",
+      "name": "fuse_table_attributes",
+      "outputs": [
+        "dict"
+      ],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Fuse Component, Flow, Interface, Law, Schema, and Rule Markdown pipe tables into the Whiteboard graph",
+      "stage": "stage 22",
+      "text": "Fuse Component, Flow, Interface, Law, Schema, and Rule Markdown pipe tables into the Whiteboard graph",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_table/renderer.py#L249-L290"
+      },
+      "file": "lattice/the_table/renderer.py#L249-L290",
+      "id": "schema_the_table_tableview",
+      "inputs": [
+        "slots",
+        "total_tokens",
+        "compact_view"
+      ],
+      "kind": "SCHEMA",
+      "name": "TableView",
+      "outputs": [],
+      "owner": "eng1",
+      "scope": "the_table",
+      "scope_id": "the_table",
+      "spec": "Rendered conference-room working surface view",
+      "stage": "stage 25",
+      "text": "Rendered conference-room working surface view",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/whiteboard/schema.py#L204-L204"
+      },
+      "file": "lattice/whiteboard/schema.py#L204-L204",
+      "id": "schema_whiteboard_whiteboardgraph",
+      "inputs": [
+        "data",
+        "store"
+      ],
+      "kind": "SCHEMA",
+      "name": "WhiteboardGraph",
+      "outputs": [],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Living nD system lattice graph container",
+      "stage": "stage 22",
+      "text": "Living nD system lattice graph container",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_executive/gate.py#L34-L38"
+      },
+      "file": "lattice/the_executive/gate.py#L34-L38",
+      "id": "schema_the_executive_gatedecisionresult",
+      "inputs": [
+        "allowed",
+        "decision",
+        "bounce_reason",
+        "violations"
+      ],
+      "kind": "SCHEMA",
+      "name": "GateDecisionResult",
+      "outputs": [],
+      "owner": "eng3",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "Pre-commit and turn gate decision verdict",
+      "stage": "stage 23",
+      "text": "Pre-commit and turn gate decision verdict",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_executive/orchestrator.py#L92-L97"
+      },
+      "file": "lattice/the_executive/orchestrator.py#L92-L97",
+      "id": "schema_the_executive_executiveturnresult",
+      "inputs": [
+        "turn_index",
+        "decision",
+        "bounce_reason",
+        "whiteboard_graph"
+      ],
+      "kind": "SCHEMA",
+      "name": "ExecutiveTurnResult",
+      "outputs": [],
+      "owner": "eng2",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "Full executive turn orchestration result",
+      "stage": "stage 23",
+      "text": "Full executive turn orchestration result",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/mcp_server.py#L51-L55"
+      },
+      "file": "lattice/mcp_server.py#L51-L55",
+      "id": "schema_runtime_foundation_mcpjsonrpcrequest",
+      "inputs": [
+        "method",
+        "params"
+      ],
+      "kind": "SCHEMA",
+      "name": "McpJsonRpcRequest",
+      "outputs": [],
+      "owner": "bethe",
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "MCP JSON-RPC 2.0 request envelope",
+      "stage": "Stage 28",
+      "text": "MCP JSON-RPC 2.0 request envelope",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_build_scope_headers#L135-L153",
+        "_collect_lattice_view_items#L256-L289"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/graph_core/propagation.py#L292-L368"
+      },
+      "file": "lattice/graph_core/propagation.py#L292-L368",
+      "id": "interface_graph_core_propagate_nodes",
+      "inputs": [
+        "graph",
+        "query",
+        "temperature",
+        "token_budget"
+      ],
+      "kind": "INTERFACE",
+      "name": "propagate_nodes",
+      "outputs": [
+        "ContextView"
+      ],
+      "owner": "eng0",
+      "scope": "graph_core",
+      "scope_id": "graph_core",
+      "spec": "Run damped activation propagation over graph_core",
+      "stage": "stage 21",
+      "text": "Run damped activation propagation over graph_core",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_build_scope_headers#L135-L153",
+        "_collect_lattice_view_items#L256-L289"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/graph_core/propagation.py#L371-L426"
+      },
+      "file": "lattice/graph_core/propagation.py#L371-L426",
+      "id": "interface_graph_core_scan_nodes",
+      "inputs": [
+        "graph",
+        "query",
+        "token_budget"
+      ],
+      "kind": "INTERFACE",
+      "name": "scan_nodes",
+      "outputs": [
+        "ContextView"
+      ],
+      "owner": "eng0",
+      "scope": "graph_core",
+      "scope_id": "graph_core",
+      "spec": "Scan and rank graph_core nodes by lexical/IDF overlap",
+      "stage": "stage 21",
+      "text": "Scan and rank graph_core nodes by lexical/IDF overlap",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_normalize_cue_token#L18-L28"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/ai_memory/cue_extractor.py#L31-L62"
+      },
+      "file": "lattice/ai_memory/cue_extractor.py#L31-L62",
+      "id": "interface_ai_memory_extract_concept_cues",
+      "inputs": [
+        "query_text",
+        "max_seed_cues"
+      ],
+      "kind": "INTERFACE",
+      "name": "extract_concept_cues",
+      "outputs": [
+        "concept_cues"
+      ],
+      "owner": "eng0",
+      "scope": "ai_memory",
+      "scope_id": "ai_memory",
+      "spec": "Extract bounded seed cues from query text",
+      "stage": "stage 24",
+      "text": "Extract bounded seed cues from query text",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_build_concept_frame_record#L374-L375",
+        "_extract_scope_synopsis_and_links#L351-L372",
+        "_req_int#L47-L50",
+        "_resolve_store_and_graph#L122-L132"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/ai_memory/hippocampal_index.py#L377-L394"
+      },
+      "file": "lattice/ai_memory/hippocampal_index.py#L377-L394",
+      "id": "interface_ai_memory_recall_concepts",
+      "inputs": [
+        "store_or_graph",
+        "concept_cues",
+        "token_budget"
+      ],
+      "kind": "INTERFACE",
+      "name": "recall_concepts",
+      "outputs": [
+        "ConceptFrames"
+      ],
+      "owner": "eng3",
+      "scope": "ai_memory",
+      "scope_id": "ai_memory",
+      "spec": "Hippocampal spreading activation recall returning ConceptFrames",
+      "stage": "stage 24",
+      "text": "Hippocampal spreading activation recall returning ConceptFrames",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_matches_lod_tier#L161-L165",
+        "_read_links_for_concept#L78-L103"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/ai_memory/uri_resolver.py#L168-L193"
+      },
+      "file": "lattice/ai_memory/uri_resolver.py#L168-L193",
+      "id": "interface_ai_memory_resolve_external_links",
+      "inputs": [
+        "store_or_frame",
+        "concept_id",
+        "lod_tier"
+      ],
+      "kind": "INTERFACE",
+      "name": "resolve_external_links",
+      "outputs": [
+        "ExternalLinkPointers"
+      ],
+      "owner": "eng0",
+      "scope": "ai_memory",
+      "scope_id": "ai_memory",
+      "spec": "Resolve pointer-only external URI links on a ConceptFrame",
+      "stage": "stage 24",
+      "text": "Resolve pointer-only external URI links on a ConceptFrame",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_collect_atlas_topology#L295-L422",
+        "_ensure_table_state_dict#L20-L42",
+        "_normalize_atlas_boards#L275-L292"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_table/surface.py#L425-L470"
+      },
+      "file": "lattice/the_table/surface.py#L425-L470",
+      "id": "interface_the_table_render_lattice_atlas",
+      "inputs": [
+        "whiteboard_boards",
+        "table_state",
+        "has_local_seed_cues"
+      ],
+      "kind": "INTERFACE",
+      "name": "render_lattice_atlas",
+      "outputs": [
+        "TableView"
+      ],
+      "owner": "eng1",
+      "scope": "the_table",
+      "scope_id": "the_table",
+      "spec": "Render multi-board LOD_0 topological Lattice Atlas",
+      "stage": "stage 25",
+      "text": "Render multi-board LOD_0 topological Lattice Atlas",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_extract_raw_slots#L306-L322"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_table/renderer.py#L325-L377"
+      },
+      "file": "lattice/the_table/renderer.py#L325-L377",
+      "id": "interface_the_table_render_table_view",
+      "inputs": [
+        "table_state",
+        "max_summary_words"
+      ],
+      "kind": "INTERFACE",
+      "name": "render_table_view",
+      "outputs": [
+        "TableView"
+      ],
+      "owner": "eng2",
+      "scope": "the_table",
+      "scope_id": "the_table",
+      "spec": "Render active TableSlots into a bounded TableView",
+      "stage": "stage 25",
+      "text": "Render active TableSlots into a bounded TableView",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_admit_or_merge_slots#L193-L224",
+        "_build_candidate_slot#L151-L166",
+        "_extract_context_view_candidates#L168-L191",
+        "_validate_caps#L53-L60"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_table/workspace_sync.py#L226-L262"
+      },
+      "file": "lattice/the_table/workspace_sync.py#L226-L262",
+      "id": "interface_the_table_sync_memory_to_table",
+      "inputs": [
+        "table_state",
+        "recalled_concepts",
+        "context_view"
+      ],
+      "kind": "INTERFACE",
+      "name": "sync_memory_to_table",
+      "outputs": [
+        "TableView"
+      ],
+      "owner": "eng2",
+      "scope": "the_table",
+      "scope_id": "the_table",
+      "spec": "Synchronize recalled ConceptFrames and ContextView into the_table",
+      "stage": "stage 25",
+      "text": "Synchronize recalled ConceptFrames and ContextView into the_table",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/whiteboard/ingest.py#L58-L136"
+      },
+      "file": "lattice/whiteboard/ingest.py#L58-L136",
+      "id": "interface_whiteboard_ingest_intake_packet",
+      "inputs": [
+        "graph",
+        "intake_packet"
+      ],
+      "kind": "INTERFACE",
+      "name": "ingest_intake_packet",
+      "outputs": [
+        "IngestionResult"
+      ],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Ingest deterministic IntakePacket into the Whiteboard graph",
+      "stage": "stage 22",
+      "text": "Ingest deterministic IntakePacket into the Whiteboard graph",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_enrich_view_compact_lines#L35-L79",
+        "_node_matches_slice_dims#L229-L338",
+        "_scan_ast_symbols_on_disk#L356-L404"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/whiteboard/read_engine.py#L407-L499"
+      },
+      "file": "lattice/whiteboard/read_engine.py#L407-L499",
+      "id": "interface_whiteboard_slice_lattice",
+      "inputs": [
+        "graph",
+        "query",
+        "token_budget"
+      ],
+      "kind": "INTERFACE",
+      "name": "slice_lattice",
+      "outputs": [
+        "ContextView"
+      ],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Slice the nD Lattice graph with focused artifact filtering on exact AST symbol queries",
+      "stage": "stage 22",
+      "text": "Slice the nD Lattice graph with focused artifact filtering on exact AST symbol queries",
+      "turn": 26,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_parse_bend_law_args#L139-L152"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/whiteboard/ingest.py#L155-L180"
+      },
+      "file": "lattice/whiteboard/ingest.py#L155-L180",
+      "id": "interface_whiteboard_compile_laws_bend",
+      "inputs": [
+        "scope_id",
+        "law_records"
+      ],
+      "kind": "INTERFACE",
+      "name": "compile_laws_bend",
+      "outputs": [
+        "str"
+      ],
+      "owner": "eng2",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Compile Bend 2 law theorems into LAWS.bend skeleton",
+      "stage": "stage 22",
+      "text": "Compile Bend 2 law theorems into LAWS.bend skeleton",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/whiteboard/mutations.py#L135-L168"
+      },
+      "file": "lattice/whiteboard/mutations.py#L135-L168",
+      "id": "interface_whiteboard_transition_component_build_status",
+      "inputs": [
+        "graph",
+        "scope_id",
+        "new_status"
+      ],
+      "kind": "INTERFACE",
+      "name": "transition_component_build_status",
+      "outputs": [
+        "dict"
+      ],
+      "owner": "eng1",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Transition a component scope between lifecycle build statuses",
+      "stage": "stage 22",
+      "text": "Transition a component scope between lifecycle build statuses",
+      "turn": 18,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_classify_table_kind#L183-L198",
+        "_clean_cell_val#L94-L98",
+        "_norm_col_key#L88-L91",
+        "_split_list_cell#L101-L112"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/regiment/markdown_tables.py#L201-L238"
+      },
+      "file": "lattice/regiment/markdown_tables.py#L201-L238",
+      "id": "interface_regiment_extract_structured_table_rows",
+      "inputs": [
+        "doc_tables"
+      ],
+      "kind": "INTERFACE",
+      "name": "extract_structured_table_rows",
+      "outputs": [
+        "list"
+      ],
+      "owner": "eng0",
+      "scope": "regiment",
+      "scope_id": "regiment",
+      "spec": "Extract normalized structured records from Markdown pipe tables",
+      "stage": "Stages 15-18",
+      "text": "Extract normalized structured records from Markdown pipe tables",
+      "turn": 17,
+      "updated_turn": 28
+    },
+    {
+      "calls": [
+        "_collect_and_index_turn_rules#L64-L89",
+        "_find_owning_scopes#L220-L223",
+        "_parse_git_report_entries#L256-L281",
+        "_paths_match#L201-L203",
+        "_scope_direct_deps#L226-L233",
+        "_scope_file_refs#L206-L217",
+        "_upsert_contract_artifact#L236-L253"
+      ],
+      "created_turn": 17,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/the_executive/orchestrator.py#L284-L392"
+      },
+      "file": "lattice/the_executive/orchestrator.py#L284-L392",
+      "id": "interface_the_executive_sync_post_commit_to_lattice",
+      "inputs": [
+        "whiteboard_graph",
+        "commit_report"
+      ],
+      "kind": "INTERFACE",
+      "name": "sync_post_commit_to_lattice",
+      "outputs": [
+        "PostCommitSyncResult"
+      ],
+      "owner": "eng2",
+      "scope": "the_executive",
+      "scope_id": "the_executive",
+      "spec": "Synchronize post-commit file hashes, delegate all URI/line healing to ai_memory.sync_git_diff_uris, and cascade STALE",
+      "stage": "stage 23",
+      "text": "Synchronize post-commit file hashes, delegate all URI/line healing to ai_memory.sync_git_diff_uris, and cascade STALE",
+      "turn": 21,
+      "updated_turn": 28
+    },
+    {
+      "args": "has_ast_symbol_range: Bool, uri_has_line_anchor: Bool",
+      "bend_dir": "bend_mem_24a",
+      "created_turn": 19,
+      "dimensions": {
+        "_from_table": true,
+        "args": "has_ast_symbol_range: Bool, uri_has_line_anchor: Bool",
+        "bend_dir": "bend_mem_24a",
+        "lhs": "MOD.is_symbol_uri_anchored(has_ast_symbol_range, uri_has_line_anchor)",
+        "rhs": "Bool.or(Bool.not(has_ast_symbol_range), uri_has_line_anchor)"
+      },
+      "id": "law_ai_memory_ast_symbol_uri_anchor_law",
+      "inputs": [
+        "has_ast_symbol_range: Bool",
+        "uri_has_line_anchor: Bool"
+      ],
+      "kind": "LAW",
+      "lhs": "MOD.is_symbol_uri_anchored(has_ast_symbol_range, uri_has_line_anchor)",
+      "name": "ast_symbol_uri_anchor_law",
+      "outputs": [],
+      "owner": "eng0",
+      "rhs": "Bool.or(Bool.not(has_ast_symbol_range), uri_has_line_anchor)",
+      "scope": "ai_memory",
+      "scope_id": "ai_memory",
+      "spec": "Stamp #Lstart-Lend AST symbol line anchors onto artifact files and ai_memory external_links during URI sync",
+      "stage": "stage 24",
+      "text": "Stamp #Lstart-Lend AST symbol line anchors onto artifact files and ai_memory external_links during URI sync",
+      "turn": 19,
+      "updated_turn": 19
+    },
+    {
+      "calls": [
+        "_UriSyncState#L309-L426",
+        "_parse_git_diff_manifest#L234-L295"
+      ],
+      "created_turn": 19,
+      "dimensions": {
+        "_from_table": true,
+        "file": "lattice/ai_memory/uri_resolver.py#L429-L490"
+      },
+      "file": "lattice/ai_memory/uri_resolver.py#L429-L490",
+      "id": "interface_ai_memory_sync_git_diff_uris",
+      "inputs": [
+        "store_or_graph",
+        "git_diff_manifest"
+      ],
+      "kind": "INTERFACE",
+      "name": "sync_git_diff_uris",
+      "outputs": [
+        "dict"
+      ],
+      "owner": "eng0",
+      "scope": "ai_memory",
+      "scope_id": "ai_memory",
+      "spec": "Single-owner URI healer for renames, line_shifts, AST #Lstart-Lend anchors, and local helper call-tree pointers",
+      "stage": "stage 24",
+      "text": "Single-owner URI healer for renames, line_shifts, AST #Lstart-Lend anchors, and local helper call-tree pointers",
+      "turn": 21,
+      "updated_turn": 28
+    }
+  ],
+  "lattice_proof": {
+    "bend_proof_source": "import Base\n\ntype LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\ndef classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n    case False{} True{} True{} True{}:\n      LPProven{}\n    case False{} True{} True{} False{}:\n      LPDraft{}\n    case False{} True{} False{} flow_ok:\n      LPDraft{}\n    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\ndef board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status(False{}, True{}, True{}, True{})\n",
+    "component_count": 7,
+    "contract_count": 33,
+    "flow_count": 8,
+    "hard_violations": [],
+    "is_proven": true,
+    "law_count": 26,
+    "open_gaps": [],
+    "status": "PROVEN_COMPLETE"
+  },
+  "max_ring": 10,
+  "mitosis_splits": [],
+  "open_blockers": [],
+  "scopes": {
+    "ai_memory": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {
+        "_table_depends_on": [
+          "graph_core"
+        ],
+        "_table_files": [
+          "lattice/ai_memory/__init__.py",
+          "lattice/ai_memory/schema.py",
+          "lattice/ai_memory/uri_resolver.py",
+          "lattice/ai_memory/hippocampal_index.py",
+          "lattice/ai_memory/cue_extractor.py"
+        ],
+        "_table_role": "hippocampal_concept_index_and_uri_resolver",
+        "depends_on": "graph_core",
+        "file_hashes": {
+          "lattice/ai_memory/__init__.py": "f7b966ac6fb65cac",
+          "lattice/ai_memory/cue_extractor.py": "17f80b1609252625",
+          "lattice/ai_memory/hippocampal_index.py": "6a89376807ef510d",
+          "lattice/ai_memory/schema.py": "e6d4ea5e4b218d1b",
+          "lattice/ai_memory/uri_resolver.py": "09f5d2272dd373fe"
+        },
+        "files": [
+          "lattice/ai_memory/__init__.py",
+          "lattice/ai_memory/schema.py",
+          "lattice/ai_memory/uri_resolver.py",
+          "lattice/ai_memory/hippocampal_index.py",
+          "lattice/ai_memory/cue_extractor.py"
+        ],
+        "owner": "eng0",
+        "role": "hippocampal_concept_index_and_uri_resolver",
+        "stage": "stage 24",
+        "updated_turn": 17
+      },
+      "build_status": "STALE",
+      "build_tag": null,
+      "children": [],
+      "core_tag": "s24-core-mem-1",
+      "created_turn": 5,
+      "depends_on": [
+        "graph_core"
+      ],
+      "failure_diagnostic": null,
+      "file_hashes": {
+        "lattice/ai_memory/__init__.py": "f7b966ac6fb65cac",
+        "lattice/ai_memory/cue_extractor.py": "17f80b1609252625",
+        "lattice/ai_memory/hippocampal_index.py": "6a89376807ef510d",
+        "lattice/ai_memory/schema.py": "e6d4ea5e4b218d1b",
+        "lattice/ai_memory/uri_resolver.py": "09f5d2272dd373fe"
+      },
+      "files": [
+        "lattice/ai_memory/__init__.py",
+        "lattice/ai_memory/schema.py",
+        "lattice/ai_memory/uri_resolver.py",
+        "lattice/ai_memory/hippocampal_index.py",
+        "lattice/ai_memory/cue_extractor.py"
+      ],
+      "id": "ai_memory",
+      "in_edges": [
+        "the_executive",
+        "the_table"
+      ],
+      "inputs": [],
+      "kind": "COMPONENT",
+      "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+      "outputs": [],
+      "owner": "eng0",
+      "parent": null,
+      "role": "hippocampal_concept_index_and_uri_resolver",
+      "rules": [],
+      "stage": "stage 24",
+      "status": "STALE",
+      "updated_turn": 28
+    },
+    "global_defaults": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {
+        "lod1_synopsis": "In `global_defaults`, `regiment_nlp` != imported when Never import regiment_nlp, spacy, torch, or onnxruntime inside lattice."
+      },
+      "build_status": "DRAFT",
+      "build_tag": null,
+      "children": [],
+      "core_tag": null,
+      "depends_on": [],
+      "failure_diagnostic": null,
+      "id": "global_defaults",
+      "in_edges": [],
+      "inputs": [],
+      "kind": null,
+      "outputs": [],
+      "owner": null,
+      "parent": null,
+      "role": null,
+      "rules": [
+        {
+          "bound_op": null,
+          "bound_val": null,
+          "conditions": [],
+          "created_turn": 4,
+          "exceptions": [],
+          "facet": "obligations",
+          "id": "r_global_defaults_1",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults",
+          "target_prop": null,
+          "text": "The whiteboard system must transition a component's status to STALE when editing any rule or contract on a VERIFIED component.",
+          "turn": 4,
+          "type": "OBLIGATION",
+          "updated_turn": 4
+        },
+        {
+          "access_turns": [
+            17
+          ],
+          "bound_op": "!=",
+          "bound_val": "imported",
+          "conditions": [
+            "Never import regiment_nlp, spacy, torch, or onnxruntime inside lattice"
+          ],
+          "created_turn": 17,
+          "exceptions": [],
+          "facet": "prohibitions",
+          "id": "r_global_defaults_8",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults",
+          "target_prop": "regiment_nlp",
+          "text": "In `global_defaults`, `regiment_nlp` != imported when Never import regiment_nlp, spacy, torch, or onnxruntime inside lattice.",
+          "turn": 17,
+          "type": "PROHIBITION",
+          "updated_turn": 17
+        }
+      ],
+      "stage": null,
+      "status": "DRAFT"
+    },
+    "graph_core": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {
+        "_table_depends_on": [],
+        "_table_files": [
+          "lattice/graph_core/__init__.py",
+          "lattice/graph_core/sqlite_store.py",
+          "lattice/graph_core/activation.py",
+          "lattice/graph_core/formatting.py",
+          "lattice/graph_core/propagation.py"
+        ],
+        "_table_role": "shared_sqlite_and_activation_substrate",
+        "depends_on": "None",
+        "file_hashes": {
+          "lattice/graph_core/__init__.py": "1ab860b33a0a5646",
+          "lattice/graph_core/activation.py": "ff6ff5ce2e53310f",
+          "lattice/graph_core/formatting.py": "40cfd2570aec979b",
+          "lattice/graph_core/propagation.py": "6cc40ae7cbf800bf",
+          "lattice/graph_core/sqlite_store.py": "1cd194f5e67218c0"
+        },
+        "files": [
+          "lattice/graph_core/__init__.py",
+          "lattice/graph_core/sqlite_store.py",
+          "lattice/graph_core/activation.py",
+          "lattice/graph_core/formatting.py",
+          "lattice/graph_core/propagation.py"
+        ],
+        "owner": "eng0",
+        "role": "shared_sqlite_and_activation_substrate",
+        "stage": "stage 21",
+        "updated_turn": 17
+      },
+      "build_status": "VERIFIED",
+      "build_tag": null,
+      "children": [],
+      "core_tag": "s21-core-1",
+      "created_turn": 1,
+      "depends_on": [],
+      "failure_diagnostic": null,
+      "file_hashes": {
+        "lattice/graph_core/__init__.py": "1ab860b33a0a5646",
+        "lattice/graph_core/activation.py": "ff6ff5ce2e53310f",
+        "lattice/graph_core/formatting.py": "40cfd2570aec979b",
+        "lattice/graph_core/propagation.py": "6cc40ae7cbf800bf",
+        "lattice/graph_core/sqlite_store.py": "1cd194f5e67218c0"
+      },
+      "files": [
+        "lattice/graph_core/__init__.py",
+        "lattice/graph_core/sqlite_store.py",
+        "lattice/graph_core/activation.py",
+        "lattice/graph_core/formatting.py",
+        "lattice/graph_core/propagation.py"
+      ],
+      "id": "graph_core",
+      "in_edges": [
+        "regiment",
+        "whiteboard",
+        "the_executive",
+        "ai_memory",
+        "the_table"
+      ],
+      "inputs": [],
+      "kind": "COMPONENT",
+      "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+      "outputs": [],
+      "owner": "eng0",
+      "parent": null,
+      "role": "shared_sqlite_and_activation_substrate",
+      "rules": [],
+      "stage": "stage 21",
+      "status": "VERIFIED",
+      "updated_turn": 1
+    },
+    "regiment": {
+      "_meta": {},
+      "active_ticket_id": "db3acba",
+      "aliases": [],
+      "attributes": {
+        "_table_depends_on": [
+          "runtime_foundation"
+        ],
+        "_table_files": [
+          "lattice/regiment/__init__.py",
+          "lattice/regiment/markdown_tables.py",
+          "lattice/regiment/intake_packet.py"
+        ],
+        "_table_role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
+        "depends_on": "runtime_foundation",
+        "file_hashes": {
+          "lattice/regiment/__init__.py": "51ed764b25109489",
+          "lattice/regiment/intake_packet.py": "c5bdc2d8008fb855",
+          "lattice/regiment/markdown_tables.py": "148d757eab4107cd"
+        },
+        "files": [
+          "lattice/regiment/__init__.py",
+          "lattice/regiment/markdown_tables.py",
+          "lattice/regiment/intake_packet.py"
+        ],
+        "owner": "eng0, eng1, eng2, eng3",
+        "role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
+        "stage": "Stages 15-18",
+        "updated_turn": 17
+      },
+      "build_status": "STALE",
+      "build_tag": "s18c-eng3-compiler-3",
+      "children": [],
+      "core_tag": "s18c-core-compiler-3",
+      "created_turn": 1,
+      "depends_on": [
+        "runtime_foundation"
+      ],
+      "failure_diagnostic": null,
+      "file_hashes": {
+        "lattice/regiment/__init__.py": "51ed764b25109489",
+        "lattice/regiment/intake_packet.py": "c5bdc2d8008fb855",
+        "lattice/regiment/markdown_tables.py": "148d757eab4107cd"
+      },
+      "files": [
+        "lattice/regiment/__init__.py",
+        "lattice/regiment/markdown_tables.py",
+        "lattice/regiment/intake_packet.py"
+      ],
+      "id": "regiment",
+      "in_edges": [
+        "whiteboard",
+        "the_executive"
+      ],
+      "inputs": [],
+      "kind": "COMPONENT",
+      "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+      "outputs": [],
+      "owner": "eng0, eng1, eng2, eng3",
+      "parent": null,
+      "role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
+      "rules": [],
+      "stage": "Stages 15-18",
+      "status": "STALE",
+      "updated_turn": 28
+    },
+    "runtime_foundation": {
+      "_meta": {},
+      "active_ticket_id": null,
+      "aliases": [],
+      "attributes": {
+        "_table_depends_on": [],
+        "_table_files": [
+          "lattice/__init__.py",
+          "lattice/nlp.py",
+          "lattice/types.py",
+          "lattice/cli.py",
+          "lattice/mcp_server.py",
+          "lattice/mcp_verifier.py"
+        ],
+        "_table_role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
+        "depends_on": "None",
+        "file_hashes": {
+          "lattice/__init__.py": "837c54c33cd000b4",
+          "lattice/cli.py": "3ec71fd1f5e71adf",
+          "lattice/mcp_server.py": "384f7a36f70e64ca",
+          "lattice/mcp_verifier.py": "a015087de6656801",
+          "lattice/nlp.py": "bfdfb1a1a0687299",
+          "lattice/types.py": "2172d10c1427d1b2"
+        },
+        "files": [
+          "lattice/__init__.py",
+          "lattice/nlp.py",
+          "lattice/types.py",
+          "lattice/cli.py",
+          "lattice/mcp_server.py",
+          "lattice/mcp_verifier.py"
+        ],
+        "owner": "bethe",
+        "role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
+        "stage": "Stage 15",
+        "updated_turn": 17
+      },
+      "build_status": "VERIFIED",
+      "build_tag": null,
+      "children": [],
+      "core_tag": "s28-core-foundation-1",
+      "created_turn": 13,
+      "depends_on": [],
+      "failure_diagnostic": null,
+      "file_hashes": {
+        "lattice/__init__.py": "837c54c33cd000b4",
+        "lattice/cli.py": "3ec71fd1f5e71adf",
+        "lattice/mcp_server.py": "384f7a36f70e64ca",
+        "lattice/mcp_verifier.py": "a015087de6656801",
+        "lattice/nlp.py": "bfdfb1a1a0687299",
+        "lattice/types.py": "2172d10c1427d1b2"
+      },
+      "files": [
+        "lattice/__init__.py",
+        "lattice/nlp.py",
+        "lattice/types.py",
+        "lattice/cli.py",
+        "lattice/mcp_server.py",
+        "lattice/mcp_verifier.py"
+      ],
+      "id": "runtime_foundation",
+      "in_edges": [
+        "regiment"
+      ],
+      "inputs": [],
+      "kind": "COMPONENT",
+      "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+      "outputs": [],
+      "owner": "bethe",
+      "parent": null,
+      "role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
+      "rules": [],
+      "stage": "Stage 15",
+      "status": "VERIFIED",
+      "updated_turn": 1
+    },
+    "the_executive": {
+      "_meta": {},
+      "active_ticket_id": "b10aa97",
+      "aliases": [],
+      "attributes": {
+        "_table_depends_on": [
+          "graph_core",
+          "regiment",
+          "whiteboard"
+        ],
+        "_table_files": [
+          "lattice/the_executive/__init__.py",
+          "lattice/the_executive/gate.py",
+          "lattice/the_executive/orchestrator.py",
+          "lattice/the_executive/preflight.py",
+          "lattice/the_executive/voice.py"
+        ],
+        "_table_role": "preflight_routing_gate_and_voice",
+        "depends_on": "graph_core, regiment, whiteboard",
+        "file_hashes": {
+          "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
+          "lattice/the_executive/gate.py": "857c391cfaf4e874",
+          "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
+          "lattice/the_executive/preflight.py": "5be08f3f57952191",
+          "lattice/the_executive/voice.py": "5fb44eaba9171d58"
+        },
+        "files": [
+          "lattice/the_executive/__init__.py",
+          "lattice/the_executive/gate.py",
+          "lattice/the_executive/orchestrator.py",
+          "lattice/the_executive/preflight.py",
+          "lattice/the_executive/voice.py"
+        ],
+        "owner": "eng2",
+        "role": "preflight_routing_gate_and_voice",
+        "stage": "stage 23",
+        "updated_turn": 17
+      },
+      "build_status": "STALE",
+      "build_tag": "s25b-eng2-table-1",
+      "children": [],
+      "core_tag": "s25-core-table-1",
+      "created_turn": 1,
+      "depends_on": [
+        "graph_core",
+        "regiment",
+        "whiteboard"
+      ],
+      "failure_diagnostic": null,
+      "file_hashes": {
+        "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
+        "lattice/the_executive/gate.py": "857c391cfaf4e874",
+        "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
+        "lattice/the_executive/preflight.py": "5be08f3f57952191",
+        "lattice/the_executive/voice.py": "5fb44eaba9171d58"
+      },
+      "files": [
+        "lattice/the_executive/__init__.py",
+        "lattice/the_executive/gate.py",
+        "lattice/the_executive/orchestrator.py",
+        "lattice/the_executive/preflight.py",
+        "lattice/the_executive/voice.py"
+      ],
+      "id": "the_executive",
+      "in_edges": [
+        "regiment",
+        "whiteboard",
+        "ai_memory",
+        "the_table"
+      ],
+      "inputs": [],
+      "kind": "COMPONENT",
+      "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+      "outputs": [],
+      "owner": "eng2",
+      "parent": null,
+      "role": "preflight_routing_gate_and_voice",
+      "rules": [],
+      "stage": "stage 23",
+      "status": "STALE",
+      "updated_turn": 28
+    },
+    "the_table": {
+      "_meta": {},
+      "aliases": [
+        "The_table"
+      ],
+      "attributes": {
+        "_table_depends_on": [
+          "graph_core",
+          "whiteboard",
+          "ai_memory"
+        ],
+        "_table_files": [
+          "lattice/the_table/__init__.py",
+          "lattice/the_table/schema.py",
+          "lattice/the_table/surface.py",
+          "lattice/the_table/renderer.py",
+          "lattice/the_table/workspace_sync.py"
+        ],
+        "_table_role": "bounded_conference_room_working_surface",
+        "depends_on": "graph_core, whiteboard, ai_memory",
+        "file_hashes": {
+          "lattice/the_table/__init__.py": "d1d25d49b0f45310",
+          "lattice/the_table/renderer.py": "456df3bffa847203",
+          "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
+          "lattice/the_table/surface.py": "cf6c17642bc63212",
+          "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
+        },
+        "files": [
+          "lattice/the_table/__init__.py",
+          "lattice/the_table/schema.py",
+          "lattice/the_table/surface.py",
+          "lattice/the_table/renderer.py",
+          "lattice/the_table/workspace_sync.py"
+        ],
+        "owner": "eng1",
+        "role": "bounded_conference_room_working_surface",
+        "stage": "stage 25",
+        "updated_turn": 17
+      },
+      "build_status": "STALE",
+      "build_tag": "s25a-eng1-table-1",
+      "children": [],
+      "core_tag": "s25-core-table-1",
+      "created_turn": 6,
+      "depends_on": [
+        "graph_core",
+        "whiteboard",
+        "ai_memory"
+      ],
+      "failure_diagnostic": null,
+      "file_hashes": {
+        "lattice/the_table/__init__.py": "d1d25d49b0f45310",
+        "lattice/the_table/renderer.py": "456df3bffa847203",
+        "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
+        "lattice/the_table/surface.py": "cf6c17642bc63212",
+        "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
+      },
+      "files": [
+        "lattice/the_table/__init__.py",
+        "lattice/the_table/schema.py",
+        "lattice/the_table/surface.py",
+        "lattice/the_table/renderer.py",
+        "lattice/the_table/workspace_sync.py"
+      ],
+      "id": "the_table",
+      "in_edges": [
+        "ai_memory",
+        "the_executive"
+      ],
+      "inputs": [],
+      "kind": "COMPONENT",
+      "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+      "outputs": [],
+      "owner": "eng1",
+      "parent": null,
+      "role": "bounded_conference_room_working_surface",
+      "rules": [],
+      "stage": "stage 25",
+      "status": "STALE",
+      "updated_turn": 28
+    },
+    "whiteboard": {
+      "_meta": {},
+      "active_ticket_id": "693f443",
+      "aliases": [],
+      "attributes": {
+        "_table_depends_on": [
+          "graph_core",
+          "regiment"
+        ],
+        "_table_files": [
+          "lattice/whiteboard/__init__.py",
+          "lattice/whiteboard/schema.py",
+          "lattice/whiteboard/mutations.py",
+          "lattice/whiteboard/ingest.py",
+          "lattice/whiteboard/linker.py",
+          "lattice/whiteboard/rewriter.py",
+          "lattice/whiteboard/read_engine.py",
+          "lattice/whiteboard/frustration.py"
+        ],
+        "_table_role": "living_nd_system_lattice",
+        "depends_on": "graph_core, regiment",
+        "file_hashes": {
+          "lattice/whiteboard/__init__.py": "b2f8f6dc53be6844",
+          "lattice/whiteboard/frustration.py": "15531d66350e0fd1",
+          "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
+          "lattice/whiteboard/linker.py": "b186b8f0fcde09ca",
+          "lattice/whiteboard/mutations.py": "ebf6c304e22f9d7a",
+          "lattice/whiteboard/read_engine.py": "d58ea8ce365cafb4",
+          "lattice/whiteboard/rewriter.py": "6bd4b61fe20216ef",
+          "lattice/whiteboard/schema.py": "2094567fa1041c95"
+        },
+        "files": [
+          "lattice/whiteboard/__init__.py",
+          "lattice/whiteboard/schema.py",
+          "lattice/whiteboard/mutations.py",
+          "lattice/whiteboard/ingest.py",
+          "lattice/whiteboard/linker.py",
+          "lattice/whiteboard/rewriter.py",
+          "lattice/whiteboard/read_engine.py",
+          "lattice/whiteboard/frustration.py"
+        ],
+        "owner": "eng2",
+        "role": "living_nd_system_lattice",
+        "stage": "stage 22",
+        "updated_turn": 17
+      },
+      "build_status": "STALE",
+      "build_tag": "s22c-eng2-compiler-1",
+      "children": [],
+      "core_tag": "s22c-core-compiler-1",
+      "created_turn": 1,
+      "depends_on": [
+        "graph_core",
+        "regiment"
+      ],
+      "failure_diagnostic": null,
+      "file_hashes": {
+        "lattice/whiteboard/__init__.py": "b2f8f6dc53be6844",
+        "lattice/whiteboard/frustration.py": "15531d66350e0fd1",
+        "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
+        "lattice/whiteboard/linker.py": "b186b8f0fcde09ca",
+        "lattice/whiteboard/mutations.py": "ebf6c304e22f9d7a",
+        "lattice/whiteboard/read_engine.py": "d58ea8ce365cafb4",
+        "lattice/whiteboard/rewriter.py": "6bd4b61fe20216ef",
+        "lattice/whiteboard/schema.py": "2094567fa1041c95"
+      },
+      "files": [
+        "lattice/whiteboard/__init__.py",
+        "lattice/whiteboard/schema.py",
+        "lattice/whiteboard/mutations.py",
+        "lattice/whiteboard/ingest.py",
+        "lattice/whiteboard/linker.py",
+        "lattice/whiteboard/rewriter.py",
+        "lattice/whiteboard/read_engine.py",
+        "lattice/whiteboard/frustration.py"
+      ],
+      "id": "whiteboard",
+      "in_edges": [
+        "the_executive",
+        "graph_core",
+        "the_table"
+      ],
+      "inputs": [],
+      "kind": "COMPONENT",
+      "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+      "outputs": [],
+      "owner": "eng2",
+      "parent": null,
+      "role": "living_nd_system_lattice",
+      "rules": [],
+      "stage": "stage 22",
+      "status": "STALE",
+      "updated_turn": 28
+    }
+  },
+  "turn": 28,
+  "turn_index": 28,
+  "version": 1
+}

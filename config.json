@@ -1,0 +1,17 @@
+{
+  "gate": {
+    "max_file_lines": null,
+    "verify_files_exist_on_status": true,
+    "require_call_graph_laws": true
+  },
+  "lattice": {
+    "k_cap": 7,
+    "max_ring": 5,
+    "max_table_slots": 16,
+    "max_table_tokens": 1200,
+    "max_pinned_slots": 6,
+    "max_slot_summary_words": 50,
+    "max_foraging_steps": 4,
+    "hub_bottleneck_min_dependents": 3
+  }
+}

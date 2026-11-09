@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lattice"
+version = "0.1.0"
+description = "Lattice: 100% Deterministic Markdown Pipe-Table Driven Neuro-Symbolic Cognitive Architecture (<50ms, Zero LLMs)"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.scripts]
+lattice = "lattice.cli:main"
+lattice-mcp = "lattice.mcp_server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["lattice"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

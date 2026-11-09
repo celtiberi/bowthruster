@@ -1,0 +1,480 @@
+{
+  "active_tasks": [],
+  "alias_index": {
+    "mcp_protocol_verifier": "mcp_protocol_verifier",
+    "mcp_server": "mcp_server",
+    "mcp_tool_call": "mcp_tool_call"
+  },
+  "ambient_notes": [],
+  "external_links": {
+    "mcp_protocol_verifier": [
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_mcp_protocol_verifier_a7ae0b9d4736",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_verifier.py#L29-L76"
+      }
+    ],
+    "mcp_server": [
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_mcp_server_b0d57ad68065",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L256-L420"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_mcp_server_a289f44716fb",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L423-L468"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_mcp_server_130f1e24099f",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L54-L58"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_mcp_server_fe0a7ed511a6",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L257-L423"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_mcp_server_bf2de690d35e",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L426-L471"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_mcp_server_c12139b074c2",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L259-L425"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_mcp_server_b453b91213ce",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L428-L473"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_mcp_server_ce720182a731",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/mcp_server.py#L258-L424"
+      }
+    ]
+  },
+  "flows": [
+    {
+      "action": null,
+      "condition": null,
+      "created_turn": 1,
+      "dimensions": {},
+      "id": "flow_1",
+      "kind": "FLOW",
+      "payload": "McpJsonRpcRequest",
+      "source": "mcp_protocol_verifier",
+      "step": null,
+      "target": "mcp_server",
+      "text": "The mcp_protocol_verifier component sends McpJsonRpcRequest to mcp_server.",
+      "turn": 1,
+      "updated_turn": 1
+    }
+  ],
+  "k_cap": 5,
+  "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+  "lattice_artifacts": [
+    {
+      "calls": [
+        "_format_tool_result#L258-L261",
+        "_read_doc_resource#L226-L238",
+        "_resolve_project_root#L241-L255"
+      ],
+      "created_turn": 1,
+      "dimensions": {
+        "_from_table": true,
+        "description": "Dispatches a validated MCP tool call to the Lattice engine",
+        "file": "lattice/mcp_server.py#L264-L433",
+        "inputs": "tool_name, arguments",
+        "interface": "call_lattice_tool",
+        "outputs": "McpToolCallResult"
+      },
+      "file": "lattice/mcp_server.py#L264-L433",
+      "id": "interface_mcp_server_call_lattice_tool",
+      "inputs": [
+        "tool_name: str",
+        "arguments: dict"
+      ],
+      "kind": "INTERFACE",
+      "name": "call_lattice_tool",
+      "outputs": [
+        "McpToolCallResult"
+      ],
+      "owner": "groves",
+      "scope": "mcp_server",
+      "scope_id": "mcp_server",
+      "spec": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
+      "stage": "28",
+      "text": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
+      "turn": 8,
+      "updated_turn": 8
+    },
+    {
+      "calls": [
+        "_hot_reload_if_changed#L437-L452",
+        "_read_doc_resource#L226-L238"
+      ],
+      "created_turn": 1,
+      "dimensions": {
+        "_from_table": true,
+        "description": "Handles an incoming JSON-RPC 2.0 MCP request",
+        "file": "lattice/mcp_server.py#L455-L477",
+        "inputs": "request",
+        "interface": "handle_mcp_request",
+        "outputs": "McpJsonRpcResponse"
+      },
+      "file": "lattice/mcp_server.py#L455-L477",
+      "id": "interface_mcp_server_handle_mcp_request",
+      "inputs": [
+        "request: McpJsonRpcRequest"
+      ],
+      "kind": "INTERFACE",
+      "name": "handle_mcp_request",
+      "outputs": [
+        "McpJsonRpcResponse"
+      ],
+      "owner": "groves",
+      "scope": "mcp_server",
+      "scope_id": "mcp_server",
+      "spec": "Handle JSON-RPC 2.0 MCP requests with self-describing tool schemas",
+      "stage": "28",
+      "text": "Handle JSON-RPC 2.0 MCP requests with self-describing tool schemas",
+      "turn": 5,
+      "updated_turn": 8
+    },
+    {
+      "created_turn": 1,
+      "dimensions": {
+        "_from_table": true,
+        "description": "Runs end-to-end MCP initialize, tool list, and tool call roundtrip checks",
+        "file": "lattice/mcp_verifier.py#L29-L76",
+        "inputs": "board",
+        "interface": "verify_mcp_server_roundtrip",
+        "outputs": "McpRoundtripVerdict"
+      },
+      "file": "lattice/mcp_verifier.py#L29-L76",
+      "id": "interface_mcp_protocol_verifier_verify_mcp_server_roundtrip",
+      "inputs": [
+        "board"
+      ],
+      "kind": "INTERFACE",
+      "name": "verify_mcp_server_roundtrip",
+      "outputs": [
+        "McpRoundtripVerdict"
+      ],
+      "owner": null,
+      "scope": "mcp_protocol_verifier",
+      "scope_id": "mcp_protocol_verifier",
+      "spec": "verify_mcp_server_roundtrip (mcp_protocol_verifier)",
+      "stage": null,
+      "text": "verify_mcp_server_roundtrip (mcp_protocol_verifier).",
+      "turn": 1,
+      "updated_turn": 8
+    },
+    {
+      "args": "has_name, board_nonempty",
+      "created_turn": 1,
+      "dimensions": {
+        "_from_table": true,
+        "args": "has_name, board_nonempty",
+        "description": "An MCP tool call is valid iff the tool name is recognized and the board identifier is non-empty",
+        "law": "mcp_tool_dispatch_law",
+        "lhs": "MOD.is_mcp_tool_call_valid(has_name, board_nonempty)",
+        "rhs": "and(has_name, board_nonempty)"
+      },
+      "id": "law_mcp_server_mcp_tool_dispatch_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_mcp_tool_call_valid(has_name, board_nonempty)",
+      "name": "mcp_tool_dispatch_law",
+      "outputs": [],
+      "owner": null,
+      "rhs": "and(has_name, board_nonempty)",
+      "scope": "mcp_server",
+      "scope_id": "mcp_server",
+      "spec": "mcp_tool_dispatch_law: MOD.is_mcp_tool_call_valid(has_name, board_nonempty) == and(has_name, board_nonempty)",
+      "stage": null,
+      "text": "mcp_tool_dispatch_law: MOD.is_mcp_tool_call_valid(has_name, board_nonempty) == and(has_name, board_nonempty).",
+      "turn": 1,
+      "updated_turn": 1
+    },
+    {
+      "args": "init_ok, list_ok, call_ok",
+      "created_turn": 1,
+      "dimensions": {
+        "_from_table": true,
+        "args": "init_ok, list_ok, call_ok",
+        "description": "An MCP protocol roundtrip is valid iff initialize, tool list, and tool call all succeed",
+        "law": "mcp_roundtrip_verdict_law",
+        "lhs": "MOD.is_mcp_roundtrip_valid(init_ok, list_ok, call_ok)",
+        "rhs": "and(init_ok, and(list_ok, call_ok))"
+      },
+      "id": "law_mcp_protocol_verifier_mcp_roundtrip_verdict_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_mcp_roundtrip_valid(init_ok, list_ok, call_ok)",
+      "name": "mcp_roundtrip_verdict_law",
+      "outputs": [],
+      "owner": null,
+      "rhs": "and(init_ok, and(list_ok, call_ok))",
+      "scope": "mcp_protocol_verifier",
+      "scope_id": "mcp_protocol_verifier",
+      "spec": "mcp_roundtrip_verdict_law: MOD.is_mcp_roundtrip_valid(init_ok, list_ok, call_ok) == and(init_ok, and(list_ok, call_ok))",
+      "stage": null,
+      "text": "mcp_roundtrip_verdict_law: MOD.is_mcp_roundtrip_valid(init_ok, list_ok, call_ok) == and(init_ok, and(list_ok, call_ok)).",
+      "turn": 1,
+      "updated_turn": 1
+    },
+    {
+      "created_turn": 1,
+      "dimensions": {
+        "description": "JSON-RPC 2.0 MCP request envelope",
+        "fields": "jsonrpc, id, method, params",
+        "file": "lattice/mcp_server.py#L51-L55",
+        "schema": "McpJsonRpcRequest"
+      },
+      "file": "lattice/mcp_server.py#L51-L55",
+      "id": "schema_mcp_server_mcpjsonrpcrequest",
+      "inputs": [],
+      "kind": "SCHEMA",
+      "name": "McpJsonRpcRequest",
+      "outputs": [],
+      "owner": null,
+      "scope": "mcp_server",
+      "scope_id": "mcp_server",
+      "spec": "McpJsonRpcRequest (mcp_server)",
+      "stage": null,
+      "text": "The McpJsonRpcRequest schema scoped to mcp_server has fields jsonrpc, id, method, and params in lattice/mcp_server.py and represents a JSON-RPC 2.0 MCP request envelope.",
+      "turn": 1,
+      "updated_turn": 8
+    },
+    {
+      "args": "is_verified: Bool, files_exist: Bool, within_max_lines: Bool",
+      "bend_dir": "bend_exec_23c",
+      "created_turn": 2,
+      "dimensions": {
+        "_from_table": true,
+        "args": "is_verified: Bool, files_exist: Bool, within_max_lines: Bool",
+        "bend_dir": "bend_exec_23c",
+        "component": "mcp_server",
+        "law": "verified_status_files_exist_law",
+        "lhs": "MOD.can_transition_to_verified(is_verified, files_exist, within_max_lines)",
+        "owner": "groves",
+        "rhs": "Bool.or(Bool.not(is_verified), Bool.and(files_exist, within_max_lines))",
+        "spec": "Spec 28",
+        "stage": "28"
+      },
+      "id": "law_mcp_server_verified_status_files_exist_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.can_transition_to_verified(is_verified, files_exist, within_max_lines)",
+      "name": "verified_status_files_exist_law",
+      "outputs": [],
+      "owner": "groves",
+      "rhs": "Bool.or(Bool.not(is_verified), Bool.and(files_exist, within_max_lines))",
+      "scope": "mcp_server",
+      "scope_id": "mcp_server",
+      "spec": "verified_status_files_exist_law: MOD.can_transition_to_verified(is_verified, files_exist, within_max_lines) == Bool.or(Bool.not(is_verified), Bool.and(files_exist, within_max_lines))",
+      "stage": "28",
+      "text": "The mcp_server component must verify that verified_status_files_exist_law applies to groves at stage bend_exec_23c with parameters is_verified: Bool, files_exist: Bool, within_max_lines: Bool, such that MOD.can_transition_to_verified(is_verified, files_exist, within_max_lines) returns Bool.or(Bool.not(is_verified), Bool.and(files_exist, within_max_lines)) per Spec 28.",
+      "turn": 2,
+      "updated_turn": 2
+    },
+    {
+      "args": "is_skills_section: Bool, returns_skill_templates: Bool",
+      "bend_dir": "bend_exec_23c",
+      "created_turn": 3,
+      "dimensions": {
+        "_from_table": true,
+        "args": "is_skills_section: Bool, returns_skill_templates: Bool",
+        "bend_dir": "bend_exec_23c",
+        "component": "mcp_server",
+        "law": "skills_section_routing_law",
+        "lhs": "MOD.is_skills_section_routed(is_skills_section, returns_skill_templates)",
+        "owner": "groves",
+        "rhs": "Bool.or(Bool.not(is_skills_section), returns_skill_templates)",
+        "spec": "Spec 28",
+        "stage": "28"
+      },
+      "id": "law_mcp_server_skills_section_routing_law",
+      "inputs": [],
+      "kind": "LAW",
+      "lhs": "MOD.is_skills_section_routed(is_skills_section, returns_skill_templates)",
+      "name": "skills_section_routing_law",
+      "outputs": [],
+      "owner": "groves",
+      "rhs": "Bool.or(Bool.not(is_skills_section), returns_skill_templates)",
+      "scope": "mcp_server",
+      "scope_id": "mcp_server",
+      "spec": "skills_section_routing_law: MOD.is_skills_section_routed(is_skills_section, returns_skill_templates) == Bool.or(Bool.not(is_skills_section), returns_skill_templates)",
+      "stage": "28",
+      "text": "skills_section_routing_law: MOD.is_skills_section_routed(is_skills_section, returns_skill_templates) == Bool.or(Bool.not(is_skills_section), returns_skill_templates).",
+      "turn": 3,
+      "updated_turn": 3
+    }
+  ],
+  "lattice_proof": {
+    "bend_proof_source": "import Base\n\ntype LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\ndef classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n    case False{} True{} True{} True{}:\n      LPProven{}\n    case False{} True{} True{} False{}:\n      LPDraft{}\n    case False{} True{} False{} flow_ok:\n      LPDraft{}\n    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\ndef board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status(False{}, True{}, True{}, True{})\n",
+    "component_count": 2,
+    "contract_count": 4,
+    "flow_count": 1,
+    "hard_violations": [],
+    "is_proven": true,
+    "law_count": 4,
+    "open_gaps": [],
+    "status": "PROVEN_COMPLETE"
+  },
+  "max_ring": 10,
+  "mitosis_splits": [],
+  "open_blockers": [],
+  "scopes": {
+    "mcp_protocol_verifier": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {
+        "_table_depends_on": [
+          "mcp_server"
+        ],
+        "_table_files": [
+          "lattice/mcp_verifier.py"
+        ],
+        "_table_role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
+        "depends_on": "mcp_server",
+        "file_hashes": {
+          "lattice/mcp_verifier.py": "a015087de6656801"
+        },
+        "files": [
+          "lattice/mcp_verifier.py"
+        ],
+        "owner": "groves",
+        "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
+        "stage": 28,
+        "updated_turn": 1
+      },
+      "build_status": "STALE",
+      "build_tag": null,
+      "children": [],
+      "core_tag": null,
+      "created_turn": 1,
+      "depends_on": [
+        "mcp_server"
+      ],
+      "failure_diagnostic": null,
+      "file_hashes": {
+        "lattice/mcp_verifier.py": "a015087de6656801"
+      },
+      "files": [
+        "lattice/mcp_verifier.py"
+      ],
+      "id": "mcp_protocol_verifier",
+      "in_edges": [
+        "mcp_server"
+      ],
+      "inputs": [],
+      "kind": "COMPONENT",
+      "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+      "outputs": [],
+      "owner": "groves",
+      "parent": null,
+      "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
+      "rules": [],
+      "stage": "28",
+      "status": "STALE",
+      "updated_turn": 8
+    },
+    "mcp_server": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {
+        "_table_depends_on": [],
+        "_table_files": [
+          "lattice/mcp_server.py"
+        ],
+        "_table_role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
+        "depends_on": "-",
+        "description": "MCP tool call result payload",
+        "fields": "content, isError, structuredContent",
+        "file": "lattice/mcp_server.py",
+        "file_hashes": {
+          "lattice/mcp_server.py": "384f7a36f70e64ca"
+        },
+        "files": [
+          "lattice/mcp_server.py"
+        ],
+        "lod1_synopsis": "The mcp_server component must route skills sections according to Spec 28.",
+        "owner": "groves",
+        "role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
+        "schema": "McpToolCallResult",
+        "stage": 28,
+        "updated_turn": 1
+      },
+      "build_status": "VERIFIED",
+      "build_tag": null,
+      "children": [],
+      "core_tag": null,
+      "created_turn": 1,
+      "depends_on": [],
+      "failure_diagnostic": null,
+      "file_hashes": {
+        "lattice/mcp_server.py": "384f7a36f70e64ca"
+      },
+      "files": [
+        "lattice/mcp_server.py"
+      ],
+      "id": "mcp_server",
+      "in_edges": [
+        "mcp_protocol_verifier"
+      ],
+      "inputs": [],
+      "kind": "COMPONENT",
+      "last_commit_sha": "ff35bd746fc4cf36e15560f57250cbe7481fdca0",
+      "outputs": [],
+      "owner": "groves",
+      "parent": null,
+      "role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
+      "rules": [
+        {
+          "access_turns": [
+            8
+          ],
+          "bound_op": "<=",
+          "bound_val": 28,
+          "conditions": [],
+          "created_turn": 3,
+          "exceptions": [],
+          "facet": "Numeric_Bounds",
+          "id": "r_mcp_server_2",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "mcp_server",
+          "target_prop": "spec",
+          "text": "The mcp_server component must route skills sections according to Spec 28.",
+          "turn": 3,
+          "type": "BOUND",
+          "updated_turn": 3
+        }
+      ],
+      "stage": "28",
+      "status": "VERIFIED",
+      "updated_turn": 1
+    }
+  },
+  "turn": 8,
+  "turn_index": 8,
+  "version": 1
+}
