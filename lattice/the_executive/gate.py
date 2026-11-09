@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import ast, copy, os
+import ast, copy, functools, os
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -169,6 +169,10 @@ def _collect_fn_calls(node: ast.AST, law_fns: set[str]) -> set[str]:
         calls.update(_collect_fn_calls(ch, law_fns))
     return calls
 
+@functools.lru_cache(maxsize=256)
+def _cached_ast_nodes(src: str) -> tuple[ast.Module, tuple[ast.AST, ...]]:
+    return (t := ast.parse(src)), tuple(ast.walk(t))
+
 def _parse_file_call_graph(f: dict[str, Any], law_fns: set[str] | None = None) -> tuple[bool, set[str], dict[str, set[str]]]:
     has_cg, (fn_names, _), (cls_names, _), lset = False, _normalize_symbol_map(f.get("ast_functions")), _normalize_symbol_map(f.get("ast_classes") if "ast_classes" in f else f.get("ast_schemas")), (law_fns or set())
     defined_fns, call_graph = (fn_names | cls_names), {}
@@ -176,34 +180,30 @@ def _parse_file_call_graph(f: dict[str, Any], law_fns: set[str] | None = None) -
         has_cg = True
         for caller, callees in raw_cg.items():
             if c_name := str(caller).strip():
-                defined_fns.add(c_name)
-                c_set = {str(x).strip() for x in (callees if isinstance(callees, (list, tuple, set)) else []) if str(x).strip()}
+                defined_fns.add(c_name); c_set = {str(x).strip() for x in (callees if isinstance(callees, (list, tuple, set)) else []) if str(x).strip()}
                 call_graph.setdefault(c_name, set()).update(c_set)
                 if "ast_functions" not in f or f.get("ast_functions") is None: defined_fns.update(c_set)
     src = f.get("source") if f.get("source") is not None else (f.get("content") if f.get("content") is not None else f.get("code"))
     if isinstance(src, str) and src.strip():
         try:
-            tree, has_cg = ast.parse(src), True
-            for node in ast.walk(tree):
-                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    defined_fns.add(node.name)
-                    call_graph.setdefault(node.name, set()).update(_collect_fn_calls(node, lset))
+            _, nodes = _cached_ast_nodes(src); has_cg = True
+            for node in nodes:
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)): defined_fns.add(node.name); call_graph.setdefault(node.name, set()).update(_collect_fn_calls(node, lset))
                 elif isinstance(node, ast.ClassDef): defined_fns.add(node.name)
         except SyntaxError: pass
     defined_fns -= {str(x).strip() for x in (f.get("removed_symbols") or []) if str(x).strip()}
     return has_cg, defined_fns, call_graph
 
+@functools.lru_cache(maxsize=256)
 def _parse_ast_imports(code_str: str) -> list[tuple[str, int, bool]]:
     res: list[tuple[str, int, bool]] = []
     try:
-        for n in ast.walk(ast.parse(code_str)):
+        for n in _cached_ast_nodes(code_str)[1]:
             if isinstance(n, ast.ImportFrom):
                 lvl, dots = int(n.level or 0), "." * int(n.level or 0)
                 res.extend([(f"{dots}{n.module}", lvl, False), *((f"{dots}{n.module}.{a.name}", lvl, True) for a in n.names)] if n.module else [(f"{dots}{a.name}", lvl, False) for a in n.names])
-            elif isinstance(n, ast.Import):
-                res.extend((a.name, 0, False) for a in n.names)
-    except SyntaxError:
-        pass
+            elif isinstance(n, ast.Import): res.extend((a.name, 0, False) for a in n.names)
+    except SyntaxError: pass
     return res
 
 def _collect_dangling_imports(scopes: dict[str, Any], artifacts: list[dict[str, Any]], staged_files: list[dict[str, Any]], staged_diff_report: dict[str, Any]) -> list[dict[str, str]]:
@@ -392,15 +392,15 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
         if isinstance(src := (f.get("source") if f.get("source") is not None else (f.get("content") if f.get("content") is not None else f.get("code"))), str) and src.strip():
             if f.get("imports") is None: eff_imps = [imp.lstrip(".") for imp, _, is_sub in _parse_ast_imports(src) if not is_sub and imp.lstrip(".")]
             try:
-                tree = ast.parse(src)
-                f_keys = {s.value for s in ast.walk(tree) if isinstance(s, ast.Constant) and isinstance(s.value, str) and s.value.isidentifier()}
+                tree, t_nodes = _cached_ast_nodes(src)
+                f_keys = {s.value for s in t_nodes if isinstance(s, ast.Constant) and isinstance(s.value, str) and s.value.isidentifier()}
                 if f.get("ast_constants") is None: f["ast_constants"] = {t.id.lower(): float(n.value.value) for n in tree.body if isinstance(n, (ast.Assign, ast.AnnAssign)) and isinstance(n.value, ast.Constant) and isinstance(n.value.value, (int, float)) and not isinstance(n.value.value, bool) for t in (n.targets if isinstance(n, ast.Assign) else [n.target]) if isinstance(t, ast.Name)}
                 if f.get("ast_functions") is None:
                     fns: dict[str, list[str]] = {}
-                    for n in (x for x in ast.walk(tree) if isinstance(x, (ast.FunctionDef, ast.AsyncFunctionDef))): fns.setdefault(n.name, []).extend([a.arg for a in (*n.args.posonlyargs, *n.args.args, *n.args.kwonlyargs) if a.arg != "self"] + (["args"] if n.args.vararg else []) + (["kwargs"] if n.args.kwarg else []))
+                    for n in (x for x in t_nodes if isinstance(x, (ast.FunctionDef, ast.AsyncFunctionDef))): fns.setdefault(n.name, []).extend([a.arg for a in (*n.args.posonlyargs, *n.args.args, *n.args.kwonlyargs) if a.arg != "self"] + (["args"] if n.args.vararg else []) + (["kwargs"] if n.args.kwarg else []))
                     f["ast_functions"] = fns
                 if f.get("ast_classes") is None and f.get("ast_schemas") is None:
-                    clss = {n.name: ({s.target.id for s in n.body if isinstance(s, ast.AnnAssign) and isinstance(s.target, ast.Name)} | {t.id for s in n.body if isinstance(s, ast.Assign) for t in s.targets if isinstance(t, ast.Name)} | {a.arg for sub in ast.walk(n) if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)) for a in (*sub.args.posonlyargs, *sub.args.args, *sub.args.kwonlyargs) if a.arg != "self"} | {sub.value for sub in ast.walk(n) if isinstance(sub, ast.Constant) and isinstance(sub.value, str) and sub.value.isidentifier()} | (f_keys if any((isinstance(b, ast.Name) and b.id in ("dict", "_AttrDict", "TypedDict", "_TableBaseDict")) or (isinstance(b, ast.Subscript) and isinstance(b.value, ast.Name) and b.value.id in ("dict", "_AttrDict")) for b in n.bases) else set())) for n in ast.walk(tree) if isinstance(n, ast.ClassDef)}
+                    clss = {n.name: ({s.target.id for s in n.body if isinstance(s, ast.AnnAssign) and isinstance(s.target, ast.Name)} | {t.id for s in n.body if isinstance(s, ast.Assign) for t in s.targets if isinstance(t, ast.Name)} | {a.arg for sub in ast.walk(n) if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)) for a in (*sub.args.posonlyargs, *sub.args.args, *sub.args.kwonlyargs) if a.arg != "self"} | {sub.value for sub in ast.walk(n) if isinstance(sub, ast.Constant) and isinstance(sub.value, str) and sub.value.isidentifier()} | (f_keys if any((isinstance(b, ast.Name) and b.id in ("dict", "_AttrDict", "TypedDict", "_TableBaseDict")) or (isinstance(b, ast.Subscript) and isinstance(b.value, ast.Name) and b.value.id in ("dict", "_AttrDict")) for b in n.bases) else set())) for n in t_nodes if isinstance(n, ast.ClassDef)}
                     for n in (x for x in tree.body if isinstance(x, ast.Assign) and isinstance(x.value, ast.Name) and x.value.id in clss):
                         for t in (x for x in n.targets if isinstance(x, ast.Name)): clss[t.id] = clss[n.value.id]
                     f["ast_classes"] = {k: sorted(v) for k, v in clss.items()}

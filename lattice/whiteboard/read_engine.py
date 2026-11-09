@@ -353,42 +353,42 @@ def _format_code_window(src_lines: list[str], s: int, e: int, q_sub: list[str]) 
     return "\n".join([*head, f"# ... [LANDMARKS #L{s + 12}-L{e} — pass query='<symbol> <keyword>' or '<symbol> <start>-<end>' for exact window]:", *lms])
 
 
+_AST_SPAN_CACHE: dict[str, tuple[int, list[tuple[str, int, int]], list[str]]] = {}
 def _scan_ast_symbols_on_disk(scopes: dict[str, Any], raw_query_low: str, component: str | None, active_artifacts: list[dict[str, Any]], include_code: bool) -> list[dict[str, Any]]:
     if not raw_query_low and not include_code: return []
     lat_home = Path(__file__).resolve().parents[2]
     root = Path(os.environ["LATTICE_PROJECT_ROOT"]).resolve() if os.environ.get("LATTICE_PROJECT_ROOT") else lat_home
     res_fp = lambda cp: next((c for c in (root / cp, lat_home / cp, lat_home.parent / cp) if c.is_file()), root / cp)
-    matched, seen, all_syms = [], set(), []
+    matched, seen = [], set()
     if raw_query_low:
         q_parts = [p for p in raw_query_low.replace("#l", " ").replace(":", " ").split() if p]
         q_clean, q_sub = (q_parts[0] if q_parts else raw_query_low.strip()), q_parts[1:]
-        for sid, sc in scopes.items():
-            if not isinstance(sc, dict) or (component and sid.lower() != str(component).strip().lower()): continue
-            for f_raw in _norm_files_list(sc.get("files") or (sc.get("attributes") or {}).get("files")):
-                cp = f_raw.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
-                if (fp := res_fp(cp)).is_file():
-                    src = fp.read_text(encoding="utf-8", errors="ignore")
-                    src_lines = src.splitlines()
-                    sym_spans: list[tuple[str, int, int]] = []
-                    if cp.endswith(".py"):
-                        try:
-                            sym_spans = [(n.name, int(n.lineno), int(getattr(n, "end_lineno", None) or n.lineno)) for n in ast.walk(ast.parse(src)) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and getattr(n, "lineno", 0) > 0]
-                        except SyntaxError: pass
-                    else:
-                        from lattice.nlp import _extract_generic_source_symbols
-                        sym_spans = [(nm, s, e) for nm, (s, e) in _extract_generic_source_symbols(fp)[0].items()]
-                    for sym_name, s, e in sym_spans:
-                        all_syms.append((sid, cp, sym_name, s, e, src_lines))
-                        nl = sym_name.lower()
-                        if (cp, sym_name) not in seen and (nl == q_clean or (len(q_clean) >= 4 and q_clean in nl)):
-                            seen.add((cp, sym_name))
-                            matched.append({"symbol": sym_name, "scope": sid, "file": f"{cp}#L{s}-L{e}", "start_line": s, "end_line": e, "exact": nl == q_clean, **({"code": _format_code_window(src_lines, s, e, q_sub)} if include_code else {})})
-        if not matched and (q_toks := [t for t in q_clean.split("_") if len(t) >= 3]):
-            for sid, cp, sym_name, s, e, src_lines in all_syms:
-                if (cp, sym_name) not in seen and all(t in f"{cp.lower()} {sym_name.lower()}" for t in q_toks):
-                    seen.add((cp, sym_name))
-                    matched.append({"symbol": sym_name, "scope": sid, "file": f"{cp}#L{s}-L{e}", "start_line": s, "end_line": e, "exact": True, **({"code": _format_code_window(src_lines, s, e, q_sub)} if include_code else {})})
-                    break
+        for tok_filter in ([q_clean], ([t for t in q_clean.split("_") if len(t) >= 3] if "_" in q_clean else [])):
+            if not tok_filter or matched: break
+            for sid, sc in scopes.items():
+                if not isinstance(sc, dict) or (component and sid.lower() != str(component).strip().lower()): continue
+                for f_raw in _norm_files_list(sc.get("files") or (sc.get("attributes") or {}).get("files")):
+                    cp = f_raw.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
+                    if (fp := res_fp(cp)).is_file():
+                        if _AST_SPAN_CACHE.get(ckey := str(fp), (0, [], []))[0] == (mt := fp.stat().st_mtime_ns): _, sym_spans, src_lines = _AST_SPAN_CACHE[ckey]
+                        else:
+                            src_low = (src := fp.read_text(encoding="utf-8", errors="ignore")).lower()
+                            if not (any(("def " in ln or "class " in ln) and all(t in f"{cp.lower()} {ln}" for t in tok_filter) for ln in src_low.splitlines()) if cp.endswith(".py") else all(t in f"{cp.lower()}\n{src_low}" for t in tok_filter)): continue
+                            src_lines, sym_spans = src.splitlines(), []
+                            if cp.endswith(".py"):
+                                try: sym_spans = [(n.name, int(n.lineno), int(getattr(n, "end_lineno", None) or n.lineno)) for n in ast.walk(ast.parse(src)) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and getattr(n, "lineno", 0) > 0]
+                                except SyntaxError: pass
+                            else:
+                                from lattice.nlp import _extract_generic_source_symbols
+                                sym_spans = [(nm, s, e) for nm, (s, e) in _extract_generic_source_symbols(fp)[0].items()]
+                            _AST_SPAN_CACHE[ckey] = (mt, sym_spans, src_lines)
+                        for sym_name, s, e in sym_spans:
+                            nl = sym_name.lower()
+                            if (cp, sym_name) not in seen and ((nl == q_clean or (len(q_clean) >= 4 and q_clean in nl)) if len(tok_filter) == 1 else all(t in f"{cp.lower()} {nl}" for t in tok_filter)):
+                                seen.add((cp, sym_name))
+                                matched.append({"symbol": sym_name, "scope": sid, "file": f"{cp}#L{s}-L{e}", "start_line": s, "end_line": e, "exact": nl == q_clean or len(tok_filter) > 1, **({"code": _format_code_window(src_lines, s, e, q_sub)} if include_code else {})})
+                                if len(tok_filter) > 1: break
+                if len(tok_filter) > 1 and matched: break
         if any(m.get("exact") for m in matched):
             matched = [m for m in matched if m.get("exact")]
     if include_code and not matched:
@@ -486,14 +486,7 @@ def slice_lattice(
     all_blockers = list(conflicts) + [b for b in open_blockers if b.get("type") != "CONFLICT"]
 
     status = "CONFLICT" if conflicts else ("BLOCKED" if open_blockers else "OK")
-    view: dict[str, Any] = {
-        "status": status, "component_specs": component_specs, "active_flows": active_flows,
-        "active_artifacts": active_artifacts, "active_rules": active_rules, "active_tasks": active_tasks,
-        "matched_symbols": matched_symbols, "blockers": all_blockers, "conflicts": conflicts, "open_blockers": open_blockers,
-    }
+    view: dict[str, Any] = {"status": status, "component_specs": component_specs, "active_flows": active_flows, "active_artifacts": active_artifacts, "active_rules": active_rules, "active_tasks": active_tasks, "matched_symbols": matched_symbols, "blockers": all_blockers, "conflicts": conflicts, "open_blockers": open_blockers}
     compact_str = format_compact_view(view, max_lines=max_lines, token_budget=token_budget)
-    view["compact_view"] = compact_str
-    view["text"] = compact_str
-    view["token_count"] = token_cost(compact_str)
-    view["line_count"] = len(compact_str.splitlines()) if compact_str else 0
+    view.update({"compact_view": compact_str, "text": compact_str, "token_count": token_cost(compact_str), "line_count": len(compact_str.splitlines()) if compact_str else 0})
     return _enrich_view_compact_lines(graph, view, eff_budget=max(token_budget, 2400) if (include_code or matched_symbols) else token_budget)

@@ -485,7 +485,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+  "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -1357,7 +1357,7 @@
         "_collect_dangling_imports#L209-L288",
         "_extract_law_fn_name#L148-L157",
         "_extract_scope_files#L111-L113",
-        "_parse_file_call_graph#L172-L194",
+        "_parse_file_call_graph#L176-L195",
         "_paths_match#L102-L105",
         "_resolve_file_scopes#L115-L123",
         "_unpack_lattice_and_files#L136-L146"
@@ -1389,11 +1389,12 @@
     },
     {
       "calls": [
+        "_cached_ast_nodes#L173-L174",
         "_check_numeric_bound#L107-L109",
         "_extract_law_fn_name#L148-L157",
         "_extract_scope_files#L111-L113",
         "_normalize_symbol_map#L125-L134",
-        "_parse_ast_imports#L196-L207",
+        "_parse_ast_imports#L198-L207",
         "_paths_match#L102-L105",
         "_resolve_file_scopes#L115-L123",
         "_unpack_lattice_and_files#L136-L146"
@@ -1893,14 +1894,14 @@
       "calls": [
         "_enrich_view_compact_lines#L35-L79",
         "_node_matches_slice_dims#L229-L338",
-        "_scan_ast_symbols_on_disk#L356-L404"
+        "_scan_ast_symbols_on_disk#L357-L404"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/read_engine.py#L407-L499"
+        "file": "lattice/whiteboard/read_engine.py#L407-L492"
       },
-      "file": "lattice/whiteboard/read_engine.py#L407-L499",
+      "file": "lattice/whiteboard/read_engine.py#L407-L492",
       "id": "interface_whiteboard_slice_lattice",
       "inputs": [
         "graph",
@@ -2154,7 +2155,7 @@
         "stage": "stage 24",
         "updated_turn": 17
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": null,
       "children": [],
       "core_tag": "s24-core-mem-1",
@@ -2184,15 +2185,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
       "role": "hippocampal_concept_index_and_uri_resolver",
       "rules": [],
       "stage": "stage 24",
-      "status": "STALE",
-      "updated_turn": 28
+      "status": "VERIFIED",
+      "updated_turn": 1
     },
     "global_defaults": {
       "_meta": {},
@@ -2328,7 +2329,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2368,7 +2369,7 @@
         "stage": "Stages 15-18",
         "updated_turn": 17
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": "s18c-eng3-compiler-3",
       "children": [],
       "core_tag": "s18c-core-compiler-3",
@@ -2394,15 +2395,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
       "role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
       "rules": [],
       "stage": "Stages 15-18",
-      "status": "STALE",
-      "updated_turn": 28
+      "status": "VERIFIED",
+      "updated_turn": 1
     },
     "runtime_foundation": {
       "_meta": {},
@@ -2422,7 +2423,7 @@
         "depends_on": "None",
         "file_hashes": {
           "lattice/__init__.py": "837c54c33cd000b4",
-          "lattice/cli.py": "3ec71fd1f5e71adf",
+          "lattice/cli.py": "0f1a7b8efd51249a",
           "lattice/mcp_server.py": "384f7a36f70e64ca",
           "lattice/mcp_verifier.py": "a015087de6656801",
           "lattice/nlp.py": "bfdfb1a1a0687299",
@@ -2450,7 +2451,7 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/__init__.py": "837c54c33cd000b4",
-        "lattice/cli.py": "3ec71fd1f5e71adf",
+        "lattice/cli.py": "0f1a7b8efd51249a",
         "lattice/mcp_server.py": "384f7a36f70e64ca",
         "lattice/mcp_verifier.py": "a015087de6656801",
         "lattice/nlp.py": "bfdfb1a1a0687299",
@@ -2470,7 +2471,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2501,7 +2502,7 @@
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
           "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-          "lattice/the_executive/gate.py": "857c391cfaf4e874",
+          "lattice/the_executive/gate.py": "04ca0191d2fdb065",
           "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
           "lattice/the_executive/preflight.py": "5be08f3f57952191",
           "lattice/the_executive/voice.py": "5fb44eaba9171d58"
@@ -2518,7 +2519,7 @@
         "stage": "stage 23",
         "updated_turn": 17
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": "s25b-eng2-table-1",
       "children": [],
       "core_tag": "s25-core-table-1",
@@ -2531,7 +2532,7 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-        "lattice/the_executive/gate.py": "857c391cfaf4e874",
+        "lattice/the_executive/gate.py": "04ca0191d2fdb065",
         "lattice/the_executive/orchestrator.py": "21e6f66b98f3a38a",
         "lattice/the_executive/preflight.py": "5be08f3f57952191",
         "lattice/the_executive/voice.py": "5fb44eaba9171d58"
@@ -2552,15 +2553,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
       "role": "preflight_routing_gate_and_voice",
       "rules": [],
       "stage": "stage 23",
-      "status": "STALE",
-      "updated_turn": 28
+      "status": "VERIFIED",
+      "updated_turn": 1
     },
     "the_table": {
       "_meta": {},
@@ -2601,7 +2602,7 @@
         "stage": "stage 25",
         "updated_turn": 17
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": "s25a-eng1-table-1",
       "children": [],
       "core_tag": "s25-core-table-1",
@@ -2633,15 +2634,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
       "role": "bounded_conference_room_working_surface",
       "rules": [],
       "stage": "stage 25",
-      "status": "STALE",
-      "updated_turn": 28
+      "status": "VERIFIED",
+      "updated_turn": 1
     },
     "whiteboard": {
       "_meta": {},
@@ -2670,7 +2671,7 @@
           "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
           "lattice/whiteboard/linker.py": "b186b8f0fcde09ca",
           "lattice/whiteboard/mutations.py": "ebf6c304e22f9d7a",
-          "lattice/whiteboard/read_engine.py": "d58ea8ce365cafb4",
+          "lattice/whiteboard/read_engine.py": "75d778d5e2f20632",
           "lattice/whiteboard/rewriter.py": "6bd4b61fe20216ef",
           "lattice/whiteboard/schema.py": "2094567fa1041c95"
         },
@@ -2689,7 +2690,7 @@
         "stage": "stage 22",
         "updated_turn": 17
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": "s22c-eng2-compiler-1",
       "children": [],
       "core_tag": "s22c-core-compiler-1",
@@ -2705,7 +2706,7 @@
         "lattice/whiteboard/ingest.py": "2db56d0be0245e8b",
         "lattice/whiteboard/linker.py": "b186b8f0fcde09ca",
         "lattice/whiteboard/mutations.py": "ebf6c304e22f9d7a",
-        "lattice/whiteboard/read_engine.py": "d58ea8ce365cafb4",
+        "lattice/whiteboard/read_engine.py": "75d778d5e2f20632",
         "lattice/whiteboard/rewriter.py": "6bd4b61fe20216ef",
         "lattice/whiteboard/schema.py": "2094567fa1041c95"
       },
@@ -2727,15 +2728,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
       "role": "living_nd_system_lattice",
       "rules": [],
       "stage": "stage 22",
-      "status": "STALE",
-      "updated_turn": 28
+      "status": "VERIFIED",
+      "updated_turn": 1
     }
   },
   "turn": 28,

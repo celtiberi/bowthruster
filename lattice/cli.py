@@ -153,17 +153,20 @@ def is_table_file_indexed(has_table_files: bool = True, in_ref_map: bool = True)
     return bool((not has_table_files) or in_ref_map)
 def is_baseline_stamp_clean(is_initial_baseline: bool = True, diff_files_emitted: bool = False) -> bool:
     return bool((not is_initial_baseline) or (not diff_files_emitted))
+_PY_AST_CACHE: dict[tuple[str, int], tuple[dict[str, tuple[int, int]], dict[str, list[str]]]] = {}
 def _py_ast_extractor(fp: Path) -> tuple[dict[str, tuple[int, int]], dict[str, list[str]]]:
-    try: tree = ast.parse(fp.read_text(encoding="utf-8", errors="ignore"))
+    if (hit := _PY_AST_CACHE.get(ckey := (str(fp), fp.stat().st_mtime_ns if fp.is_file() else 0))) is not None: return hit
+    try: nodes = list(ast.walk(tree := ast.parse(fp.read_text(encoding="utf-8", errors="ignore"))))
     except SyntaxError: return {}, {}
-    fn_nodes = [n for n in reversed(list(ast.walk(tree))) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
-    syms = {n.name: (int(n.lineno), int(getattr(n, "end_lineno", None) or n.lineno)) for n in reversed(list(ast.walk(tree))) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and getattr(n, "lineno", 0) > 0}
+    fn_nodes = [n for n in reversed(nodes) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    syms = {n.name: (int(n.lineno), int(getattr(n, "end_lineno", None) or n.lineno)) for n in reversed(nodes) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and getattr(n, "lineno", 0) > 0}
     for n in getattr(tree, "body", []):
         if isinstance(n, ast.Assign) and getattr(n, "lineno", 0) > 0:
             for t in n.targets:
                 if isinstance(t, ast.Name): syms.setdefault(t.id, (int(n.lineno), int(getattr(n, "end_lineno", None) or n.lineno)))
     calls = {fn.name: sorted({f"{c}#L{syms[c][0]}-L{syms[c][1]}" for s in ast.walk(fn) if isinstance(s, ast.Call) and isinstance(s.func, ast.Name) and (c := s.func.id) in syms and c != fn.name and c.startswith("_")}) for fn in fn_nodes}
-    return syms, {k: v for k, v in calls.items() if v}
+    _PY_AST_CACHE[ckey] = res = (syms, {k: v for k, v in calls.items() if v})
+    return res
 from lattice.nlp import _extract_generic_source_symbols
 AST_EXTRACTORS: dict[str, Any] = {".py": _py_ast_extractor, **{e: _extract_generic_source_symbols for e in (".ts", ".tsx", ".js", ".jsx", ".mjs", ".go", ".rs", ".java", ".kt", ".c", ".cpp", ".cc", ".h", ".hpp", ".cs", ".swift", ".rb", ".bend")}}
 def register_ast_extractor(ext: str, extractor_fn: Any) -> None: AST_EXTRACTORS[ext if ext.startswith(".") else f".{ext}"] = extractor_fn
@@ -238,14 +241,14 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
                 lcnt, fhash = (len(fp.read_text(encoding="utf-8", errors="ignore").splitlines()) if path.endswith((".py", ".bend")) else None, hashlib.sha256(fp.read_bytes()).hexdigest()[:16]) if fp.is_file() else (None, "")
                 files.append({"status": st, "path": path, "contract_changed": bool(old_p or fp.suffix in AST_EXTRACTORS), **({"scope": sid_hit} if sid_hit else {}), **({"old_path": old_p} if old_p else {}), **({"line_count": lcnt} if lcnt is not None else {}), **({"file_hash": fhash} if fhash else {}), **({"ast_symbols": _extract_py_ast_symbols(fp)} if mode in ("pre", "post") and fp.is_file() and fp.suffix in AST_EXTRACTORS else {}), **({"source": fp.read_text(encoding="utf-8", errors="ignore")} if mode == "pre" and fp.is_file() and fp.suffix in AST_EXTRACTORS else {})})
     if mode == "pre":
-        seen, touched_sc = {f["path"] for f in files} | {f.get("old_path") for f in files if f.get("old_path")}, {f.get("scope") for f in files if f.get("scope")}
+        seen, sc_map = {f["path"] for f in files} | {f.get("old_path") for f in files if f.get("old_path")}, (graph or {}).get("scopes") or {}
+        touched_sc = {f.get("scope") for f in files if f.get("scope")} | ({sid for cp, (sid, raw_r) in ref_map.items() if (fp := eff_root / cp).is_file() and (str((sc := sc_map.get(sid) or {}).get("status") or sc.get("build_status") or "").upper() != "VERIFIED" or hashlib.sha256(fp.read_bytes()).hexdigest()[:16] != ((sc.get("file_hashes") or (sc.get("attributes") or {}).get("file_hashes") or {}).get(raw_r)))} if not seen else set())
         for cp, (sid_hit, _) in ref_map.items():
             fp = eff_root / cp
             if not fp.is_file() and cp not in seen: files.append({"status": "D", "path": cp, "scope": sid_hit})
-            elif (not seen or (sid_hit in touched_sc and cp not in seen)) and fp.is_file():
+            elif (sid_hit in touched_sc and cp not in seen) and fp.is_file():
                 files.append({"status": "M", "path": cp, "scope": sid_hit, "contract_changed": fp.suffix in AST_EXTRACTORS, **({"line_count": len(fp.read_text(encoding="utf-8", errors="ignore").splitlines())} if cp.endswith((".py", ".bend")) else {}), "file_hash": hashlib.sha256(fp.read_bytes()).hexdigest()[:16], **({"ast_symbols": _extract_py_ast_symbols(fp), "source": fp.read_text(encoding="utf-8", errors="ignore")} if fp.suffix in AST_EXTRACTORS else {})})
-    if not is_baseline_stamp_clean(is_base, bool(files)):
-        raise ValueError("initial_baseline_stamp_law violated")
+    if not is_baseline_stamp_clean(is_base, bool(files)): raise ValueError("initial_baseline_stamp_law violated")
     cfg_mlb = (next((json.loads(p.read_text(encoding="utf-8")) for p in DEFAULT_CONFIG_PATHS if p.is_file()), {}).get("gate") or {}).get("max_file_lines")
     ast_by_f = {cp: _extract_py_ast_symbols(eff_root / cp) for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()} if mode in ("post", "baseline") else {}
     calls_by_f = {cp: _extract_ast_local_calls(eff_root / cp) for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()} if mode in ("post", "baseline") else {}
@@ -254,11 +257,8 @@ _read_transcript = lambda p: [json.loads(ln) for ln in p.read_text(encoding="utf
 def _append_transcript(p: Path, record: dict[str, Any]) -> None:
     with p.open("a", encoding="utf-8") as fh: fh.write(json.dumps(record, ensure_ascii=False) + "\n")
 def _read_input_text(message: str | None, file_path: str | None) -> str:
-    if message is not None or file_path is not None:
-        return (message if message is not None else (sys.stdin.read() if file_path == "-" else Path(file_path).read_text(encoding="utf-8"))).strip()
+    if message is not None or file_path is not None: return (message if message is not None else (sys.stdin.read() if file_path == "-" else Path(file_path).read_text(encoding="utf-8"))).strip()
     raise ValueError("Provide either -m/--message or -F/--file")
-
-
 def _remove_item_from_board(graph: dict[str, Any], target_id: str) -> list[str]:
     removed, scopes = [], graph.get("scopes", {})
     if target_id.startswith("scope:") and (del_sid := target_id.removeprefix("scope:").strip()) in scopes:

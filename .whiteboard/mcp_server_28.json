@@ -84,7 +84,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+  "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
   "lattice_artifacts": [
     {
       "calls": [
@@ -363,7 +363,7 @@
         "stage": 28,
         "updated_turn": 1
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": null,
       "children": [],
       "core_tag": null,
@@ -384,15 +384,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
       "outputs": [],
       "owner": "groves",
       "parent": null,
       "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
       "rules": [],
       "stage": "28",
-      "status": "STALE",
-      "updated_turn": 8
+      "status": "VERIFIED",
+      "updated_turn": 1
     },
     "mcp_server": {
       "_meta": {},
@@ -439,7 +439,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "4ee1fa6ab1b70668137cb175f1fadaa88f89aef0",
+      "last_commit_sha": "e4838d857ee3ddf70c03c091ea93293512b1eb28",
       "outputs": [],
       "owner": "groves",
       "parent": null,
