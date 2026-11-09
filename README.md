@@ -73,6 +73,8 @@ When you use an AI coding agent on a growing project, three things start going w
 
 ### Daily Agent Workflows
 
+> **More Examples:** See [**`docs/examples.md`**](docs/examples.md) for walkthroughs of multi-agent parallel `STALE` dispatch, targeted QA & producer $\rightarrow$ consumer seam testing, architectural audits, and living spec generation.
+
 #### Workflow A — Internal Fix (`0` Contract Changes, **3 Tool Calls**)
 When fixing an internal bug, helper function, or threshold where no `# SCHEMA`, `$ INTERFACE`, `> FLOW`, or `% LAW` signature changes:
 1. **Pull Code & Mark `STALE` in One Shot:**
