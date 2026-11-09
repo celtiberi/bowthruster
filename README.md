@@ -3,9 +3,9 @@
 **Architecture memory, focused code lookup, and pre-commit verification for AI coding agents. The Lattice itself is the spec, eliminating manual spec writing and keeping design and code in sync automatically.**
 
 > **Built for AI Coding Agents — Not Manual Human Bookkeeping**  
-> Lattice (`lattice-mcp`) is a tool for **your AI coding agent** to operate directly, not another spec format for you to maintain by hand. You connect `lattice-mcp` to your agent (Claude Code, Cursor, Antigravity, Windsurf, etc.), and your AI builds the architecture map, pulls focused code slices, and verifies its own commits automatically.
+> Lattice (`lattice-mcp`) is a tool for **your AI coding agent** to operate directly, not another spec format for you to maintain by hand. Anyone (or any AI agent) can clone the repo and run it immediately with stock `python3` — **no `pip install`, no virtualenv, and no API keys required**. You connect `lattice-mcp` to your agent (Claude Code, Cursor, Antigravity, Windsurf, etc.), and your AI builds the architecture map, pulls focused code slices, and verifies its own commits automatically.
 >
-> **Try it in 60 seconds:** Connect `lattice-mcp` and paste these two prompts to your AI:  
+> **Try it in 60 seconds:** [Clone & connect `lattice-mcp`](#20-install--register-lattice-mcp-in-30-seconds-zero-pip-dependencies), then paste these two prompts to your AI:  
 > 1. **Map the codebase:** *`"Call lattice_readme(section='readme') and map this repository onto a Lattice board with its Charter, component Roles/Why, Flows, Interfaces, and Laws."`*  
 > 2. **Run an architectural audit:** *`"With the insight you now have from the Lattice board and AST slices, what would you change about this project's architecture (e.g., monoliths doing another component's job, hidden state mutations across flows, duplicated logic, or missing seams)?"`*
 
@@ -38,7 +38,7 @@ When you use an AI coding agent on a growing project, three things start going w
 
 ### 2.0 Install & Register `lattice-mcp` in 30 Seconds (Zero `pip` Dependencies)
 
-`lattice-mcp` is implemented **100% in the Python 3.11+ standard library** (`json`, `sqlite3`, `ast`, `pathlib`, `hashlib`, `subprocess`) — **no `pip install`, no virtual environment, and no API keys are required**.
+Anyone (or any AI agent) can clone the repo and run it immediately with stock `python3` — **no `pip install`, no virtualenv, and no API keys required** (`100%` Python 3.11+ standard library: `json`, `sqlite3`, `ast`, `pathlib`, `hashlib`, `subprocess`).
 
 #### 1. Clone the repository
 ```bash
