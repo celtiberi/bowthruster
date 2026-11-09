@@ -518,7 +518,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "a1660b22adfc088ba560b67bf09606df8ef81294",
+  "last_commit_sha": "8f45feafe7856b39be2e690fbeec1c7fdd7dd320",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -736,7 +736,7 @@
       "stage": "stage 23",
       "text": "Execute deterministic zero-LLM preflight, gate, and voice turn",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 3,
@@ -1419,7 +1419,7 @@
       "stage": "stage 23",
       "text": "Verify interface-to-law call reachability across all component files while ignoring discarded _ = law(...) assignments",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "calls": [
@@ -1456,7 +1456,7 @@
       "stage": "stage 23",
       "text": "Verify bounds, contracts, FLOW payload schemas, and unregistered public symbols scoped to modified or non-VERIFIED files",
       "turn": 26,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "args": "file_hash_changed: Bool, scope_still_verified: Bool",
@@ -1596,7 +1596,7 @@
       "stage": "stage 23",
       "text": "Pre-commit and turn gate decision verdict",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 17,
@@ -1622,7 +1622,7 @@
       "stage": "stage 23",
       "text": "Full executive turn orchestration result",
       "turn": 17,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "created_turn": 17,
@@ -2078,7 +2078,7 @@
       "stage": "stage 23",
       "text": "Synchronize post-commit file hashes, delegate all URI/line healing to ai_memory.sync_git_diff_uris, and cascade STALE",
       "turn": 21,
-      "updated_turn": 28
+      "updated_turn": 30
     },
     {
       "args": "has_ast_symbol_range: Bool, uri_has_line_anchor: Bool",
@@ -2222,7 +2222,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "a1660b22adfc088ba560b67bf09606df8ef81294",
+      "last_commit_sha": "8f45feafe7856b39be2e690fbeec1c7fdd7dd320",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2419,7 +2419,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "a1660b22adfc088ba560b67bf09606df8ef81294",
+      "last_commit_sha": "8f45feafe7856b39be2e690fbeec1c7fdd7dd320",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2487,7 +2487,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "a1660b22adfc088ba560b67bf09606df8ef81294",
+      "last_commit_sha": "8f45feafe7856b39be2e690fbeec1c7fdd7dd320",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2565,7 +2565,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "a1660b22adfc088ba560b67bf09606df8ef81294",
+      "last_commit_sha": "8f45feafe7856b39be2e690fbeec1c7fdd7dd320",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2649,7 +2649,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "a1660b22adfc088ba560b67bf09606df8ef81294",
+      "last_commit_sha": "8f45feafe7856b39be2e690fbeec1c7fdd7dd320",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2732,7 +2732,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "a1660b22adfc088ba560b67bf09606df8ef81294",
+      "last_commit_sha": "8f45feafe7856b39be2e690fbeec1c7fdd7dd320",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
@@ -2828,7 +2828,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "a1660b22adfc088ba560b67bf09606df8ef81294",
+      "last_commit_sha": "8f45feafe7856b39be2e690fbeec1c7fdd7dd320",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
