@@ -215,12 +215,6 @@ If you put a codebase into a naive dependency graph and walk 2 undirected hops f
 
 ## Configuration (`config.json`) & Limitations
 
-### Zero-LLM Runtime & `config.json`
-Every Lattice operation is **100% deterministic Python, SQLite, `ast`, and Bend 2**:
-- **`0` LLM API calls & `0` API keys required**
-- **`0 GB` local model weights / GPU RAM (`100%` Python 3.11+ standard library)**
-- **`< 50ms` turn compilation and pre-commit verification**
-
 All gate policies and working-memory budgets live in [`config.json`](config.json):
 
 | Config Key | Default | What It Controls |
