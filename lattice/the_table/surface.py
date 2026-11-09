@@ -459,6 +459,11 @@ def render_lattice_atlas(
     for bname, board in boards:
         if ch := _extract_board_charter(bname, board):
             schem_lines.append(f"- @ CHARTER [{ch['name']}]: {ch['summary']}" + (f" (principles: {ch['principles']})" if ch["principles"] else ""))
+        for k, sc in ((board.get("scopes") or {}).items() if isinstance(board.get("scopes"), dict) else []):
+            if (k == "global_defaults" or str(k).startswith("global_defaults::")) and isinstance(sc, dict):
+                for r in (sc.get("rules") or []):
+                    if isinstance(r, dict) and r.get("text") and not str(r.get("text") or "").startswith("Charter ["):
+                        schem_lines.append(f"- * GLOBAL_RULE [{r.get('type', 'RULE')}]: {r.get('text')}")
     mermaid_lines = ["flowchart LR"]
     for sid, c in components.items():
         deps_str, owner_str = ", ".join(c["depends_on"]), c["owner"] or "unassigned"

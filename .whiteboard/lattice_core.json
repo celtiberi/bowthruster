@@ -352,6 +352,12 @@
         "link_id": "link_the_table_40f3e725ee41",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/lattice/the_table/surface.py#L443-L488"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_table_86202ece2f88",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/lattice/the_table/surface.py#L443-L493"
       }
     ],
     "whiteboard": [
@@ -528,7 +534,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "0e73314dda4a78432a74fedf6b439a08465028b6",
+  "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -1825,9 +1831,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/the_table/surface.py#L443-L488"
+        "file": "lattice/the_table/surface.py#L443-L493"
       },
-      "file": "lattice/the_table/surface.py#L443-L488",
+      "file": "lattice/the_table/surface.py#L443-L493",
       "id": "interface_the_table_render_lattice_atlas",
       "inputs": [
         "whiteboard_boards",
@@ -1945,9 +1951,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "lattice/whiteboard/read_engine.py#L408-L494"
+        "file": "lattice/whiteboard/read_engine.py#L408-L492"
       },
-      "file": "lattice/whiteboard/read_engine.py#L408-L494",
+      "file": "lattice/whiteboard/read_engine.py#L408-L492",
       "id": "interface_whiteboard_slice_lattice",
       "inputs": [
         "graph",
@@ -2297,7 +2303,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "0e73314dda4a78432a74fedf6b439a08465028b6",
+      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2617,7 +2623,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "0e73314dda4a78432a74fedf6b439a08465028b6",
+      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2685,7 +2691,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "0e73314dda4a78432a74fedf6b439a08465028b6",
+      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2763,7 +2769,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "0e73314dda4a78432a74fedf6b439a08465028b6",
+      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2847,7 +2853,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "0e73314dda4a78432a74fedf6b439a08465028b6",
+      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2882,7 +2888,7 @@
           "lattice/the_table/__init__.py": "d1d25d49b0f45310",
           "lattice/the_table/renderer.py": "456df3bffa847203",
           "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
-          "lattice/the_table/surface.py": "723fa63364e4a485",
+          "lattice/the_table/surface.py": "547634bc776f453c",
           "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
         },
         "files": [
@@ -2913,7 +2919,7 @@
         "lattice/the_table/__init__.py": "d1d25d49b0f45310",
         "lattice/the_table/renderer.py": "456df3bffa847203",
         "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
-        "lattice/the_table/surface.py": "723fa63364e4a485",
+        "lattice/the_table/surface.py": "547634bc776f453c",
         "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
       },
       "files": [
@@ -2930,7 +2936,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "0e73314dda4a78432a74fedf6b439a08465028b6",
+      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
@@ -2968,7 +2974,7 @@
           "lattice/whiteboard/ingest.py": "039136270f285a69",
           "lattice/whiteboard/linker.py": "7a16cbccaff6e93f",
           "lattice/whiteboard/mutations.py": "6ac6e21f039db4e7",
-          "lattice/whiteboard/read_engine.py": "fa812b1455533cac",
+          "lattice/whiteboard/read_engine.py": "7f9b0bd022885c83",
           "lattice/whiteboard/rewriter.py": "627f2e4d06ddc5ce",
           "lattice/whiteboard/schema.py": "2094567fa1041c95"
         },
@@ -3004,7 +3010,7 @@
         "lattice/whiteboard/ingest.py": "039136270f285a69",
         "lattice/whiteboard/linker.py": "7a16cbccaff6e93f",
         "lattice/whiteboard/mutations.py": "6ac6e21f039db4e7",
-        "lattice/whiteboard/read_engine.py": "fa812b1455533cac",
+        "lattice/whiteboard/read_engine.py": "7f9b0bd022885c83",
         "lattice/whiteboard/rewriter.py": "627f2e4d06ddc5ce",
         "lattice/whiteboard/schema.py": "2094567fa1041c95"
       },
@@ -3026,7 +3032,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "0e73314dda4a78432a74fedf6b439a08465028b6",
+      "last_commit_sha": "1fe434ddde2d2b0504ed8264809f8bf1fa5943ec",
       "outputs": [],
       "owner": "eng2",
       "parent": null,

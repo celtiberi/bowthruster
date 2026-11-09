@@ -119,12 +119,12 @@ The **`Type`** column tells Lattice whether the rule is **mechanically enforced 
 | :--- | :--- | :--- | :--- |
 | **`BOUND`** | A numeric threshold on file length (`max_file_lines`) or a module-level Python constant (`MAX_RETRIES <= 3`). | **Yes** — blocks commits when a file exceeds `max_file_lines` or a top-level constant violates `Op Value`. | File size limits, timeouts, retry caps, batch sizes, latency/budget constants. |
 | **`PROHIBITION`** | A banned Python import or module dependency (`Property = requests`, `Op = !=`, `Value = imported`). | **Yes** — blocks commits if any `.py` file imports the prohibited package. | Layer boundaries (e.g., keeping `sqlalchemy` or `requests` out of pure domain logic). |
-| **`POLICY`** *(or `OBLIGATION`)* | A semantic engineering rule or architectural convention that requires human/LLM judgment rather than a brittle AST regex. | **No** — stored on the board and surfaced in `lattice_slice`, `lattice_packets`, and `lattice_atlas(spec=True)`. | Architectural principles (e.g., no silent output truncation, UTC-only timestamps, idempotent retries). |
+| **`POLICY`** *(or `OBLIGATION`)* | A semantic engineering rule or architectural convention that requires human/LLM judgment rather than a brittle AST regex. | **No** — stored on the board and surfaced in `lattice_atlas` (for `global_defaults`) or `lattice_slice` / `lattice_packets` (for component-scoped rules). | Architectural principles (e.g., no silent output truncation, UTC-only timestamps, idempotent retries). |
 
 ### Scope: Repo-Wide (`global_defaults`) vs. Single Component
 
-- Set `Component = global_defaults` for **standing repo-wide rules** that apply across the entire board.
-- Set `Component = <component_name>` (e.g., `auth_service` or `billing_service`) for rules that apply only to that component (and trigger a `STALE` transition on that component when updated).
+- **Repo-Wide (`Component = global_defaults`):** Displayed **once** at the top of `lattice_atlas` (under `@ CHARTER` as `* GLOBAL_RULE`) and in `lattice_atlas(spec=True)`, so calling `lattice_slice` 10 times during a session never repeats global rules 10 times in the agent's context window.
+- **Single Component (`Component = <component_name>`):** Displayed **only** when slicing or pulling a `WorkPacket` for that specific component (`lattice_slice(component="...")` or `lattice_packets`), keeping rules scoped to where they actually apply.
 
 ### Example: Submitting `BOUND`, `PROHIBITION`, and `POLICY` Rules (`lattice_turn`)
 
