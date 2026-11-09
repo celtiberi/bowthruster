@@ -249,18 +249,18 @@ def markovian_overwrite_rule(graph: dict[str, Any], scope_id: str, old_rule_id: 
 
 def prune_dysfluency_and_upsert_rule(graph: dict[str, Any], scope_id: str, rule_data: dict[str, Any]) -> dict[str, Any]:
     """Upserts a clean rule into `scopes[scope_id]`, enforcing `_meta` caps, bidirectional `refs`, and SQLite sync (Spec 22A §2.2)."""
-    scope = _ensure_scope_node_nosync(graph, scope_id)
-    rid = str(rule_data.get("id") or f"r_{scope_id}_{len(scope.get('rules', [])) + 1}")
-    if any(r.get("id") == rid for r in scope.get("rules", [])):
-        return markovian_overwrite_rule(graph, scope_id, rid, rule_data)
-
+    scope, all_sc = _ensure_scope_node_nosync(graph, scope_id), (graph.get("scopes", {}) if isinstance(graph.get("scopes"), dict) else {})
+    if not rule_data.get("id") and (tp := rule_data.get("target_prop")) is not None and not rule_data.get("is_exception") and (m := next(((s, r["id"]) for s, sc in all_sc.items() if isinstance(sc, dict) and (s == scope_id or s.startswith(f"{scope_id}::")) for r in sc.get("rules", []) if isinstance(r, dict) and r.get("target_prop") == tp and set(r.get("conditions", [])) == set(rule_data.get("conditions", []))), None)):
+        return markovian_overwrite_rule(graph, m[0], str(m[1]), rule_data)
+    all_rids = {str(r.get("id")) for sc in all_sc.values() if isinstance(sc, dict) for r in sc.get("rules", []) if isinstance(r, dict) and r.get("id")}
+    rid = str(rule_data.get("id") or next(f"r_{scope_id}_{i}" for i in range(len(scope.get("rules", [])) + 1, len(all_rids) + len(scope.get("rules", [])) + 5) if f"r_{scope_id}_{i}" not in all_rids))
+    if m_sid := next((s for s, sc in all_sc.items() if isinstance(sc, dict) and (s == scope_id or s.startswith(f"{scope_id}::")) and any(isinstance(r, dict) and r.get("id") == rid for r in sc.get("rules", []))), None):
+        return markovian_overwrite_rule(graph, m_sid, rid, rule_data)
     rtype = str(rule_data.get("type", "OBLIGATION"))
     rfacet = rule_data.get("facet") or _TYPE_TO_FACET.get(rtype, "obligations")
     clamped_meta, meta_keys, meta_tokens = clamp_rule_meta(rule_data.get("meta"))
-    if not meta_tokens and isinstance(rule_data.get("meta_tokens"), list):
-        meta_tokens = [str(x).lower() for x in rule_data["meta_tokens"] if str(x).strip()]
-    if not meta_keys and isinstance(rule_data.get("meta_keys"), list):
-        meta_keys = [str(x) for x in rule_data["meta_keys"][:3]]
+    if not meta_tokens and isinstance(rule_data.get("meta_tokens"), list): meta_tokens = [str(x).lower() for x in rule_data["meta_tokens"] if str(x).strip()]
+    if not meta_keys and isinstance(rule_data.get("meta_keys"), list): meta_keys = [str(x) for x in rule_data["meta_keys"][:3]]
 
     raw_g_turn = graph.get("turn") if graph.get("turn") is not None else graph.get("turn_index")
     turn_val = int(rule_data.get("turn", max(1, int(raw_g_turn if raw_g_turn is not None else 1))))

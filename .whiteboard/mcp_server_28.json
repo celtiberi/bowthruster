@@ -101,7 +101,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "ffe341775045ace185707dc3ca2b33370376509e",
+  "last_commit_sha": "41a27a28caaa64ef911e54c2ff719cbb3c08a8eb",
   "lattice_artifacts": [
     {
       "calls": [
@@ -344,7 +344,7 @@
     }
   ],
   "lattice_proof": {
-    "bend_proof_source": "import Base\n\ntype LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\ndef classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n    case False{} True{} True{} True{}:\n      LPProven{}\n    case False{} True{} True{} False{}:\n      LPDraft{}\n    case False{} True{} False{} flow_ok:\n      LPDraft{}\n    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\ndef board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status(False{}, True{}, True{}, True{})\n",
+    "bend_proof_source": "import Base\n\ntype LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\ndef is_lp_proven(s: LPStatus) -> Bool:\n  match s:\n    case LPBroken{}: False{}\n    case LPProven{}: True{}\n    case LPDraft{}: False{}\n\ndef classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n    case False{} True{} True{} True{}:\n      LPProven{}\n    case False{} True{} True{} False{}:\n      LPDraft{}\n    case False{} True{} False{} flow_ok:\n      LPDraft{}\n    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\nlaw lattice_proof_proven_iff_complete_and_conflict_free:\n  for +has_viol: Bool\n  for +has_comp: Bool\n  for +comp_ok: Bool\n  for +flow_ok: Bool\n  {is_lp_proven(classify_lattice_proof_status(has_viol, has_comp, comp_ok, flow_ok)) == Bool.and(Bool.not(has_viol), Bool.and(has_comp, Bool.and(comp_ok, flow_ok))) : Bool}\n\ndef lattice_proof_proven_iff_complete_and_conflict_free(has_viol, has_comp, comp_ok, flow_ok):\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok: {==}\n    case False{} True{} True{} True{}: {==}\n    case False{} True{} True{} False{}: {==}\n    case False{} True{} False{} flow_ok: {==}\n    case False{} False{} comp_ok flow_ok: {==}\n\ndef board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status(False{}, True{}, True{}, True{})\n",
     "component_count": 2,
     "contract_count": 4,
     "flow_count": 1,
@@ -367,7 +367,7 @@
           "principles": "Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
           "summary": "Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents."
         },
-        "lod1_synopsis": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload."
+        "lod1_synopsis": "Never silently truncate strings, lists, code windows, or diagnostic outputs ([:N]) to hide data or force output into a budget"
       },
       "build_status": "DRAFT",
       "build_tag": null,
@@ -386,14 +386,14 @@
       "rules": [
         {
           "access_turns": [
-            9
+            14
           ],
-          "bound_op": null,
-          "bound_val": null,
+          "bound_op": "<=",
+          "bound_val": 500,
           "conditions": [],
           "created_turn": 9,
           "exceptions": [],
-          "facet": "context_facts",
+          "facet": "Numeric_Bounds",
           "id": "r_global_defaults_3",
           "is_exception": false,
           "meta_keys": [],
@@ -401,18 +401,18 @@
           "overrides": [],
           "refs": [],
           "scope": "global_defaults",
-          "target_prop": null,
-          "text": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
-          "turn": 9,
-          "type": "FACT",
-          "updated_turn": 9
+          "target_prop": "max_file_lines",
+          "text": "Every source file must be at most 500 lines",
+          "turn": 14,
+          "type": "BOUND",
+          "updated_turn": 14
         },
         {
           "access_turns": [
-            10
+            12
           ],
-          "bound_op": null,
-          "bound_val": null,
+          "bound_op": "<=",
+          "bound_val": 500,
           "conditions": [],
           "created_turn": 10,
           "exceptions": [],
@@ -424,11 +424,34 @@
           "overrides": [],
           "refs": [],
           "scope": "global_defaults",
-          "target_prop": null,
-          "text": "Charter [mcp_server_28]: Stdio JSON-RPC 2.0 MCP Server & Protocol Verifier exposing the 8 Lattice tools (lattice_readme, lattice_atlas, lattice_slice, lattice_packets, lattice_turn, lattice_git_sync, lattice_status, lattice_logs) to AI coding agents. | Principles: Zero external dependencies; cross-process flock + RLock concurrency safety for parallel subagents; automatic project_root discovery and live hot-reload.",
-          "turn": 10,
-          "type": "FACT",
-          "updated_turn": 10
+          "target_prop": "max_file_lines",
+          "text": "Every source file must be at most 500 lines",
+          "turn": 12,
+          "type": "BOUND",
+          "updated_turn": 12
+        },
+        {
+          "access_turns": [
+            14
+          ],
+          "bound_op": "==",
+          "bound_val": "true",
+          "conditions": [],
+          "created_turn": 11,
+          "exceptions": [],
+          "facet": "obligations",
+          "id": "r_global_defaults_5",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults",
+          "target_prop": "no_silent_truncation",
+          "text": "Never silently truncate strings, lists, code windows, or diagnostic outputs ([:N]) to hide data or force output into a budget",
+          "turn": 14,
+          "type": "POLICY",
+          "updated_turn": 14
         }
       ],
       "stage": null,
@@ -479,7 +502,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ffe341775045ace185707dc3ca2b33370376509e",
+      "last_commit_sha": "41a27a28caaa64ef911e54c2ff719cbb3c08a8eb",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -536,7 +559,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ffe341775045ace185707dc3ca2b33370376509e",
+      "last_commit_sha": "41a27a28caaa64ef911e54c2ff719cbb3c08a8eb",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -544,7 +567,7 @@
       "rules": [
         {
           "access_turns": [
-            10
+            14
           ],
           "bound_op": "<=",
           "bound_val": 28,
@@ -572,7 +595,7 @@
       "why": "Gives AI coding agents direct <50ms access to architecture memory, focused AST code slices, living specs, and pre-commit verification over stdio JSON-RPC 2.0."
     }
   },
-  "turn": 10,
-  "turn_index": 10,
+  "turn": 14,
+  "turn_index": 14,
   "version": 1
 }

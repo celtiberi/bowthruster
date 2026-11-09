@@ -147,7 +147,7 @@ def classify_delta_transition(
     unclear_spans = list(parsed_mcu.get("unclear_spans", []))
     grounding = str(parsed_mcu.get("grounding_status") or "GROUNDED")
     target_prop, bound_op, bound_val = parsed_mcu.get("target_prop"), parsed_mcu.get("bound_op"), parsed_mcu.get("bound_val")
-    conditions = [restore_ascii_dots(str(c)).strip() for c in parsed_mcu.get("conditions", []) if str(c).strip()]
+    conditions = [restore_ascii_dots(str(c)).strip() for c in parsed_mcu.get("conditions", []) if str(c).strip() and restore_ascii_dots(str(c)).strip().lower() not in ("none", "-", "—", "n/a", "null")]
     cond_set = set(conditions)
     is_exception = bool(parsed_mcu.get("is_exception", False))
     meta = copy.deepcopy(parsed_mcu.get("meta", {})) if isinstance(parsed_mcu.get("meta"), dict) else {}

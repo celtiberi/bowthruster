@@ -398,7 +398,7 @@ def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_f
             "python_skeleton": w0_py_skel, "is_skeleton_complete": is_python_skeleton_complete(bool(schemas), bool(all_ifaces), bool(all_laws)),
             "flows": [], "rules": [], "tasks": [], "prompt_slice": w0_slice["compact_view"],
         })
-    sbf_scopes = [(sid, sc) for sid, sc in scopes.items() if isinstance(sc, dict) and sid != "global_defaults" and (str(sc.get("kind") or "").strip().upper() == "COMPONENT" or bool(sc.get("role") or sc.get("owner") or sc.get("stage") or sc.get("depends_on") or sc.get("children") or sc.get("parent") or sc.get("files")))]
+    sbf_scopes = [(sid, sc) for sid, sc in scopes.items() if isinstance(sc, dict) and sid != "global_defaults" and not str(sid).startswith("global_defaults::") and (str(sc.get("kind") or "").strip().upper() == "COMPONENT" or bool(sc.get("role") or sc.get("owner") or sc.get("stage") or sc.get("depends_on") or sc.get("children") or sc.get("parent") or sc.get("files")))]
     non_qa_raw, qa_scopes = [], []
     for sid, sc in sbf_scopes:
         owner_low, stage_low = str(sc.get("owner") or "").strip().lower(), str(sc.get("stage") or "").strip().lower()

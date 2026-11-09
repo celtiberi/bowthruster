@@ -308,7 +308,7 @@ def _collect_atlas_topology(
         board_has_sbf_comps = bool(ref_sids) or any(_has_comp(str(k).strip(), v) for k, v in scopes.items() if str(k).strip() and str(k).strip() != "global_defaults" and isinstance(v, dict))
         for raw_sid, sc in scopes.items():
             sid = str(raw_sid).strip()
-            if not sid or sid == "global_defaults" or not isinstance(sc, dict):
+            if not sid or sid == "global_defaults" or sid.startswith("global_defaults::") or not isinstance(sc, dict):
                 continue
             st = "STALE" if "STALE" in (str(sc.get("status") or "").strip().upper(), str(sc.get("build_status") or "").strip().upper()) else (str(sc.get("status") if sc.get("status") not in (None, "", "DRAFT") else (sc.get("build_status") or "DRAFT")).strip().upper() or "DRAFT")
             sc_attrs = sc.get("attributes") if isinstance(sc.get("attributes"), dict) else {}
@@ -393,7 +393,7 @@ def _render_board_spec(
         f"> **Status:** `{metrics['verified_components']}/{metrics['total_components']}` components `VERIFIED` | `{metrics['total_flows']}` data flows | `{metrics['open_gaps']}` open gaps | **Hubs:** `{', '.join(metrics['hub_bottlenecks']) or 'none'}`",
     ]
     charters = [(bn, ch) for bn, bd in boards if (ch := _extract_board_charter(bn, bd))]
-    g_rules = [r for _, bd in boards for r in (((bd.get("scopes") or {}).get("global_defaults") or {}).get("rules") or []) if isinstance(r, dict) and r.get("text") and not str(r.get("text") or "").startswith("Charter [")]
+    g_rules = [r for _, bd in boards for k, sc in ((bd.get("scopes") or {}).items() if isinstance(bd.get("scopes"), dict) else []) if (k == "global_defaults" or str(k).startswith("global_defaults::")) and isinstance(sc, dict) for r in (sc.get("rules") or []) if isinstance(r, dict) and r.get("text") and not str(r.get("text") or "").startswith("Charter [")]
     if charters or g_rules:
         lines.extend(["", "## 1. Project Charter & Purpose"])
         for _, ch in charters:
@@ -414,7 +414,7 @@ def _render_board_spec(
             if isinstance(a, dict) and (asid := str(a.get("scope_id") or a.get("scope") or "").strip()):
                 arts_by_scope.setdefault(asid, []).append(a)
         for sid, sc in ((bd.get("scopes") or {}).items() if isinstance(bd.get("scopes"), dict) else []):
-            if isinstance(sc, dict) and sid != "global_defaults":
+            if isinstance(sc, dict) and sid != "global_defaults" and not str(sid).startswith("global_defaults::"):
                 for r in (sc.get("rules") or []):
                     if isinstance(r, dict) and r.get("text"): rules_by_scope.setdefault(sid, []).append(r)
     lines.extend(["", "## 3. Components, Rationale & Contracts"])

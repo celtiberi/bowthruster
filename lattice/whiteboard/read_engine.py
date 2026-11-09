@@ -434,14 +434,14 @@ def slice_lattice(
     for sid, sc in scopes.items():
         if not isinstance(sc, dict):
             continue
-        is_sbf_comp = (
+        is_sbf_comp = sid != "global_defaults" and not str(sid).startswith("global_defaults::") and (
             str(sc.get("kind") or "").strip().upper() == "COMPONENT"
             or bool(
                 sc.get("role") or sc.get("owner") or sc.get("stage") or sc.get("depends_on")
                 or sc.get("children") or sc.get("parent") or sc.get("inputs") or sc.get("outputs") or sc.get("files")
             )
         )
-        if sid != "global_defaults" or is_sbf_comp or len(scopes) == 1:
+        if (sid != "global_defaults" and not str(sid).startswith("global_defaults::")) or is_sbf_comp or len(scopes) == 1:
             sc_kinds = {"COMPONENT", "SCOPE"} if is_sbf_comp else {"SCOPE"}
             if sc.get("kind"):
                 sc_kinds.add(str(sc["kind"]).strip().upper())

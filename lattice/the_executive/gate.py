@@ -370,17 +370,17 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
             if not isinstance(r, dict):
                 continue
             rtype, rtext, prop = str(r.get("type") or "").upper(), str(r.get("text") or ""), str(r.get("target_prop") or "").strip()
-            if (rtype == "BOUND" or r.get("bound_op") is not None) and r.get("bound_val") is not None:
+            if (rtype == "BOUND" or r.get("bound_op") is not None) and r.get("bound_val") is not None and not isinstance(r.get("bound_val"), bool):
                 try:
                     bval, bop = float(r["bound_val"]), str(r.get("bound_op") or "<=").strip()
                     if prop.lower() in ("max_file_lines", "file_lines", "line_count", "lines", "max_lines") or "max_file_lines" in rtext.lower():
                         max_lines_bound = int(bval)
                     elif prop:
-                        scope_bounds.setdefault(sid, []).append((prop, bop, bval, rtext or f"{prop} {bop} {bval}"))
+                        scope_bounds.setdefault(sid.split("::", 1)[0], []).append((prop, bop, bval, rtext or f"{prop} {bop} {bval}"))
                 except (TypeError, ValueError):
                     pass
             if rtype == "PROHIBITION" or any(w in rtext.lower() for w in ("forbid", "never", "prohibit")):
-                prohibited_tokens.update((["re"] if (any(tok in rtext.lower().replace(",", " ").replace("`", " ").split() for tok in ("re", "regex")) or "import re " in (rtext.lower() + " ")) else []) + ([prop.lower()] if prop else []) + [t for t in ("regiment_nlp", "spacy", "torch", "onnxruntime") if t in rtext.lower()])
+                prohibited_tokens.update((["re"] if (any(tok in rtext.lower().replace(",", " ").replace("`", " ").split() for tok in ("re", "regex")) or "import re " in (rtext.lower() + " ")) else []) + ([prop.lower()] if (prop and rtype == "PROHIBITION") else []) + [t for t in ("regiment_nlp", "spacy", "torch", "onnxruntime") if t in rtext.lower()])
 
     modified_scope_files: dict[str, list[dict[str, Any]]] = {}
     deleted_paths: set[str] = {str(p).strip() for p in (staged_diff_report.get("deleted_files") or []) if str(p).strip()}

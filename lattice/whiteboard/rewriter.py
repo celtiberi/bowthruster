@@ -275,7 +275,7 @@ def fuse_table_attributes(
                 comp_sid = _resolve_or_register_scope(graph, raw_comp, create=True) if raw_comp.strip() else "global_defaults"
                 if comp_sid not in fused_scopes: fused_scopes.append(comp_sid)
                 raw_type = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("type", "kind", "facet"))).strip().upper() or "BOUND"
-                rtype = raw_type if raw_type in ("BOUND", "PROHIBITION", "OBLIGATION", "FACT", "GOAL", "PERMISSION") else "BOUND"
+                rtype = raw_type if raw_type in ("BOUND", "PROHIBITION", "OBLIGATION", "FACT", "POLICY", "GOAL", "PROPOSAL", "PERMISSION") else "BOUND"
                 raw_prop = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("property", "target_prop", "field", "metric", "rule", "bound"))).strip().strip("\"`'*").strip()
                 t_prop = _slugify_scope_id(raw_prop) if raw_prop and raw_prop.lower() not in ("none", "-", "—", "n/a", "null") else None
                 raw_op = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("op", "bound_op", "operator"))).strip().strip("\"`'*").strip()

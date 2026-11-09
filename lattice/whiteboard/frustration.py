@@ -446,7 +446,7 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
 
     owned_components = [
         sid for sid, sc in scopes.items()
-        if sid != "global_defaults" and isinstance(sc, dict)
+        if sid != "global_defaults" and not str(sid).startswith("global_defaults::") and isinstance(sc, dict)
         and bool(sc.get("owner") or sc.get("role") or sc.get("depends_on") or sc.get("children") or sc.get("parent"))
     ]
     open_gaps: list[dict[str, str]] = []

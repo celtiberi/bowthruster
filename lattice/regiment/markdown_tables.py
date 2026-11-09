@@ -262,7 +262,8 @@ def build_mcus_from_tables_and_flows(
                 continue
             fnm = str(srow.get("flow") or srow.get("id") or srow.get("name") or "").strip() or None
             pay = str(srow.get("payload") or srow.get("object") or srow.get("data") or "").strip() or None
-            cond = str(srow.get("condition") or srow.get("when") or "").strip() or None
+            raw_c = str(srow.get("condition") or srow.get("when") or "").strip()
+            cond = None if raw_c.lower() in ("", "none", "-", "—", "n/a", "null") else raw_c
             txt = f"The {src} component sends {pay or 'data'} to {tgt}."
             mcus.append({
                 "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
@@ -282,7 +283,8 @@ def build_mcus_from_tables_and_flows(
             prop = str(srow.get("property") or srow.get("target_prop") or srow.get("prop") or srow.get("rule") or srow.get("bound") or "").strip() or None
             op = str(srow.get("op") or srow.get("bound_op") or ("==" if rtype in ("FACT", "OBLIGATION") else ("!=" if rtype == "PROHIBITION" else "<="))).strip() or None
             val = _parse_scalar_val(srow.get("value", srow.get("bound_val")))
-            cond = str(srow.get("condition") or srow.get("when") or "").strip() or None
+            raw_c = str(srow.get("condition") or srow.get("when") or "").strip()
+            cond = None if raw_c.lower() in ("", "none", "-", "—", "n/a", "null") else raw_c
             rid = str(srow.get("rule") or srow.get("id") or srow.get("name") or "").strip()
             spec_txt = str(srow.get("spec") or srow.get("text") or srow.get("description") or "").strip()
             txt = spec_txt or (f"In `{scope}`, `{prop}` {op} {val}" + (f" when {cond}." if cond else ".") if prop and val is not None else f"Rule {rid or next_id} on `{scope}`.")

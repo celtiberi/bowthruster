@@ -41,6 +41,10 @@
     "component_packet": "component_packet",
     "duplicate_spacy_calls": "duplicate_spacy_calls",
     "global_defaults": "global_defaults",
+    "global_defaults::general": "global_defaults::general",
+    "global_defaults::max": "global_defaults::max",
+    "global_defaults::no": "global_defaults::no",
+    "global_defaults::regiment": "global_defaults::regiment",
     "graph_core": "graph_core",
     "has_markdown_tables": "has_markdown_tables",
     "hippocampal_concept_index_and_uri_resolver": "hippocampal_concept_index_and_uri_resolver",
@@ -524,7 +528,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "5ed730942b3a85b71c509516dd7b90c2704f190b",
+  "last_commit_sha": "128f174a348fe5322b879133a00c4daf18b105b8",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -685,7 +689,7 @@
       "stage": "Stages 15-18",
       "text": "Deterministic pipe-table and flow turn intake packet",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "created_turn": 2,
@@ -711,7 +715,7 @@
       "stage": "stage 22",
       "text": "Sliced nD Lattice context view",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -742,7 +746,7 @@
       "stage": "stage 23",
       "text": "Execute deterministic zero-LLM preflight, gate, and voice turn",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "created_turn": 3,
@@ -884,7 +888,7 @@
       "stage": "stage 25",
       "text": "Bounded conference-room working surface slot",
       "turn": 17,
-      "updated_turn": 30
+      "updated_turn": 35
     },
     {
       "created_turn": 8,
@@ -917,7 +921,7 @@
       "stage": "Stages 15-18",
       "text": "Compile deterministic Markdown pipe-table rows and flows into an IntakePacket",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -1330,7 +1334,7 @@
       "stage": "stage 22",
       "text": "Emit AST-parseable Python stub with Spec docstrings on schemas, laws, and interfaces and # MUST CALL anchors",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -1360,7 +1364,7 @@
       "stage": "stage 22",
       "text": "Compile wave-ordered WorkPackets with baseline_commit_sha and synchronized status and build_status",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "args": "status_synced: Bool, spec_in_docstring: Bool",
@@ -1425,7 +1429,7 @@
       "stage": "stage 23",
       "text": "Verify interface-to-law call reachability across all component files while ignoring discarded _ = law(...) assignments",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -1462,7 +1466,7 @@
       "stage": "stage 23",
       "text": "Verify bounds, contracts, FLOW payload schemas, and unregistered public symbols scoped to modified or non-VERIFIED files",
       "turn": 26,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "args": "file_hash_changed: Bool, scope_still_verified: Bool",
@@ -1527,7 +1531,7 @@
       "stage": "stage 22",
       "text": "Fuse Component, Flow, Interface, Law, Schema, and Rule Markdown pipe tables into the Whiteboard graph",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "created_turn": 17,
@@ -1552,7 +1556,7 @@
       "stage": "stage 25",
       "text": "Rendered conference-room working surface view",
       "turn": 17,
-      "updated_turn": 30
+      "updated_turn": 35
     },
     {
       "created_turn": 17,
@@ -1576,7 +1580,7 @@
       "stage": "stage 22",
       "text": "Living nD system lattice graph container",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "created_turn": 17,
@@ -1602,7 +1606,7 @@
       "stage": "stage 23",
       "text": "Pre-commit and turn gate decision verdict",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "created_turn": 17,
@@ -1628,7 +1632,7 @@
       "stage": "stage 23",
       "text": "Full executive turn orchestration result",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "created_turn": 17,
@@ -1842,7 +1846,7 @@
       "stage": "stage 25",
       "text": "Render multi-board LOD_0 topological Lattice Atlas",
       "turn": 17,
-      "updated_turn": 30
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -1871,7 +1875,7 @@
       "stage": "stage 25",
       "text": "Render active TableSlots into a bounded TableView",
       "turn": 17,
-      "updated_turn": 30
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -1904,7 +1908,7 @@
       "stage": "stage 25",
       "text": "Synchronize recalled ConceptFrames and ContextView into the_table",
       "turn": 17,
-      "updated_turn": 30
+      "updated_turn": 35
     },
     {
       "created_turn": 17,
@@ -1930,7 +1934,7 @@
       "stage": "stage 22",
       "text": "Ingest deterministic IntakePacket into the Whiteboard graph",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -1962,7 +1966,7 @@
       "stage": "stage 22",
       "text": "Slice the nD Lattice graph with focused artifact filtering on exact AST symbol queries",
       "turn": 26,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -1991,7 +1995,7 @@
       "stage": "stage 22",
       "text": "Compile Bend 2 law theorems into LAWS.bend skeleton",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "created_turn": 17,
@@ -2018,7 +2022,7 @@
       "stage": "stage 22",
       "text": "Transition a component scope between lifecycle build statuses",
       "turn": 18,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -2049,7 +2053,7 @@
       "stage": "Stages 15-18",
       "text": "Extract normalized structured records from Markdown pipe tables",
       "turn": 17,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "calls": [
@@ -2084,7 +2088,7 @@
       "stage": "stage 23",
       "text": "Synchronize post-commit file hashes, delegate all URI/line healing to ai_memory.sync_git_diff_uris, and cascade STALE",
       "turn": 21,
-      "updated_turn": 31
+      "updated_turn": 35
     },
     {
       "args": "has_ast_symbol_range: Bool, uri_has_line_anchor: Bool",
@@ -2293,7 +2297,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "5ed730942b3a85b71c509516dd7b90c2704f190b",
+      "last_commit_sha": "128f174a348fe5322b879133a00c4daf18b105b8",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2313,11 +2317,16 @@
           "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
           "summary": "Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically."
         },
-        "lod1_synopsis": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500"
+        "lod1_synopsis": "Every source file must be at most 500 lines"
       },
       "build_status": "DRAFT",
       "build_tag": null,
-      "children": [],
+      "children": [
+        "global_defaults::general",
+        "global_defaults::regiment",
+        "global_defaults::no",
+        "global_defaults::max"
+      ],
       "core_tag": null,
       "depends_on": [],
       "failure_diagnostic": null,
@@ -2328,6 +2337,28 @@
       "outputs": [],
       "owner": null,
       "parent": null,
+      "role": null,
+      "rules": [],
+      "stage": null,
+      "status": "DRAFT"
+    },
+    "global_defaults::general": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {},
+      "build_status": "DRAFT",
+      "build_tag": null,
+      "children": [],
+      "core_tag": null,
+      "depends_on": [],
+      "failure_diagnostic": null,
+      "id": "global_defaults::general",
+      "in_edges": [],
+      "inputs": [],
+      "kind": null,
+      "outputs": [],
+      "owner": null,
+      "parent": "global_defaults",
       "role": null,
       "rules": [
         {
@@ -2343,13 +2374,155 @@
           "meta_tokens": [],
           "overrides": [],
           "refs": [],
-          "scope": "global_defaults",
+          "scope": "global_defaults::general",
           "target_prop": null,
           "text": "The whiteboard system must transition a component's status to STALE when editing any rule or contract on a VERIFIED component.",
           "turn": 4,
           "type": "OBLIGATION",
           "updated_turn": 4
         },
+        {
+          "access_turns": [
+            29
+          ],
+          "bound_op": null,
+          "bound_val": null,
+          "conditions": [],
+          "created_turn": 29,
+          "exceptions": [],
+          "facet": "context_facts",
+          "id": "r_global_defaults_9",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults::general",
+          "target_prop": null,
+          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+          "turn": 29,
+          "type": "FACT",
+          "updated_turn": 29
+        }
+      ],
+      "stage": null,
+      "status": "DRAFT"
+    },
+    "global_defaults::max": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {
+        "lod1_synopsis": "Every source file must be at most 500 lines"
+      },
+      "build_status": "DRAFT",
+      "build_tag": null,
+      "children": [],
+      "core_tag": null,
+      "depends_on": [],
+      "failure_diagnostic": null,
+      "id": "global_defaults::max",
+      "in_edges": [],
+      "inputs": [],
+      "kind": null,
+      "outputs": [],
+      "owner": null,
+      "parent": "global_defaults",
+      "role": null,
+      "rules": [
+        {
+          "access_turns": [
+            35
+          ],
+          "bound_op": "<=",
+          "bound_val": 500,
+          "conditions": [],
+          "created_turn": 32,
+          "exceptions": [],
+          "facet": "Numeric_Bounds",
+          "id": "r_global_defaults_6",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults::max",
+          "target_prop": "max_file_lines",
+          "text": "Every source file must be at most 500 lines",
+          "turn": 35,
+          "type": "BOUND",
+          "updated_turn": 35
+        }
+      ],
+      "stage": null,
+      "status": "DRAFT"
+    },
+    "global_defaults::no": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {
+        "lod1_synopsis": "Never silently truncate strings, lists, code windows, or diagnostic outputs ([:N]) to hide data or force output into a budget"
+      },
+      "build_status": "DRAFT",
+      "build_tag": null,
+      "children": [],
+      "core_tag": null,
+      "depends_on": [],
+      "failure_diagnostic": null,
+      "id": "global_defaults::no",
+      "in_edges": [],
+      "inputs": [],
+      "kind": null,
+      "outputs": [],
+      "owner": null,
+      "parent": "global_defaults",
+      "role": null,
+      "rules": [
+        {
+          "access_turns": [
+            35
+          ],
+          "bound_op": "==",
+          "bound_val": "true",
+          "conditions": [],
+          "created_turn": 32,
+          "exceptions": [],
+          "facet": "obligations",
+          "id": "r_global_defaults_5",
+          "is_exception": false,
+          "meta_keys": [],
+          "meta_tokens": [],
+          "overrides": [],
+          "refs": [],
+          "scope": "global_defaults::no",
+          "target_prop": "no_silent_truncation",
+          "text": "Never silently truncate strings, lists, code windows, or diagnostic outputs ([:N]) to hide data or force output into a budget",
+          "turn": 35,
+          "type": "POLICY",
+          "updated_turn": 35
+        }
+      ],
+      "stage": null,
+      "status": "DRAFT"
+    },
+    "global_defaults::regiment": {
+      "_meta": {},
+      "aliases": [],
+      "attributes": {},
+      "build_status": "DRAFT",
+      "build_tag": null,
+      "children": [],
+      "core_tag": null,
+      "depends_on": [],
+      "failure_diagnostic": null,
+      "id": "global_defaults::regiment",
+      "in_edges": [],
+      "inputs": [],
+      "kind": null,
+      "outputs": [],
+      "owner": null,
+      "parent": "global_defaults",
+      "role": null,
+      "rules": [
         {
           "access_turns": [
             17
@@ -2368,58 +2541,12 @@
           "meta_tokens": [],
           "overrides": [],
           "refs": [],
-          "scope": "global_defaults",
+          "scope": "global_defaults::regiment",
           "target_prop": "regiment_nlp",
           "text": "In `global_defaults`, `regiment_nlp` != imported when Never import regiment_nlp, spacy, torch, or onnxruntime inside lattice.",
           "turn": 17,
           "type": "PROHIBITION",
           "updated_turn": 17
-        },
-        {
-          "access_turns": [
-            29
-          ],
-          "bound_op": null,
-          "bound_val": null,
-          "conditions": [],
-          "created_turn": 29,
-          "exceptions": [],
-          "facet": "context_facts",
-          "id": "r_global_defaults_9",
-          "is_exception": false,
-          "meta_keys": [],
-          "meta_tokens": [],
-          "overrides": [],
-          "refs": [],
-          "scope": "global_defaults",
-          "target_prop": null,
-          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
-          "turn": 29,
-          "type": "FACT",
-          "updated_turn": 29
-        },
-        {
-          "access_turns": [
-            30
-          ],
-          "bound_op": null,
-          "bound_val": null,
-          "conditions": [],
-          "created_turn": 30,
-          "exceptions": [],
-          "facet": "context_facts",
-          "id": "r_global_defaults_10",
-          "is_exception": false,
-          "meta_keys": [],
-          "meta_tokens": [],
-          "overrides": [],
-          "refs": [],
-          "scope": "global_defaults",
-          "target_prop": null,
-          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
-          "turn": 30,
-          "type": "FACT",
-          "updated_turn": 30
         }
       ],
       "stage": null,
@@ -2490,7 +2617,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "5ed730942b3a85b71c509516dd7b90c2704f190b",
+      "last_commit_sha": "128f174a348fe5322b879133a00c4daf18b105b8",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2519,7 +2646,7 @@
         "file_hashes": {
           "lattice/regiment/__init__.py": "51ed764b25109489",
           "lattice/regiment/intake_packet.py": "22abda8736dcfa39",
-          "lattice/regiment/markdown_tables.py": "882e6e296869665d"
+          "lattice/regiment/markdown_tables.py": "091d78e7affbeee0"
         },
         "files": [
           "lattice/regiment/__init__.py",
@@ -2544,7 +2671,7 @@
       "file_hashes": {
         "lattice/regiment/__init__.py": "51ed764b25109489",
         "lattice/regiment/intake_packet.py": "22abda8736dcfa39",
-        "lattice/regiment/markdown_tables.py": "882e6e296869665d"
+        "lattice/regiment/markdown_tables.py": "091d78e7affbeee0"
       },
       "files": [
         "lattice/regiment/__init__.py",
@@ -2558,7 +2685,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "5ed730942b3a85b71c509516dd7b90c2704f190b",
+      "last_commit_sha": "128f174a348fe5322b879133a00c4daf18b105b8",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2636,7 +2763,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "5ed730942b3a85b71c509516dd7b90c2704f190b",
+      "last_commit_sha": "128f174a348fe5322b879133a00c4daf18b105b8",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2668,7 +2795,7 @@
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
           "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-          "lattice/the_executive/gate.py": "ac175a0f3e75f692",
+          "lattice/the_executive/gate.py": "db07b88801afbb12",
           "lattice/the_executive/orchestrator.py": "f88814b3f93e0b36",
           "lattice/the_executive/preflight.py": "5be08f3f57952191",
           "lattice/the_executive/voice.py": "5fb44eaba9171d58"
@@ -2699,7 +2826,7 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/the_executive/__init__.py": "27b1a61b1a03ac27",
-        "lattice/the_executive/gate.py": "ac175a0f3e75f692",
+        "lattice/the_executive/gate.py": "db07b88801afbb12",
         "lattice/the_executive/orchestrator.py": "f88814b3f93e0b36",
         "lattice/the_executive/preflight.py": "5be08f3f57952191",
         "lattice/the_executive/voice.py": "5fb44eaba9171d58"
@@ -2720,7 +2847,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "5ed730942b3a85b71c509516dd7b90c2704f190b",
+      "last_commit_sha": "128f174a348fe5322b879133a00c4daf18b105b8",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2755,7 +2882,7 @@
           "lattice/the_table/__init__.py": "d1d25d49b0f45310",
           "lattice/the_table/renderer.py": "456df3bffa847203",
           "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
-          "lattice/the_table/surface.py": "9312740f6d458f28",
+          "lattice/the_table/surface.py": "723fa63364e4a485",
           "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
         },
         "files": [
@@ -2786,7 +2913,7 @@
         "lattice/the_table/__init__.py": "d1d25d49b0f45310",
         "lattice/the_table/renderer.py": "456df3bffa847203",
         "lattice/the_table/schema.py": "bd7f5f7c9746faa0",
-        "lattice/the_table/surface.py": "9312740f6d458f28",
+        "lattice/the_table/surface.py": "723fa63364e4a485",
         "lattice/the_table/workspace_sync.py": "14dcf39c0011194e"
       },
       "files": [
@@ -2803,7 +2930,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "5ed730942b3a85b71c509516dd7b90c2704f190b",
+      "last_commit_sha": "128f174a348fe5322b879133a00c4daf18b105b8",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
@@ -2837,12 +2964,12 @@
         "depends_on": "graph_core, regiment",
         "file_hashes": {
           "lattice/whiteboard/__init__.py": "b2f8f6dc53be6844",
-          "lattice/whiteboard/frustration.py": "21f3f6f81adf47cd",
-          "lattice/whiteboard/ingest.py": "b60109fe44620856",
-          "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
-          "lattice/whiteboard/mutations.py": "41a72335950cd737",
-          "lattice/whiteboard/read_engine.py": "35e560eab7d7ce33",
-          "lattice/whiteboard/rewriter.py": "d23258b838777950",
+          "lattice/whiteboard/frustration.py": "d2af217e05102182",
+          "lattice/whiteboard/ingest.py": "039136270f285a69",
+          "lattice/whiteboard/linker.py": "7a16cbccaff6e93f",
+          "lattice/whiteboard/mutations.py": "6ac6e21f039db4e7",
+          "lattice/whiteboard/read_engine.py": "7f9b0bd022885c83",
+          "lattice/whiteboard/rewriter.py": "627f2e4d06ddc5ce",
           "lattice/whiteboard/schema.py": "2094567fa1041c95"
         },
         "files": [
@@ -2873,12 +3000,12 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "lattice/whiteboard/__init__.py": "b2f8f6dc53be6844",
-        "lattice/whiteboard/frustration.py": "21f3f6f81adf47cd",
-        "lattice/whiteboard/ingest.py": "b60109fe44620856",
-        "lattice/whiteboard/linker.py": "bc4bf38b29a6e310",
-        "lattice/whiteboard/mutations.py": "41a72335950cd737",
-        "lattice/whiteboard/read_engine.py": "35e560eab7d7ce33",
-        "lattice/whiteboard/rewriter.py": "d23258b838777950",
+        "lattice/whiteboard/frustration.py": "d2af217e05102182",
+        "lattice/whiteboard/ingest.py": "039136270f285a69",
+        "lattice/whiteboard/linker.py": "7a16cbccaff6e93f",
+        "lattice/whiteboard/mutations.py": "6ac6e21f039db4e7",
+        "lattice/whiteboard/read_engine.py": "7f9b0bd022885c83",
+        "lattice/whiteboard/rewriter.py": "627f2e4d06ddc5ce",
         "lattice/whiteboard/schema.py": "2094567fa1041c95"
       },
       "files": [
@@ -2899,7 +3026,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "5ed730942b3a85b71c509516dd7b90c2704f190b",
+      "last_commit_sha": "128f174a348fe5322b879133a00c4daf18b105b8",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2911,7 +3038,7 @@
       "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves <2KB 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },
-  "turn": 31,
-  "turn_index": 31,
+  "turn": 35,
+  "turn_index": 35,
   "version": 1
 }
