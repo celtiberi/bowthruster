@@ -149,7 +149,26 @@ Pass canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`
 1. **Bootstrap the Draft Board (`bootstrap`):** Run `bootstrap(board="my_board")` (CLI: `bowthruster --board my_board bootstrap [--component <comp>]`) to mechanically extract candidate components (`Files`), public `Schema` classes and `Interface` functions with real signatures and `#L<start>-L<end>` anchors, intra-repo imports (`Depends_On`), and matched test files (`Tests`). `Charter`, `Role`, `Why`, and `Spec` are left blank and flagged in `open_gaps`, and candidate component boundaries can be kept, merged, or split via `turn`.
 2. **Fill in Judgment Gaps (`turn`) & Verify (`git_sync`):** Work through one onboarding packet at a time via `turn` to fill in `Charter`, `Role`, `Why`, `Spec`, and `Flow`s until `open_gaps` reaches `0` (`PROVEN_COMPLETE`), then mark existing files `VERIFIED` via `git_sync(board="my_board", mode="pre", mark_verified=True)` and stamp the initial Git SHA via `git_sync(board="my_board", mode="post")`.
 3. **Install the Unified `bowthruster` Skill:** Call `readme(section="skills")` to retrieve [`docs/skills/bowthruster/SKILL.md`](docs/skills/bowthruster/SKILL.md) and write it to `.agents/skills/bowthruster/SKILL.md` (or `.claude/skills/bowthruster/SKILL.md`), replacing `<BOARD_NAME>` and `<TEST_CMD>`.
-4. **Optional — Run `install_hook` if you want the gate on every commit:**
+4. **Preventing Post-Compaction Skill Amnesia (`SessionStart` Re-Injection):**
+   - **The Problem:** Unlike static system rules, skills (`SKILL.md`) are loaded into the mutable conversation history as tool outputs or skill-read turns. When a long coding session hits context compaction (`/compact` or auto-compaction), the summarizer strips tool outputs and drops the `bowthruster` skill instructions—causing agents to revert to raw `grep` / `read_file` / `edit_file` after compaction.
+   - **The Solution:** Coding harnesses such as Claude Code fire their `SessionStart` hook immediately after every compaction (`source="compact"`), as well as on session startup and resume. Re-injecting `SKILL.md` via `SessionStart` (`hookSpecificOutput.additionalContext`) puts the full BowThruster workflow instructions back into the active context window automatically after every compaction, and adding a `PreCompact` instruction preserves the active board, component, and `STALE`/`VERIFIED` status in the compaction summary:
+     ```json
+     {
+       "hooks": {
+         "SessionStart": [
+           {
+             "hooks": [
+               {
+                 "type": "command",
+                 "command": "python3 -c 'import json, pathlib; p = pathlib.Path(\".claude/skills/bowthruster/SKILL.md\"); print(json.dumps({\"hookSpecificOutput\": {\"hookEventName\": \"SessionStart\", \"additionalContext\": p.read_text()}})) if p.is_file() else None'"
+               }
+             ]
+           }
+         ]
+       }
+     }
+     ```
+5. **Optional — Run `install_hook` if you want the gate on every commit:**
    Run `git_sync(board="my_board", mode="install_hook")` (CLI: `bowthruster --board my_board git-sync --install-hook`) to write a portable `.git/hooks/pre-commit` script for that board (which fails open with a warning if `bowthruster` is not installed in the active environment). To stamp commit SHAs automatically after each commit, you can also add a `.git/hooks/post-commit` hook calling `bowthruster --board my_board git-sync --post-commit`.
 
 ---
