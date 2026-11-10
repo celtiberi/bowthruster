@@ -145,7 +145,11 @@ class SQLiteGraphStore:
             "INSERT OR REPLACE INTO external_links(link_id, node_id, uri, kind, summary, metadata_json) VALUES (?, ?, ?, ?, ?, ?)",
             (lid, nid, uri_clean, kind_clean, sum_clean, json.dumps(meta_dict, sort_keys=True)),
         )
-        return {"link_id": lid, "node_id": nid, "uri": uri_clean, "kind": kind_clean, "summary": sum_clean, "metadata": meta_dict}
+        return {
+            "link_id": lid, "node_id": nid, "uri": uri_clean,
+            "kind": kind_clean, "summary": sum_clean,
+            "metadata": meta_dict
+        }
 
     def upsert_external_link(
         self, node_id: str, uri: str, kind: str = "reference",
@@ -296,7 +300,11 @@ class SQLiteGraphStore:
                         ),
                     )
 
-            base_flow_keys = ("id", "source", "target", "payload", "action", "condition", "step", "text", "dimensions", "turn")
+            base_flow_keys = (
+                "id", "source", "target", "payload",
+                "action", "condition", "step", "text",
+                "dimensions", "turn"
+            )
             for idx, fl in enumerate(graph.get("flows", [])):
                 if not isinstance(fl, dict):
                     continue
@@ -321,7 +329,11 @@ class SQLiteGraphStore:
                     ),
                 )
 
-            base_art_keys = ("id", "kind", "scope_id", "name", "spec", "inputs", "outputs", "owner", "stage", "dimensions", "text", "turn")
+            base_art_keys = (
+                "id", "kind", "scope_id", "name", "spec",
+                "inputs", "outputs", "owner", "stage",
+                "dimensions", "text", "turn"
+            )
             for idx, art in enumerate(graph.get("lattice_artifacts", [])):
                 if not isinstance(art, dict):
                     continue
@@ -480,7 +492,10 @@ class SQLiteGraphStore:
         """Indexed SQLite lookup returning all nodes in `scope_id` (Spec 21 §1.1)."""
         if not isinstance(scope_id, str) or not scope_id.strip():
             return []
-        rows = self.conn.execute("SELECT * FROM nodes WHERE scope_id = ? ORDER BY rowid ASC", (scope_id.strip(),)).fetchall()
+        rows = self.conn.execute(
+            "SELECT * FROM nodes WHERE scope_id = ? ORDER BY rowid ASC",
+            (scope_id.strip(),)
+        ).fetchall()
         return [_row_to_node_dict(r) for r in rows]
 
     def query_nodes_by_target_prop(self, scope_id: str, target_prop: str) -> list[dict[str, Any]]:

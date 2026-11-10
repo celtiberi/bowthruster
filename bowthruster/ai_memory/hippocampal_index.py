@@ -65,14 +65,20 @@ def should_dereference_external(level: str, has_links: bool, deep_detail_needed:
     """Returns `True` iff `level == 'LOD2' and has_links and deep_detail_needed` (Spec 24 §2.1 Law 2)."""
     return str(level or "").strip().upper() == LOD_2 and bool(has_links) and bool(deep_detail_needed)
 
-def classify_hop_bucket(hop_distance: int, *, is_steiner_bridge: bool = False, max_hops: int = MAX_RADIAL_HOPS) -> HopBucket:
+def classify_hop_bucket(
+    hop_distance: int, *, is_steiner_bridge: bool = False,
+    max_hops: int = MAX_RADIAL_HOPS
+) -> HopBucket:
     """Maps a non-negative integer hop distance to its canonical `HopBucket`."""
     _req_int(hop_distance, "hop_distance", 0)
     if hop_distance <= MAX_RADIAL_HOPS and hop_distance <= max_hops:
         return (HopBucket.Hop0Seed, HopBucket.Hop1Neighbor, HopBucket.Hop2Second)[hop_distance]
     return HopBucket.Hop2Second if (is_steiner_bridge and hop_distance <= max_hops) else HopBucket.HopExceeds2
 
-def should_include_recalled_concept(hop_bucket: HopBucket | str | int, budget_within_400: bool, words_within_50: bool) -> bool:
+def should_include_recalled_concept(
+    hop_bucket: HopBucket | str | int, budget_within_400: bool,
+    words_within_50: bool
+) -> bool:
     """Pure recall gate governed by Bend 2 Law 1 (`recall_hop_bound_law` in `bend_mem_24b/LAWS.bend`)."""
     if isinstance(hop_bucket, int) and not isinstance(hop_bucket, bool):
         bucket = classify_hop_bucket(hop_bucket)
@@ -84,7 +90,10 @@ def should_include_recalled_concept(hop_bucket: HopBucket | str | int, budget_wi
         raise ValueError(f"Unknown hop_bucket: {hop_bucket!r}")
     return False if bucket is HopBucket.HopExceeds2 else (bool(budget_within_400) and bool(words_within_50))
 
-def can_propagate_from_node(reached_via_depends_on_sink: bool, step_energy_above_epsilon: bool, within_max_hops: bool) -> bool:
+def can_propagate_from_node(
+    reached_via_depends_on_sink: bool, step_energy_above_epsilon: bool,
+    within_max_hops: bool
+) -> bool:
     """Pure propagation gate governed by Bend 2 Law 2 (`steiner_bridge_and_sink_isolation_law` in `bend_mem_24b/LAWS.bend`)."""
     return False if bool(reached_via_depends_on_sink) else (bool(step_energy_above_epsilon) and bool(within_max_hops))
 
@@ -107,7 +116,14 @@ def _normalize_external_links(concept_id: str, raw_links: list[Any] | None) -> l
         if isinstance(item, str) and item.strip() and item.strip() not in seen_uris:
             uri = item.strip()
             seen_uris.add(uri)
-            out.append({"link_id": f"link_{concept_id}_{idx + 1}", "node_id": concept_id, "uri": uri, "target_uri": uri, "kind": "reference", "artifact_kind": "reference", "lod_tier": LOD_2, "summary": "", "metadata": {}})
+            out.append({
+                "link_id": f"link_{concept_id}_{idx + 1}",
+                "node_id": concept_id, "uri": uri,
+                "target_uri": uri, "kind": "reference",
+                "artifact_kind": "reference",
+                "lod_tier": LOD_2, "summary": "",
+                "metadata": {}
+            })
         elif isinstance(item, dict):
             _validate_no_raw_documents(item)
             uri = str(item.get("uri") or item.get("target_uri") or "").strip()
@@ -116,7 +132,13 @@ def _normalize_external_links(concept_id: str, raw_links: list[Any] | None) -> l
                 kind = str(item.get("kind") or item.get("artifact_kind") or "reference").strip() or "reference"
                 lod_tier = str(item.get("lod_tier") or LOD_2).strip() or LOD_2
                 lid = str(item.get("link_id") or f"link_{concept_id}_{len(out) + 1}").strip()
-                out.append({"link_id": lid, "node_id": str(item.get("node_id") or concept_id).strip(), "uri": uri, "target_uri": uri, "kind": kind, "artifact_kind": kind, "lod_tier": lod_tier, "summary": _clamp_synopsis(str(item.get("summary") or ""), MAX_LOD1_SYNOPSIS_WORDS), "metadata": copy.deepcopy(item["metadata"]) if isinstance(item.get("metadata"), dict) else {}})
+                out.append({
+                    "link_id": lid, "node_id": str(item.get("node_id") or concept_id).strip(),
+                    "uri": uri, "target_uri": uri,
+                    "kind": kind, "artifact_kind": kind,
+                    "lod_tier": lod_tier, "summary": _clamp_synopsis(str(item.get("summary") or ""), MAX_LOD1_SYNOPSIS_WORDS),
+                    "metadata": copy.deepcopy(item["metadata"]) if isinstance(item.get("metadata"), dict) else {}
+                })
     return out
 
 def _resolve_store_and_graph(store_or_graph: Any) -> tuple[SQLiteGraphStore | None, dict[str, Any]]:
@@ -134,12 +156,20 @@ def _resolve_store_and_graph(store_or_graph: Any) -> tuple[SQLiteGraphStore | No
 def _ensure_concept_scope(graph: dict[str, Any], concept_id: str) -> dict[str, Any]:
     scopes = graph.setdefault("scopes", {})
     sc = scopes.get(concept_id) if isinstance(scopes.get(concept_id), dict) else {}
-    for k, d in (("id", concept_id), ("parent", None), ("aliases", []), ("children", []), ("rules", []), ("in_edges", []), ("attributes", {}), ("_meta", {})):
+    for k, d in (
+        ("id", concept_id), ("parent", None),
+        ("aliases", []), ("children", []),
+        ("rules", []), ("in_edges", []), ("attributes", {}),
+        ("_meta", {})
+    ):
         sc.setdefault(k, copy.deepcopy(d))
     scopes[concept_id] = sc
     return sc
 
-def index_committed_rules(store_or_graph: Any, committed_rules: list[dict[str, Any]], *, current_turn: int = 1, lod1_synopsis_words: int = MAX_LOD1_SYNOPSIS_WORDS) -> list[str]:
+def index_committed_rules(
+    store_or_graph: Any, committed_rules: list[dict[str, Any]],
+    *, current_turn: int = 1, lod1_synopsis_words: int = MAX_LOD1_SYNOPSIS_WORDS
+) -> list[str]:
     """Indexes committed Whiteboard rules into pointer-only `ConceptFrame` nodes on `graph_core`."""
     if not isinstance(committed_rules, list):
         raise ValueError(f"committed_rules must be a list, got {type(committed_rules).__name__}")
@@ -155,18 +185,51 @@ def index_committed_rules(store_or_graph: Any, committed_rules: list[dict[str, A
             if len(synopsis.split()) > lod1_synopsis_words:
                 raise ValueError(f"lod1_synopsis word count ({len(synopsis.split())}) exceeds limit ({lod1_synopsis_words})")
         else:
-            synopsis = _clamp_synopsis(str(rule.get("canonical_text") or rule.get("text") or rule.get("summary") or "").strip(), lod1_synopsis_words)
-        concept_id = _req_str(str(rule.get("concept_id") or rule.get("primary_scope") or rule.get("scope") or rule.get("id") or f"concept_{idx + 1}"), "concept_id")
+            synopsis = _clamp_synopsis(
+                str(rule.get("canonical_text") or rule.get("text") or rule.get("summary") or "").strip(),
+                lod1_synopsis_words
+            )
+        concept_id = _req_str(
+            str(
+                rule.get("concept_id") or rule.get("primary_scope")
+                or rule.get("scope") or rule.get("id")
+                or f"concept_{idx + 1}"
+            ),
+            "concept_id"
+        )
         raw_refs = rule.get("secondary_refs") if isinstance(rule.get("secondary_refs"), list) else rule.get("refs", [])
-        refs = [str(r).strip() for r in (raw_refs if isinstance(raw_refs, list) else []) if str(r).strip() and str(r).strip() != concept_id]
-        if isinstance(rule.get("external_links"), list) and isinstance(rule.get("source_links"), list) and _normalize_external_links(concept_id, rule["external_links"]) != _normalize_external_links(concept_id, rule["source_links"]):
+        refs = [
+            str(r).strip() for r in (raw_refs if isinstance(raw_refs, list) else [])
+            if str(r).strip() and str(r).strip() != concept_id
+        ]
+        if (
+            isinstance(rule.get("external_links"), list)
+            and isinstance(rule.get("source_links"), list)
+            and _normalize_external_links(concept_id, rule["external_links"]) != _normalize_external_links(concept_id, rule["source_links"])
+        ):
             raise ValueError("r_uri_resolver_7 violation: source_links must equal external_links")
-        norm_links = _normalize_external_links(concept_id, rule.get("external_links") if "external_links" in rule else rule.get("source_links"))
+        norm_links = _normalize_external_links(
+            concept_id, rule.get("external_links")
+            if "external_links" in rule else rule.get("source_links")
+        )
         sc = _ensure_concept_scope(graph, concept_id)
         if synopsis:
             sc["attributes"]["lod1_synopsis"] = synopsis
         rule_id = str(rule.get("id") or f"{concept_id}.synopsis").strip()
-        node_entry: dict[str, Any] = {"id": rule_id, "scope": concept_id, "type": str(rule.get("type") or "FACT"), "facet": str(rule.get("facet") or "context_facts"), "text": synopsis or concept_id, "target_prop": rule.get("target_prop"), "bound_op": rule.get("bound_op"), "bound_val": rule.get("bound_val"), "conditions": list(rule.get("conditions", [])) if isinstance(rule.get("conditions"), list) else [], "refs": refs, "overrides": [], "exceptions": [], "meta_keys": [], "meta_tokens": tokenize_content_words(synopsis or concept_id), "created_turn": int(current_turn), "updated_turn": int(current_turn), "access_turns": [int(current_turn)]}
+        node_entry: dict[str, Any] = {
+            "id": rule_id, "scope": concept_id,
+            "type": str(rule.get("type") or "FACT"),
+            "facet": str(rule.get("facet") or "context_facts"),
+            "text": synopsis or concept_id, "target_prop": rule.get("target_prop"),
+            "bound_op": rule.get("bound_op"), "bound_val": rule.get("bound_val"),
+            "conditions": list(rule.get("conditions", []))
+            if isinstance(rule.get("conditions"), list) else [],
+            "refs": refs, "overrides": [], "exceptions": [],
+            "meta_keys": [], "meta_tokens": tokenize_content_words(synopsis or concept_id),
+            "created_turn": int(current_turn),
+            "updated_turn": int(current_turn),
+            "access_turns": [int(current_turn)]
+        }
         if norm_links:
             node_entry["external_links"] = copy.deepcopy(norm_links)
             graph.setdefault("external_links", {})[rule_id] = copy.deepcopy(norm_links)
@@ -183,12 +246,19 @@ def index_committed_rules(store_or_graph: Any, committed_rules: list[dict[str, A
         for cid in indexed_ids:
             for lk in graph.get("external_links", {}).get(cid, []):
                 if isinstance(lk, dict) and (u := str(lk.get("uri") or lk.get("target_uri") or "")):
-                    store.upsert_external_link(cid, u, lk.get("kind", lk.get("artifact_kind", "reference")), lk.get("summary", lk.get("lod_tier", "")), lk.get("metadata"), link_id=lk.get("link_id"))
+                    store.upsert_external_link(
+                        cid, u, lk.get("kind", lk.get("artifact_kind", "reference")),
+                        lk.get("summary", lk.get("lod_tier", "")),
+                        lk.get("metadata"), link_id=lk.get("link_id")
+                    )
     if isinstance(store_or_graph, AIMemoryStore):
         store_or_graph.graph = graph
     return indexed_ids
 
-def _extract_directed_topology(graph: dict[str, Any]) -> tuple[dict[str, list[str]], dict[str, list[str]], dict[str, list[str]]]:
+def _extract_directed_topology(graph: dict[str, Any]) -> tuple[
+    dict[str, list[str]], dict[str, list[str]],
+    dict[str, list[str]]
+]:
     """Extracts `(fwd_flow, bwd_flow, fwd_dep)` over valid scopes in `graph` (`s24b-spec-laws-3`)."""
     scopes = graph.get("scopes") if isinstance(graph.get("scopes"), dict) else {}
     valid = {s for s, sc in scopes.items() if s != "global_defaults" and isinstance(sc, dict)}
@@ -206,7 +276,11 @@ def _extract_directed_topology(graph: dict[str, Any]) -> tuple[dict[str, list[st
         for d in raw_deps:
             _add(fwd_dep, sid, str(d or "").strip())
         for r in (sc.get("rules") if isinstance(sc.get("rules"), list) else []):
-            if isinstance(r, dict) and ("depends on" in str(r.get("text") or "").lower() or "depends_on" in str(r.get("text") or "").lower() or r.get("target_prop") == "depends_on"):
+            if isinstance(r, dict) and (
+                "depends on" in str(r.get("text") or "").lower()
+                or "depends_on" in str(r.get("text") or "").lower()
+                or r.get("target_prop") == "depends_on"
+            ):
                 for ref_s in (r.get("refs") if isinstance(r.get("refs"), list) else []):
                     _add(fwd_dep, sid, str(ref_s or "").strip())
     for fl in (graph.get("flows") if isinstance(graph.get("flows"), list) else []):
@@ -247,7 +321,10 @@ def _seed_activation_state(graph: dict[str, Any], cues: list[str]) -> dict[str, 
     cue_set, state = {c.lower() for c in cues}, {}
     for sid, sc in scopes.items():
         if sid != "global_defaults" and isinstance(sc, dict):
-            aliases = {str(a).strip().lower() for a in (sc.get("aliases") if isinstance(sc.get("aliases"), list) else []) if str(a).strip()}
+            aliases = {
+                str(a).strip().lower() for a in (sc.get("aliases") if isinstance(sc.get("aliases"), list) else [])
+                if str(a).strip()
+            }
             if sid.lower() in cue_set or bool(cue_set & aliases):
                 state[sid] = _ActivationNode(hop=0, activation=1.0)
     if state:
@@ -258,12 +335,20 @@ def _seed_activation_state(graph: dict[str, Any], cues: list[str]) -> dict[str, 
             score = float(seed_acts.get(sid, 0.0))
             for r in (sc.get("rules") if isinstance(sc.get("rules"), list) else []):
                 if isinstance(r, dict):
-                    score = max(score, float(seed_acts.get(str(r.get("id") or ""), 0.0)), HOP1_DECAY if (cue_set & set(tokenize_content_words(str(r.get("text") or "")))) else 0.0)
+                    score = max(
+                        score, float(seed_acts.get(str(r.get("id") or ""), 0.0)),
+                        HOP1_DECAY if (cue_set & set(tokenize_content_words(str(r.get("text") or "")))) else 0.0
+                    )
             if sid in seed_scopes or score >= SEED_SCORE_FLOOR:
                 state[sid] = _ActivationNode(hop=0, activation=round(min(1.0, max(score, HOP2_DECAY)), 6))
     return state
 
-def _run_directed_wave(seed_id: str, seed_energy: float, flow_adj: dict[str, list[str]], dep_adj: dict[str, list[str]], other_seeds: set[str], max_hops: int, decay_gamma: float, push_epsilon: float) -> dict[str, _ActivationNode]:
+def _run_directed_wave(
+    seed_id: str, seed_energy: float, flow_adj: dict[str, list[str]],
+    dep_adj: dict[str, list[str]], other_seeds: set[str],
+    max_hops: int, decay_gamma: float,
+    push_epsilon: float
+) -> dict[str, _ActivationNode]:
     """Propagates a single seed wave along `flow_adj` and 1-hop `dep_adj`, gating each step with `can_propagate_from_node`."""
     state: dict[str, _ActivationNode] = {seed_id: _ActivationNode(hop=0, activation=seed_energy, reached_via_sink=False)}
     frontier: list[str] = [seed_id]
@@ -271,7 +356,10 @@ def _run_directed_wave(seed_id: str, seed_energy: float, flow_adj: dict[str, lis
         next_frontier: list[str] = []
         for u in frontier:
             u_node = state[u]
-            if (u != seed_id and u in other_seeds) or not can_propagate_from_node(u_node.reached_via_sink, u_node.activation >= push_epsilon, cur_hop <= max_hops):
+            if (u != seed_id and u in other_seeds) or not can_propagate_from_node(
+                u_node.reached_via_sink, u_node.activation >= push_epsilon,
+                cur_hop <= max_hops
+            ):
                 continue
             flow_nbrs = flow_adj.get(u, [])
             if flow_nbrs:
@@ -298,7 +386,14 @@ def _run_directed_wave(seed_id: str, seed_energy: float, flow_adj: dict[str, lis
             break
     return state
 
-def bounded_spreading_activation(store_or_graph: Any, seed_cues: list[str] | str, *, max_recall_hops: int = MAX_RECALL_HOPS, decay_gamma: float = DEFAULT_DECAY_GAMMA, bridge_beta: float = DEFAULT_BRIDGE_BETA, activation_tau: float = DEFAULT_ACTIVATION_TAU, push_epsilon: float = DEFAULT_PUSH_EPSILON) -> list[dict[str, Any]]:
+def bounded_spreading_activation(
+    store_or_graph: Any, seed_cues: list[str] | str,
+    *, max_recall_hops: int = MAX_RECALL_HOPS,
+    decay_gamma: float = DEFAULT_DECAY_GAMMA,
+    bridge_beta: float = DEFAULT_BRIDGE_BETA,
+    activation_tau: float = DEFAULT_ACTIVATION_TAU,
+    push_epsilon: float = DEFAULT_PUSH_EPSILON
+) -> list[dict[str, Any]]:
     """Runs directed multi-cue epsilon-push activation + Steiner bridge intersection (`max_recall_hops <= 6`)."""
     _req_int(max_recall_hops, "max_recall_hops", 0, MAX_RECALL_HOPS)
     _, graph = _resolve_store_and_graph(store_or_graph)
@@ -307,13 +402,30 @@ def bounded_spreading_activation(store_or_graph: Any, seed_cues: list[str] | str
         return []
     seeds = _seed_activation_state(graph, cues)
     if not seeds or max_recall_hops == 0:
-        return [{"concept_id": s, "hop": 0, "hop_bucket": HopBucket.Hop0Seed.value, "activation": seeds[s].activation} for s in sorted(seeds, key=lambda k: (-seeds[k].activation, k))]
+        return [
+            {"concept_id": s, "hop": 0, "hop_bucket": HopBucket.Hop0Seed.value, "activation": seeds[s].activation}
+            for s in sorted(seeds, key=lambda k: (-seeds[k].activation, k))
+        ]
 
     fwd_flow, bwd_flow, fwd_dep = _extract_directed_topology(graph)
     seed_ids, seed_set = sorted(seeds.keys()), set(seeds.keys())
     eff_wave_hops = max_recall_hops if len(seed_ids) >= 2 else min(max_recall_hops, MAX_RADIAL_HOPS)
-    w_plus = {s: _run_directed_wave(s, seeds[s].activation, fwd_flow, fwd_dep, seed_set - {s}, eff_wave_hops, decay_gamma, push_epsilon) for s in seed_ids}
-    w_minus = {s: _run_directed_wave(s, seeds[s].activation, bwd_flow, {}, seed_set - {s}, eff_wave_hops, decay_gamma, push_epsilon) for s in seed_ids}
+    w_plus = {
+        s: _run_directed_wave(
+            s, seeds[s].activation, fwd_flow, fwd_dep,
+            seed_set - {s}, eff_wave_hops, decay_gamma,
+            push_epsilon
+        )
+        for s in seed_ids
+    }
+    w_minus = {
+        s: _run_directed_wave(
+            s, seeds[s].activation, bwd_flow, {},
+            seed_set - {s}, eff_wave_hops, decay_gamma,
+            push_epsilon
+        )
+        for s in seed_ids
+    }
 
     all_cands = set(seed_ids) | {v for s in seed_ids for v in (*w_plus[s], *w_minus[s])}
     results: dict[str, _ActivationNode] = {}
@@ -331,8 +443,14 @@ def bounded_spreading_activation(store_or_graph: Any, seed_cues: list[str] | str
         for idx1, s1 in enumerate(seed_ids):
             for s2 in seed_ids[idx1 + 1:]:
                 n1p, n2m, n2p, n1m = w_plus[s1].get(v), w_minus[s2].get(v), w_plus[s2].get(v), w_minus[s1].get(v)
-                b1 = math.sqrt(n1p.activation * n2m.activation) if (n1p and n2m and not n1p.reached_via_sink and not n2m.reached_via_sink and n1p.hop + n2m.hop <= max_recall_hops) else 0.0
-                b2 = math.sqrt(n2p.activation * n1m.activation) if (n2p and n1m and not n2p.reached_via_sink and not n1m.reached_via_sink and n2p.hop + n1m.hop <= max_recall_hops) else 0.0
+                b1 = math.sqrt(n1p.activation * n2m.activation) if (
+                    n1p and n2m and not n1p.reached_via_sink
+                    and not n2m.reached_via_sink and n1p.hop + n2m.hop <= max_recall_hops
+                ) else 0.0
+                b2 = math.sqrt(n2p.activation * n1m.activation) if (
+                    n2p and n1m and not n2p.reached_via_sink
+                    and not n1m.reached_via_sink and n2p.hop + n1m.hop <= max_recall_hops
+                ) else 0.0
                 if b1 > 0.0 or b2 > 0.0:
                     bridge_sum += max(b1, b2)
                     bridge_hops.append((n1p.hop + n2m.hop) if b1 >= b2 else (n2p.hop + n1m.hop))
@@ -343,18 +461,40 @@ def bounded_spreading_activation(store_or_graph: Any, seed_cues: list[str] | str
         eff_hop = min(min_hop, min(bridge_hops)) if is_bridge else min_hop
         is_only_sink = all(n.reached_via_sink for n in vis)
         if total_v >= activation_tau and (min_hop <= radial_cap or (is_bridge and eff_hop <= max_recall_hops)):
-            results[v] = _ActivationNode(hop=eff_hop, activation=total_v, reached_via_sink=is_only_sink, is_bridge=is_bridge)
+            results[v] = _ActivationNode(
+                hop=eff_hop, activation=total_v, reached_via_sink=is_only_sink,
+                is_bridge=is_bridge
+            )
 
     ordered = sorted(results, key=lambda s: (0 if results[s].hop == 0 else (1 if results[s].is_bridge else 2), -results[s].activation, results[s].hop, s))
-    return [{"concept_id": s, "hop": results[s].hop, "hop_bucket": classify_hop_bucket(results[s].hop, is_steiner_bridge=results[s].is_bridge, max_hops=max_recall_hops).value, "activation": results[s].activation} for s in ordered]
+    return [
+        {
+            "concept_id": s, "hop": results[s].hop,
+            "hop_bucket": classify_hop_bucket(
+                results[s].hop, is_steiner_bridge=results[s].is_bridge,
+                max_hops=max_recall_hops
+            ).value,
+            "activation": results[s].activation
+        }
+        for s in ordered
+    ]
 
-def _extract_scope_synopsis_and_links(store: SQLiteGraphStore | None, graph: dict[str, Any], concept_id: str, max_words: int) -> tuple[str, list[dict[str, Any]]]:
+def _extract_scope_synopsis_and_links(
+    store: SQLiteGraphStore | None, graph: dict[str, Any],
+    concept_id: str, max_words: int
+) -> tuple[str, list[dict[str, Any]]]:
     sc = (graph.get("scopes") or {}).get(concept_id, {})
     if not isinstance(sc, dict):
         return concept_id, []
     attrs = sc.get("attributes") if isinstance(sc.get("attributes"), dict) else {}
     rules = [r for r in (sc.get("rules") if isinstance(sc.get("rules"), list) else []) if isinstance(r, dict)]
-    synopsis = _clamp_synopsis(str(attrs.get("lod1_synopsis") or (rules[0].get("text") if rules else "") or sc.get("role") or concept_id).strip(), max_words)
+    synopsis = _clamp_synopsis(
+        str(
+            attrs.get("lod1_synopsis") or (rules[0].get("text") if rules else "")
+            or sc.get("role") or concept_id
+        ).strip(),
+        max_words
+    )
     raw_links: list[dict[str, Any]] = []
     if store is not None:
         raw_links.extend(store.get_external_links(concept_id))
@@ -371,29 +511,64 @@ def _extract_scope_synopsis_and_links(store: SQLiteGraphStore | None, graph: dic
             raw_links.extend(r["external_links"])
     return synopsis, _normalize_external_links(concept_id, raw_links[:MAX_LINKS_PER_NODE])
 
-def _build_concept_frame_record(cid: str, synopsis: str, links: list[dict[str, Any]], hop: int, hop_bucket: str, activation: float, cost: int) -> ConceptFrame:
-    return ConceptFrame({"concept_id": cid, "lod1_synopsis": synopsis, "external_links": links, "source_links": copy.deepcopy(links), "hop": hop, "hop_distance": hop, "hop_bucket": hop_bucket, "activation": activation, "token_cost": cost})  # type: ignore[misc]
+def _build_concept_frame_record(
+    cid: str, synopsis: str, links: list[dict[str, Any]],
+    hop: int, hop_bucket: str, activation: float,
+    cost: int
+) -> ConceptFrame:
+    return ConceptFrame({
+        "concept_id": cid, "lod1_synopsis": synopsis,
+        "external_links": links,
+        "source_links": copy.deepcopy(links),
+        "hop": hop, "hop_distance": hop,
+        "hop_bucket": hop_bucket,
+        "activation": activation,
+        "token_cost": cost
+    })  # type: ignore[misc]
 
-def recall_concepts(store_or_graph: Any, concept_cues: list[str] | str, token_budget: int = MAX_LOD1_TOKEN_BUDGET, *, max_recall_hops: int = MAX_RECALL_HOPS, lod1_synopsis_words: int = MAX_LOD1_SYNOPSIS_WORDS, max_words: int | None = None, decay_gamma: float = DEFAULT_DECAY_GAMMA, bridge_beta: float = DEFAULT_BRIDGE_BETA, activation_tau: float = DEFAULT_ACTIVATION_TAU, push_epsilon: float = DEFAULT_PUSH_EPSILON) -> list[ConceptFrame]:
+def recall_concepts(
+    store_or_graph: Any, concept_cues: list[str] | str,
+    token_budget: int = MAX_LOD1_TOKEN_BUDGET,
+    *, max_recall_hops: int = MAX_RECALL_HOPS,
+    lod1_synopsis_words: int = MAX_LOD1_SYNOPSIS_WORDS,
+    max_words: int | None = None, decay_gamma: float = DEFAULT_DECAY_GAMMA,
+    bridge_beta: float = DEFAULT_BRIDGE_BETA,
+    activation_tau: float = DEFAULT_ACTIVATION_TAU,
+    push_epsilon: float = DEFAULT_PUSH_EPSILON
+) -> list[ConceptFrame]:
     """Recalls `ConceptFrame` records within `max_recall_hops <= 6` and `token_budget <= 400` (Laws 1–2)."""
     eff_words = max_words if max_words is not None else lod1_synopsis_words
     _req_int(token_budget, "lod1_token_budget", 1, MAX_LOD1_TOKEN_BUDGET)
     _req_int(max_recall_hops, "max_recall_hops", 0, MAX_RECALL_HOPS)
     _req_int(eff_words, "lod1_synopsis_words", 1, MAX_LOD1_SYNOPSIS_WORDS)
     store, graph = _resolve_store_and_graph(store_or_graph)
-    activated = bounded_spreading_activation(graph, concept_cues, max_recall_hops=max_recall_hops, decay_gamma=decay_gamma, bridge_beta=bridge_beta, activation_tau=activation_tau, push_epsilon=push_epsilon)
+    activated = bounded_spreading_activation(
+        graph, concept_cues, max_recall_hops=max_recall_hops,
+        decay_gamma=decay_gamma, bridge_beta=bridge_beta,
+        activation_tau=activation_tau, push_epsilon=push_epsilon
+    )
     frames: list[ConceptFrame] = []
     used_tokens = 0
     for item in activated:
         cid, hop, hop_bucket = item["concept_id"], int(item["hop"]), item["hop_bucket"]
         synopsis, links = _extract_scope_synopsis_and_links(store, graph, cid, eff_words)
         cost = max(1, token_cost(synopsis))
-        if should_include_recalled_concept(hop_bucket, (used_tokens + cost <= token_budget) and (token_budget <= MAX_LOD1_TOKEN_BUDGET), (len(synopsis.split()) <= eff_words) and (eff_words <= MAX_LOD1_SYNOPSIS_WORDS)):
+        if should_include_recalled_concept(
+            hop_bucket, (used_tokens + cost <= token_budget)
+            and (token_budget <= MAX_LOD1_TOKEN_BUDGET),
+            (len(synopsis.split()) <= eff_words)
+            and (eff_words <= MAX_LOD1_SYNOPSIS_WORDS)
+        ):
             used_tokens += cost
             frames.append(_build_concept_frame_record(cid, synopsis, links, hop, hop_bucket, item["activation"], cost))
     return frames
 
-def expand_concept_neighbors(graph_or_store: Any, concept_id: str, *, max_hops: int = 1, token_budget: int = MAX_RECALL_TOKEN_BUDGET, max_words: int = MAX_SYNOPSIS_WORDS, decay_gamma: float = DEFAULT_DECAY_GAMMA) -> list[ConceptFrame]:
+def expand_concept_neighbors(
+    graph_or_store: Any, concept_id: str,
+    *, max_hops: int = 1, token_budget: int = MAX_RECALL_TOKEN_BUDGET,
+    max_words: int = MAX_SYNOPSIS_WORDS,
+    decay_gamma: float = DEFAULT_DECAY_GAMMA
+) -> list[ConceptFrame]:
     """Stage 2 Deliberate Neighbor Expansion: expands `max_hops` from `concept_id` along flow, hierarchy, and 1-hop `depends_on` edges."""
     cid_clean = _req_str(concept_id, "concept_id")
     _req_int(max_hops, "max_hops", 1, MAX_RECALL_HOPS)
@@ -406,17 +581,31 @@ def expand_concept_neighbors(graph_or_store: Any, concept_id: str, *, max_hops: 
         return []
 
     fwd_flow, bwd_flow, fwd_dep = _extract_directed_topology(graph)
-    bi_flow = {s: list(dict.fromkeys([*fwd_flow.get(s, []), *bwd_flow.get(s, [])])) for s in scopes if s != "global_defaults"}
+    bi_flow = {
+        s: list(dict.fromkeys([*fwd_flow.get(s, []), *bwd_flow.get(s, [])]))
+        for s in scopes if s != "global_defaults"
+    }
     wave_state = _run_directed_wave(target, 1.0, bi_flow, fwd_dep, set(), max_hops, decay_gamma, DEFAULT_PUSH_EPSILON)
 
     frames: list[ConceptFrame] = []
     used_tokens = 0
-    for cid in sorted([s for s in wave_state if s != target], key=lambda s: (-wave_state[s].activation, wave_state[s].hop, s)):
+    for cid in sorted(
+        [s for s in wave_state if s != target],
+        key=lambda s: (-wave_state[s].activation, wave_state[s].hop, s)
+    ):
         node = wave_state[cid]
-        hop_bucket = classify_hop_bucket(node.hop, is_steiner_bridge=(node.hop > MAX_RADIAL_HOPS), max_hops=max_hops).value
+        hop_bucket = classify_hop_bucket(
+            node.hop, is_steiner_bridge=(node.hop > MAX_RADIAL_HOPS),
+            max_hops=max_hops
+        ).value
         synopsis, links = _extract_scope_synopsis_and_links(store, graph, cid, max_words)
         cost = max(1, token_cost(synopsis))
-        if should_include_recalled_concept(hop_bucket, (used_tokens + cost <= token_budget) and (token_budget <= MAX_LOD1_TOKEN_BUDGET), (len(synopsis.split()) <= max_words) and (max_words <= MAX_LOD1_SYNOPSIS_WORDS)):
+        if should_include_recalled_concept(
+            hop_bucket, (used_tokens + cost <= token_budget)
+            and (token_budget <= MAX_LOD1_TOKEN_BUDGET),
+            (len(synopsis.split()) <= max_words)
+            and (max_words <= MAX_LOD1_SYNOPSIS_WORDS)
+        ):
             used_tokens += cost
             frames.append(_build_concept_frame_record(cid, synopsis, links, node.hop, hop_bucket, node.activation, cost))
     return frames
@@ -432,11 +621,25 @@ class AIMemoryStore:
     def close(self) -> None:
         self.store.close()
 
-    def upsert_concept_frame(self, frame_id: str, synopsis: str, *, category: str = "CONCEPT", aliases: list[str] | None = None, attributes: dict[str, Any] | None = None, related_frames: list[str] | None = None, external_links: list[dict[str, Any]] | None = None, current_turn: int = 1) -> dict[str, Any]:
+    def upsert_concept_frame(
+        self, frame_id: str, synopsis: str,
+        *, category: str = "CONCEPT", aliases: list[str] | None = None,
+        attributes: dict[str, Any] | None = None,
+        related_frames: list[str] | None = None,
+        external_links: list[dict[str, Any]] | None = None,
+        current_turn: int = 1
+    ) -> dict[str, Any]:
         fid = _req_str(frame_id, "frame_id")
         if attributes:
             _validate_no_raw_documents({"attributes": attributes})
-        index_committed_rules(self, [{"concept_id": fid, "id": f"{fid}.synopsis", "text": synopsis, "refs": list(related_frames or []), "external_links": list(external_links or [])}], current_turn=current_turn)
+        index_committed_rules(
+            self, [{
+                "concept_id": fid, "id": f"{fid}.synopsis",
+                "text": synopsis, "refs": list(related_frames or []),
+                "external_links": list(external_links or [])
+            }],
+            current_turn=current_turn
+        )
         sc = _ensure_concept_scope(self.graph, fid)
         sc["aliases"] = list(dict.fromkeys([*sc.get("aliases", []), *(aliases or [])]))
         sc["attributes"].update({"category": str(category or "CONCEPT"), **(attributes or {})})
@@ -447,9 +650,23 @@ class AIMemoryStore:
         self.store.save_graph(self.graph)
         return sc
 
-    def record_episode(self, episode_id: str, summary: str, *, related_frames: list[str] | None = None, turn: int = 1) -> dict[str, Any]:
+    def record_episode(
+        self, episode_id: str, summary: str,
+        *, related_frames: list[str] | None = None,
+        turn: int = 1
+    ) -> dict[str, Any]:
         eid, sc, clamped = _req_str(episode_id, "episode_id"), _ensure_concept_scope(self.graph, "episodes"), _clamp_synopsis(summary, MAX_LOD1_SYNOPSIS_WORDS)
-        ep_node = {"id": eid, "scope": "episodes", "type": "FACT", "facet": "context_facts", "text": clamped, "target_prop": None, "bound_op": None, "bound_val": None, "conditions": [], "refs": [str(r).strip() for r in (related_frames or []) if str(r).strip()], "overrides": [], "exceptions": [], "meta_keys": [], "meta_tokens": tokenize_content_words(clamped), "created_turn": int(turn), "updated_turn": int(turn), "access_turns": [int(turn)]}
+        ep_node = {
+            "id": eid, "scope": "episodes", "type": "FACT",
+            "facet": "context_facts", "text": clamped,
+            "target_prop": None, "bound_op": None,
+            "bound_val": None, "conditions": [],
+            "refs": [str(r).strip() for r in (related_frames or []) if str(r).strip()],
+            "overrides": [], "exceptions": [],
+            "meta_keys": [], "meta_tokens": tokenize_content_words(clamped),
+            "created_turn": int(turn), "updated_turn": int(turn),
+            "access_turns": [int(turn)]
+        }
         sc["rules"] = [r for r in sc["rules"] if isinstance(r, dict) and r.get("id") != eid] + [ep_node]
         self.store.save_graph(self.graph)
         return ep_node
@@ -457,17 +674,49 @@ class AIMemoryStore:
     def index_committed_rules(self, committed_rules: list[dict[str, Any]], *, current_turn: int = 1) -> list[str]:
         return index_committed_rules(self, committed_rules, current_turn=current_turn)
 
-    def recall_concepts(self, concept_cues: list[str] | str, token_budget: int = MAX_LOD1_TOKEN_BUDGET, *, max_recall_hops: int = MAX_RECALL_HOPS, lod1_synopsis_words: int = MAX_LOD1_SYNOPSIS_WORDS, max_words: int | None = None, decay_gamma: float = DEFAULT_DECAY_GAMMA, bridge_beta: float = DEFAULT_BRIDGE_BETA, activation_tau: float = DEFAULT_ACTIVATION_TAU, push_epsilon: float = DEFAULT_PUSH_EPSILON) -> list[ConceptFrame]:
-        return recall_concepts(self, concept_cues, token_budget=token_budget, max_recall_hops=max_recall_hops, lod1_synopsis_words=lod1_synopsis_words, max_words=max_words, decay_gamma=decay_gamma, bridge_beta=bridge_beta, activation_tau=activation_tau, push_epsilon=push_epsilon)
+    def recall_concepts(
+        self, concept_cues: list[str] | str,
+        token_budget: int = MAX_LOD1_TOKEN_BUDGET,
+        *, max_recall_hops: int = MAX_RECALL_HOPS,
+        lod1_synopsis_words: int = MAX_LOD1_SYNOPSIS_WORDS,
+        max_words: int | None = None, decay_gamma: float = DEFAULT_DECAY_GAMMA,
+        bridge_beta: float = DEFAULT_BRIDGE_BETA,
+        activation_tau: float = DEFAULT_ACTIVATION_TAU,
+        push_epsilon: float = DEFAULT_PUSH_EPSILON
+    ) -> list[ConceptFrame]:
+        return recall_concepts(
+            self, concept_cues, token_budget=token_budget,
+            max_recall_hops=max_recall_hops, lod1_synopsis_words=lod1_synopsis_words,
+            max_words=max_words, decay_gamma=decay_gamma,
+            bridge_beta=bridge_beta, activation_tau=activation_tau,
+            push_epsilon=push_epsilon
+        )
 
-    def expand_concept_neighbors(self, concept_id: str, *, max_hops: int = 1, token_budget: int = MAX_RECALL_TOKEN_BUDGET, max_words: int = MAX_SYNOPSIS_WORDS, decay_gamma: float = DEFAULT_DECAY_GAMMA) -> list[ConceptFrame]:
-        return expand_concept_neighbors(self, concept_id, max_hops=max_hops, token_budget=token_budget, max_words=max_words, decay_gamma=decay_gamma)
+    def expand_concept_neighbors(
+        self, concept_id: str, *, max_hops: int = 1,
+        token_budget: int = MAX_RECALL_TOKEN_BUDGET,
+        max_words: int = MAX_SYNOPSIS_WORDS,
+        decay_gamma: float = DEFAULT_DECAY_GAMMA
+    ) -> list[ConceptFrame]:
+        return expand_concept_neighbors(
+            self, concept_id, max_hops=max_hops,
+            token_budget=token_budget, max_words=max_words,
+            decay_gamma=decay_gamma
+        )
 
-    def recall_into_working_memory(self, query: str, *, deep_detail_needed: bool = False, token_budget: int = MAX_LOD1_TOKEN_BUDGET, max_lines: int = 25, max_recall_hops: int = MAX_RECALL_HOPS, external_fetcher: Callable[[str], str] | None = None) -> dict[str, Any]:
+    def recall_into_working_memory(
+        self, query: str, *, deep_detail_needed: bool = False,
+        token_budget: int = MAX_LOD1_TOKEN_BUDGET,
+        max_lines: int = 25, max_recall_hops: int = MAX_RECALL_HOPS,
+        external_fetcher: Callable[[str], str] | None = None
+    ) -> dict[str, Any]:
         _req_str(query, "query")
         _req_int(token_budget, "lod1_token_budget", 1, MAX_LOD1_TOKEN_BUDGET)
         _req_int(max_lines, "max_lines", 1)
-        prop_res = propagate_nodes(self.graph, query, max_tokens=token_budget, max_lines=max_lines, max_hops=min(max_recall_hops, MAX_RADIAL_HOPS))
+        prop_res = propagate_nodes(
+            self.graph, query, max_tokens=token_budget,
+            max_lines=max_lines, max_hops=min(max_recall_hops, MAX_RADIAL_HOPS)
+        )
         frames = self.recall_concepts(query, token_budget=token_budget, max_recall_hops=max_recall_hops)
         activated_ids = list(dict.fromkeys([*(f["concept_id"] for f in frames), *prop_res.get("active_scopes", [])]))
         lod_level, ext_map, deref_map = (LOD_2 if deep_detail_needed else LOD_1), {}, {}
@@ -478,4 +727,10 @@ class AIMemoryStore:
                 if should_dereference_external(lod_level, bool(links), deep_detail_needed) and external_fetcher is not None:
                     for lk in links:
                         deref_map[lk["uri"]] = _clamp_synopsis(external_fetcher(lk["uri"]), MAX_LOD1_SYNOPSIS_WORDS)
-        return {"activated_frames": activated_ids, "synopses": frames or prop_res.get("active_rules", []), "lod_level": lod_level, "external_links": ext_map, "dereferenced_sources": deref_map, "text": str(prop_res.get("text", ""))}
+        return {
+            "activated_frames": activated_ids, "synopses": frames
+            or prop_res.get("active_rules", []),
+            "lod_level": lod_level, "external_links": ext_map,
+            "dereferenced_sources": deref_map,
+            "text": str(prop_res.get("text", ""))
+        }

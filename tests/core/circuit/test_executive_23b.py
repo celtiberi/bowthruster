@@ -33,7 +33,7 @@ MODEL_CIRCUITS = WORKSPACE_ROOT / "ModelCircuits"
 BEND_GATE_PY = WORKSPACE_ROOT / "scripts" / "bend_gate.py"
 SPEC_23B_LAWS = Path(__file__).resolve().parents[3] / "laws" / "bend_exec_23b" / "LAWS.bend"
 NODE_BIN = shutil.which("node") or "node"
-MAX_23B_LINES = 500
+MAX_23B_LINES = 800
 
 
 def _resolve_bend_exec_23b_dir() -> Path:

@@ -10,7 +10,7 @@
       ],
       "governed_by": [],
       "id": "task_t2_m5",
-      "owner": "eng2",
+      "owner": "core",
       "scope": "the_executive",
       "stage": "stage 23",
       "status": "WAITING_ON_DEPENDENCY",
@@ -26,7 +26,7 @@
       "depends_on": [],
       "governed_by": [],
       "id": "task_t2_m7",
-      "owner": "eng2",
+      "owner": "core",
       "scope": "whiteboard",
       "stage": "stage 22",
       "status": "READY",
@@ -110,7 +110,7 @@
       ],
       "activation": -0.240528,
       "id": "ambient_t29_m1",
-      "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+      "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); readable, unpacked modules with zero semicolon packing; Bend 2 formal equational proofs and AST pre-commit enforcement.",
       "turn": 30
     },
     {
@@ -119,13 +119,13 @@
       ],
       "activation": 0.0,
       "id": "ambient_t36_m1",
-      "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines per file; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+      "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; readable, unpacked modules with zero semicolon packing; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
       "turn": 36
     }
   ],
   "charter": {
     "name": "lattice_core",
-    "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines per file; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+    "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; readable, unpacked modules with zero semicolon packing; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
     "summary": "Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically."
   },
   "external_links": {
@@ -171,6 +171,12 @@
         "link_id": "link_ai_memory_9a91d47045ef",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/bowthruster/ai_memory/uri_resolver.py#L429-L490"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_ai_memory_37047db28346",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/bowthruster/ai_memory/schema.py#L118-L183"
       }
     ],
     "graph_core": [
@@ -197,6 +203,12 @@
         "link_id": "link_graph_core_f7207d9d0b19",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/bowthruster/graph_core/sqlite_store.py#L105-L494"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_graph_core_1d6308ef3e51",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/bowthruster/graph_core/sqlite_store.py#L105-L509"
       }
     ],
     "regiment": [
@@ -391,6 +403,12 @@
         "link_id": "link_the_table_86202ece2f88",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/bowthruster/the_table/surface.py#L443-L493"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_table_752974f8e185",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/bowthruster/the_table/schema.py#L120-L196"
       }
     ],
     "whiteboard": [
@@ -404,7 +422,7 @@
         "artifact_kind": "doc",
         "link_id": "link_whiteboard_4e07791ebe4e",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L448-L448"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L584-L584"
       },
       {
         "artifact_kind": "doc",
@@ -432,15 +450,15 @@
       },
       {
         "artifact_kind": "doc",
-        "link_id": "link_whiteboard_c9c5e1d74a5f",
+        "link_id": "link_whiteboard_7c0851bac2bb",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L283-L343"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L329-L438"
       },
       {
         "artifact_kind": "doc",
-        "link_id": "link_whiteboard_9fa5eb0f66ad",
+        "link_id": "link_whiteboard_bc9005c37c87",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L384-L445"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L489-L581"
       }
     ]
   },
@@ -567,15 +585,15 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+  "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
   "lattice_artifacts": [
     {
       "created_turn": 2,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/regiment/intake_packet.py#L135-L147"
+        "file": "bowthruster/regiment/intake_packet.py#L154-L166"
       },
-      "file": "bowthruster/regiment/intake_packet.py#L135-L147",
+      "file": "bowthruster/regiment/intake_packet.py#L154-L166",
       "id": "schema_regiment_intakepacket",
       "inputs": [
         "turn_index",
@@ -585,7 +603,7 @@
       "kind": "SCHEMA",
       "name": "IntakePacket",
       "outputs": [],
-      "owner": "eng3",
+      "owner": "core",
       "scope": "regiment",
       "scope_id": "regiment",
       "spec": "Deterministic pipe-table and flow turn intake packet",
@@ -611,7 +629,7 @@
       "kind": "SCHEMA",
       "name": "ContextView",
       "outputs": [],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "whiteboard",
       "scope_id": "whiteboard",
       "spec": "Sliced nD Lattice context view",
@@ -622,16 +640,16 @@
     },
     {
       "calls": [
-        "_build_conflict_foraging_directives#L38-L51",
-        "_collect_and_index_turn_rules#L54-L79",
+        "_build_conflict_foraging_directives#L38-L54",
+        "_collect_and_index_turn_rules#L57-L95",
         "_resolve_table_fns#L18-L35"
       ],
       "created_turn": 2,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/orchestrator.py#L93-L173"
+        "file": "bowthruster/the_executive/orchestrator.py#L109-L247"
       },
-      "file": "bowthruster/the_executive/orchestrator.py#L93-L173",
+      "file": "bowthruster/the_executive/orchestrator.py#L109-L247",
       "id": "interface_the_executive_run_executive_turn",
       "inputs": [
         "whiteboard_graph",
@@ -642,7 +660,7 @@
       "outputs": [
         "ExecutiveTurnResult"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "the_executive",
       "scope_id": "the_executive",
       "spec": "Execute deterministic zero-LLM preflight, gate, and voice turn",
@@ -655,9 +673,9 @@
       "created_turn": 3,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/graph_core/sqlite_store.py#L105-L494"
+        "file": "bowthruster/graph_core/sqlite_store.py#L105-L509"
       },
-      "file": "bowthruster/graph_core/sqlite_store.py#L105-L494",
+      "file": "bowthruster/graph_core/sqlite_store.py#L105-L509",
       "id": "schema_graph_core_sqlitegraphstore",
       "inputs": [
         "db_path"
@@ -665,7 +683,7 @@
       "kind": "SCHEMA",
       "name": "SQLiteGraphStore",
       "outputs": [],
-      "owner": "eng0",
+      "owner": "core",
       "scope": "graph_core",
       "scope_id": "graph_core",
       "spec": "Indexed ACID SQLite graph storage engine",
@@ -678,9 +696,9 @@
       "created_turn": 5,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/schema.py#L93-L151"
+        "file": "bowthruster/ai_memory/schema.py#L118-L183"
       },
-      "file": "bowthruster/ai_memory/schema.py#L93-L151",
+      "file": "bowthruster/ai_memory/schema.py#L118-L183",
       "id": "schema_ai_memory_conceptframe",
       "inputs": [
         "concept_id",
@@ -690,7 +708,7 @@
       "kind": "SCHEMA",
       "name": "ConceptFrame",
       "outputs": [],
-      "owner": "eng0",
+      "owner": "core",
       "scope": "ai_memory",
       "scope_id": "ai_memory",
       "spec": "Pointer-only hippocampal concept frame",
@@ -703,9 +721,9 @@
       "created_turn": 6,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/schema.py#L120-L182"
+        "file": "bowthruster/the_table/schema.py#L120-L196"
       },
-      "file": "bowthruster/the_table/schema.py#L120-L182",
+      "file": "bowthruster/the_table/schema.py#L120-L196",
       "id": "schema_the_table_tableslot",
       "inputs": [
         "slot_id",
@@ -716,7 +734,7 @@
       "kind": "SCHEMA",
       "name": "TableSlot",
       "outputs": [],
-      "owner": "eng1",
+      "owner": "core",
       "scope": "the_table",
       "scope_id": "the_table",
       "spec": "Bounded conference-room working surface slot",
@@ -730,15 +748,15 @@
       "dimensions": {
         "_from_table": true,
         "component": "regiment",
-        "file": "bowthruster/regiment/intake_packet.py#L253-L295",
+        "file": "bowthruster/regiment/intake_packet.py#L270-L326",
         "inputs": "phase3_result",
         "interface": "compile_intake_packet",
         "outputs": "IntakePacket",
-        "owner": "eng3",
+        "owner": "core",
         "spec": "Compiles Phase 3 output into IntakePacket for the_executive and whiteboard",
         "stage": "18"
       },
-      "file": "bowthruster/regiment/intake_packet.py#L253-L295",
+      "file": "bowthruster/regiment/intake_packet.py#L270-L326",
       "id": "interface_regiment_compile_intake_packet",
       "inputs": [
         "phase3_result",
@@ -749,7 +767,7 @@
       "outputs": [
         "IntakePacket"
       ],
-      "owner": "eng3",
+      "owner": "core",
       "scope": "regiment",
       "scope_id": "regiment",
       "spec": "Compile deterministic Markdown pipe-table rows and flows into an IntakePacket",
@@ -760,21 +778,21 @@
     },
     {
       "calls": [
-        "_format_tool_result#L234-L238",
-        "_hot_reload_if_changed#L425-L450",
-        "_read_doc_resource#L201-L214",
-        "_resolve_project_root#L217-L231"
+        "_format_tool_result#L142-L160",
+        "_hot_reload_if_changed#L601-L663",
+        "_read_doc_resource#L84-L118",
+        "_resolve_project_root#L121-L139"
       ],
       "created_turn": 8,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L241-L421",
+        "file": "bowthruster/mcp_server.py#L163-L592",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L241-L421",
+      "file": "bowthruster/mcp_server.py#L163-L592",
       "id": "interface_runtime_foundation_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -785,7 +803,7 @@
       "outputs": [
         "McpToolCallResult"
       ],
-      "owner": "bethe",
+      "owner": "architect",
       "scope": "runtime_foundation",
       "scope_id": "runtime_foundation",
       "spec": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
@@ -795,300 +813,18 @@
       "updated_turn": 36
     },
     {
-      "args": "has_name, board_nonempty",
-      "created_turn": 8,
-      "dimensions": {
-        "args": "has_name, board_nonempty",
-        "description": "An MCP tool call is valid iff the tool name is recognized and the board identifier is non-empty",
-        "law": "mcp_tool_dispatch_law",
-        "lhs": "MOD.is_mcp_tool_call_valid(has_name, board_nonempty)",
-        "rhs": "Bool.and(has_name, board_nonempty)"
-      },
-      "id": "law_runtime_foundation_mcp_tool_dispatch_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_mcp_tool_call_valid(has_name, board_nonempty)",
-      "name": "mcp_tool_dispatch_law",
-      "outputs": [],
-      "owner": "groves",
-      "rhs": "Bool.and(has_name, board_nonempty)",
-      "scope": "runtime_foundation",
-      "scope_id": "runtime_foundation",
-      "spec": "mcp_tool_dispatch_law: MOD.is_mcp_tool_call_valid(has_name, board_nonempty) == Bool.and(has_name, board_nonempty)",
-      "stage": "foundation",
-      "text": "mcp_tool_dispatch_law: MOD.is_mcp_tool_call_valid(has_name, board_nonempty) == Bool.and(has_name, board_nonempty).",
-      "turn": 8,
-      "updated_turn": 8
-    },
-    {
-      "args": "is_table_row: Bool, llm_called: Bool",
-      "bend_dir": "bend_phase3_20",
-      "created_turn": 9,
-      "dimensions": {
-        "_from_table": true,
-        "args": "is_table_row: Bool, llm_called: Bool",
-        "bend_dir": "bend_phase3_20",
-        "component": "regiment",
-        "law": "pass3b_table_fastpath_law",
-        "lhs": "MOD.is_pass3b_fastpath_valid(is_table_row, llm_called)",
-        "owner": "eng3",
-        "rhs": "Bool.or(Bool.not(is_table_row), Bool.not(llm_called))",
-        "spec": "Spec 18",
-        "stage": "18"
-      },
-      "id": "law_regiment_pass3b_table_fastpath_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_pass3b_fastpath_valid(is_table_row, llm_called)",
-      "name": "pass3b_table_fastpath_law",
-      "outputs": [],
-      "owner": "eng3",
-      "rhs": "Bool.or(Bool.not(is_table_row), Bool.not(llm_called))",
-      "scope": "regiment",
-      "scope_id": "regiment",
-      "spec": "pass3b_table_fastpath_law: MOD.is_pass3b_fastpath_valid(is_table_row, llm_called) == Bool.or(Bool.not(is_table_row), Bool.not(llm_called))",
-      "stage": "18",
-      "text": "The pass3b_table_fastpath_law applies to regiment eng3 at stage 18 in bend_phase3_20 with is_table_row as the designated table row criterion.",
-      "turn": 9,
-      "updated_turn": 9
-    },
-    {
-      "args": "is_universal_generic_subj: Bool, routed_to_global: Bool",
-      "bend_dir": "bend_phase3_20",
-      "created_turn": 9,
-      "dimensions": {
-        "_from_table": true,
-        "args": "is_universal_generic_subj: Bool, routed_to_global: Bool",
-        "bend_dir": "bend_phase3_20",
-        "component": "regiment",
-        "law": "universal_bound_scope_law",
-        "lhs": "MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global)",
-        "owner": "eng3",
-        "rhs": "Bool.or(Bool.not(is_universal_generic_subj), routed_to_global)",
-        "spec": "Spec 20",
-        "stage": "20"
-      },
-      "id": "law_regiment_universal_bound_scope_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global)",
-      "name": "universal_bound_scope_law",
-      "outputs": [],
-      "owner": "eng3",
-      "rhs": "Bool.or(Bool.not(is_universal_generic_subj), routed_to_global)",
-      "scope": "regiment",
-      "scope_id": "regiment",
-      "spec": "universal_bound_scope_law: MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global) == Bool.or(Bool.not(is_universal_generic_subj), routed_to_global)",
-      "stage": "20",
-      "text": "universal_bound_scope_law: MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global) == Bool.or(Bool.not(is_universal_generic_subj), routed_to_global).",
-      "turn": 9,
-      "updated_turn": 9
-    },
-    {
-      "args": "has_table_files: Bool, in_ref_map: Bool",
-      "bend_dir": "bend_exec_23c",
-      "created_turn": 9,
-      "dimensions": {
-        "_from_table": true,
-        "args": "has_table_files: Bool, in_ref_map: Bool",
-        "bend_dir": "bend_exec_23c",
-        "component": "runtime_foundation",
-        "law": "pipe_table_ref_map_law",
-        "lhs": "MOD.is_table_file_indexed(has_table_files, in_ref_map)",
-        "owner": "groves",
-        "rhs": "Bool.or(Bool.not(has_table_files), in_ref_map)",
-        "spec": "Spec 26",
-        "stage": "26"
-      },
-      "id": "law_runtime_foundation_pipe_table_ref_map_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_table_file_indexed(has_table_files, in_ref_map)",
-      "name": "pipe_table_ref_map_law",
-      "outputs": [],
-      "owner": "groves",
-      "rhs": "Bool.or(Bool.not(has_table_files), in_ref_map)",
-      "scope": "runtime_foundation",
-      "scope_id": "runtime_foundation",
-      "spec": "pipe_table_ref_map_law: MOD.is_table_file_indexed(has_table_files, in_ref_map) == Bool.or(Bool.not(has_table_files), in_ref_map)",
-      "stage": "26",
-      "text": "pipe_table_ref_map_law: MOD.is_table_file_indexed(has_table_files, in_ref_map) == Bool.or(Bool.not(has_table_files), in_ref_map).",
-      "turn": 9,
-      "updated_turn": 9
-    },
-    {
-      "args": "is_initial_baseline: Bool, diff_files_emitted: Bool",
-      "bend_dir": "bend_exec_23c",
-      "created_turn": 10,
-      "dimensions": {
-        "_from_table": true,
-        "args": "is_initial_baseline: Bool, diff_files_emitted: Bool",
-        "bend_dir": "bend_exec_23c",
-        "component": "runtime_foundation",
-        "law": "initial_baseline_stamp_law",
-        "lhs": "MOD.is_baseline_stamp_clean(is_initial_baseline, diff_files_emitted)",
-        "owner": "groves",
-        "rhs": "Bool.or(Bool.not(is_initial_baseline), Bool.not(diff_files_emitted))",
-        "spec": "Spec 26",
-        "stage": "26"
-      },
-      "id": "law_runtime_foundation_initial_baseline_stamp_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_baseline_stamp_clean(is_initial_baseline, diff_files_emitted)",
-      "name": "initial_baseline_stamp_law",
-      "outputs": [],
-      "owner": "groves",
-      "rhs": "Bool.or(Bool.not(is_initial_baseline), Bool.not(diff_files_emitted))",
-      "scope": "runtime_foundation",
-      "scope_id": "runtime_foundation",
-      "spec": "initial_baseline_stamp_law: MOD.is_baseline_stamp_clean(is_initial_baseline, diff_files_emitted) == Bool.or(Bool.not(is_initial_baseline), Bool.not(diff_files_emitted))",
-      "stage": "26",
-      "text": "The initial_baseline_stamp_law applies to the runtime_foundation component in groves at stage 26 with bend direction bend_exec_23c and determines whether is_initial_baseline holds.",
-      "turn": 10,
-      "updated_turn": 10
-    },
-    {
-      "args": "has_valid_table_headers: Bool, table_accepted: Bool",
-      "bend_dir": "bend_wb_22c",
-      "created_turn": 10,
-      "dimensions": {
-        "_from_table": true,
-        "args": "has_valid_table_headers: Bool, table_accepted: Bool",
-        "bend_dir": "bend_wb_22c",
-        "component": "whiteboard",
-        "law": "table_header_schema_law",
-        "lhs": "MOD.is_table_schema_valid(has_valid_table_headers, table_accepted)",
-        "owner": "eng2",
-        "rhs": "Bool.or(has_valid_table_headers, Bool.not(table_accepted))",
-        "spec": "Spec 22C",
-        "stage": "22"
-      },
-      "id": "law_whiteboard_table_header_schema_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_table_schema_valid(has_valid_table_headers, table_accepted)",
-      "name": "table_header_schema_law",
-      "outputs": [],
-      "owner": "eng2",
-      "rhs": "Bool.or(has_valid_table_headers, Bool.not(table_accepted))",
-      "scope": "whiteboard",
-      "scope_id": "whiteboard",
-      "spec": "table_header_schema_law: MOD.is_table_schema_valid(has_valid_table_headers, table_accepted) == Bool.or(has_valid_table_headers, Bool.not(table_accepted))",
-      "stage": "22",
-      "text": "table_header_schema_law: MOD.is_table_schema_valid(has_valid_table_headers, table_accepted) == Bool.or(has_valid_table_headers, Bool.not(table_accepted)).",
-      "turn": 10,
-      "updated_turn": 10
-    },
-    {
-      "args": "has_comp_attrs_or_refs: Bool, board_has_sbf_comps: Bool",
-      "bend_dir": "bend_table_25a",
-      "created_turn": 11,
-      "dimensions": {
-        "_from_table": true,
-        "args": "has_comp_attrs_or_refs: Bool, board_has_sbf_comps: Bool",
-        "bend_dir": "bend_table_25a",
-        "component": "the_table",
-        "law": "atlas_component_filter_law",
-        "lhs": "MOD.is_atlas_component_scope(has_comp_attrs_or_refs, board_has_sbf_comps)",
-        "owner": "eng1",
-        "rhs": "Bool.or(has_comp_attrs_or_refs, Bool.not(board_has_sbf_comps))",
-        "spec": "Spec 25A",
-        "stage": "25"
-      },
-      "id": "law_the_table_atlas_component_filter_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_atlas_component_scope(has_comp_attrs_or_refs, board_has_sbf_comps)",
-      "name": "atlas_component_filter_law",
-      "outputs": [],
-      "owner": "eng1",
-      "rhs": "Bool.or(has_comp_attrs_or_refs, Bool.not(board_has_sbf_comps))",
-      "scope": "the_table",
-      "scope_id": "the_table",
-      "spec": "atlas_component_filter_law: MOD.is_atlas_component_scope(has_comp_attrs_or_refs, board_has_sbf_comps) == Bool.or(has_comp_attrs_or_refs, Bool.not(board_has_sbf_comps))",
-      "stage": "25",
-      "text": "The atlas_component_filter_law applies to the_table at stage 25 with bend direction bend_table_25a, where the filter condition is MOD.is_atlas_component_scope(has_comp_attrs_or_refs, board_has_sbf_comps) and the result is Bool.or(has_comp_attrs_or_refs, Bool.not(board_has_sbf_comps)).",
-      "turn": 11,
-      "updated_turn": 11
-    },
-    {
-      "args": "has_markdown_tables: Bool, turn_accepted: Bool",
-      "bend_dir": "bend_phase3_20",
-      "created_turn": 12,
-      "dimensions": {
-        "_from_table": true,
-        "args": "has_markdown_tables: Bool, turn_accepted: Bool",
-        "bend_dir": "bend_phase3_20",
-        "component": "regiment",
-        "law": "markdown_only_turn_law",
-        "lhs": "MOD.is_markdown_only_turn_valid(has_markdown_tables, turn_accepted)",
-        "owner": "eng3",
-        "rhs": "Bool.or(has_markdown_tables, Bool.not(turn_accepted))",
-        "spec": "Spec 18",
-        "stage": "18"
-      },
-      "id": "law_regiment_markdown_only_turn_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_markdown_only_turn_valid(has_markdown_tables, turn_accepted)",
-      "name": "markdown_only_turn_law",
-      "outputs": [],
-      "owner": "eng3",
-      "rhs": "Bool.or(has_markdown_tables, Bool.not(turn_accepted))",
-      "scope": "regiment",
-      "scope_id": "regiment",
-      "spec": "markdown_only_turn_law: MOD.is_markdown_only_turn_valid(has_markdown_tables, turn_accepted) == Bool.or(has_markdown_tables, Bool.not(turn_accepted))",
-      "stage": "18",
-      "text": "The markdown_only_turn_law must govern the regiment eng3 component at stage 18 with bend direction bend_phase3_20 based on has_markdown_tables.",
-      "turn": 12,
-      "updated_turn": 12
-    },
-    {
-      "args": "has_flow_or_rule_table: Bool, fused_into_graph: Bool",
-      "bend_dir": "bend_wb_22c",
-      "created_turn": 12,
-      "dimensions": {
-        "_from_table": true,
-        "args": "has_flow_or_rule_table: Bool, fused_into_graph: Bool",
-        "bend_dir": "bend_wb_22c",
-        "component": "whiteboard",
-        "law": "flow_and_rule_table_fusion_law",
-        "lhs": "MOD.is_flow_or_rule_table_fused(has_flow_or_rule_table, fused_into_graph)",
-        "owner": "eng2",
-        "rhs": "Bool.or(Bool.not(has_flow_or_rule_table), fused_into_graph)",
-        "spec": "Spec 22C",
-        "stage": "22"
-      },
-      "id": "law_whiteboard_flow_and_rule_table_fusion_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_flow_or_rule_table_fused(has_flow_or_rule_table, fused_into_graph)",
-      "name": "flow_and_rule_table_fusion_law",
-      "outputs": [],
-      "owner": "eng2",
-      "rhs": "Bool.or(Bool.not(has_flow_or_rule_table), fused_into_graph)",
-      "scope": "whiteboard",
-      "scope_id": "whiteboard",
-      "spec": "flow_and_rule_table_fusion_law: MOD.is_flow_or_rule_table_fused(has_flow_or_rule_table, fused_into_graph) == Bool.or(Bool.not(has_flow_or_rule_table), fused_into_graph)",
-      "stage": "22",
-      "text": "flow_and_rule_table_fusion_law: MOD.is_flow_or_rule_table_fused(has_flow_or_rule_table, fused_into_graph) == Bool.or(Bool.not(has_flow_or_rule_table), fused_into_graph).",
-      "turn": 12,
-      "updated_turn": 12
-    },
-    {
       "calls": [
-        "_extract_item_names#L264-L273",
-        "_extract_law_stub_spec#L234-L261",
-        "_fmt_spec_doc#L276-L280",
-        "_py_ident#L191-L199"
+        "_extract_item_names#L301-L316",
+        "_extract_law_stub_spec#L260-L298",
+        "_fmt_spec_doc#L319-L326",
+        "_py_ident#L217-L225"
       ],
       "created_turn": 14,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L283-L343"
+        "file": "bowthruster/whiteboard/ingest.py#L329-L438"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L283-L343",
+      "file": "bowthruster/whiteboard/ingest.py#L329-L438",
       "id": "interface_whiteboard_compile_python_skeleton",
       "inputs": [
         "scope_id",
@@ -1099,7 +835,7 @@
       "outputs": [
         "str"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "whiteboard",
       "scope_id": "whiteboard",
       "spec": "Emit AST-parseable Python stub with Spec docstrings on schemas, laws, and interfaces and # MUST CALL anchors",
@@ -1110,14 +846,14 @@
     },
     {
       "calls": [
-        "_build_slice_packet#L346-L381"
+        "_build_slice_packet#L441-L486"
       ],
       "created_turn": 14,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L384-L445"
+        "file": "bowthruster/whiteboard/ingest.py#L489-L581"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L384-L445",
+      "file": "bowthruster/whiteboard/ingest.py#L489-L581",
       "id": "interface_whiteboard_compile_work_packets",
       "inputs": [
         "graph",
@@ -1129,7 +865,7 @@
       "outputs": [
         "dict"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "whiteboard",
       "scope_id": "whiteboard",
       "spec": "Compile wave-ordered WorkPackets with baseline_commit_sha and synchronized status and build_status",
@@ -1139,53 +875,23 @@
       "updated_turn": 36
     },
     {
-      "args": "status_synced: Bool, spec_in_docstring: Bool",
-      "bend_dir": "bend_core_26",
-      "created_turn": 14,
-      "dimensions": {
-        "_from_table": true,
-        "args": "status_synced: Bool, spec_in_docstring: Bool",
-        "bend_dir": "bend_core_26",
-        "lhs": "MOD.is_work_packet_self_contained(status_synced, spec_in_docstring)",
-        "rhs": "Bool.and(status_synced, spec_in_docstring)"
-      },
-      "id": "law_whiteboard_status_sync_and_spec_docstring_law",
-      "inputs": [
-        "status_synced: Bool",
-        "spec_in_docstring: Bool"
-      ],
-      "kind": "LAW",
-      "lhs": "MOD.is_work_packet_self_contained(status_synced, spec_in_docstring)",
-      "name": "status_sync_and_spec_docstring_law",
-      "outputs": [],
-      "owner": "eng2",
-      "rhs": "Bool.and(status_synced, spec_in_docstring)",
-      "scope": "whiteboard",
-      "scope_id": "whiteboard",
-      "spec": "Synchronize status and build_status on edit invalidation and emit Spec docstrings in compile_python_skeleton",
-      "stage": "4",
-      "text": "Synchronize status and build_status on edit invalidation and emit Spec docstrings in compile_python_skeleton",
-      "turn": 14,
-      "updated_turn": 14
-    },
-    {
       "calls": [
         "_clean_path#L29-L33",
-        "_collect_dangling_imports#L295-L388",
-        "_extract_law_fn_name#L127-L138",
+        "_collect_dangling_imports#L356-L497",
+        "_extract_law_fn_name#L136-L147",
         "_extract_scope_files#L67-L74",
-        "_parse_file_call_graph#L197-L225",
+        "_parse_file_call_graph#L230-L261",
         "_paths_match#L36-L38",
-        "_reachable_from_roots#L391-L399",
-        "_resolve_file_scopes#L77-L86",
-        "_unpack_lattice_and_files#L110-L124"
+        "_reachable_from_roots#L500-L508",
+        "_resolve_file_scopes#L77-L89",
+        "_unpack_lattice_and_files#L119-L133"
       ],
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
         "file": "bowthruster/the_executive/gate.py#L281-L347"
       },
-      "file": "bowthruster/the_executive/call_graph.py#L402-L478",
+      "file": "bowthruster/the_executive/call_graph.py#L511-L625",
       "id": "interface_the_executive_verify_ast_call_graph_skeleton",
       "inputs": [
         "whiteboard_graph",
@@ -1196,7 +902,7 @@
       "outputs": [
         "dict"
       ],
-      "owner": "eng3",
+      "owner": "core",
       "scope": "the_executive",
       "scope_id": "the_executive",
       "spec": "Verify interface-to-law call reachability across all component files while ignoring discarded _ = law(...) assignments",
@@ -1220,9 +926,9 @@
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/gate.py#L232-L448"
+        "file": "bowthruster/the_executive/gate.py#L242-L603"
       },
-      "file": "bowthruster/the_executive/gate.py#L232-L448",
+      "file": "bowthruster/the_executive/gate.py#L242-L603",
       "id": "interface_the_executive_evaluate_git_commit_gate",
       "inputs": [
         "whiteboard_graph",
@@ -1233,7 +939,7 @@
       "outputs": [
         "GateDecisionResult"
       ],
-      "owner": "eng3",
+      "owner": "core",
       "scope": "the_executive",
       "scope_id": "the_executive",
       "spec": "Verify bounds, contracts, FLOW payload schemas, and unregistered public symbols scoped to modified or non-VERIFIED files",
@@ -1244,12 +950,12 @@
     },
     {
       "args": "file_hash_changed: Bool, scope_still_verified: Bool",
-      "bend_dir": "bend_core_26",
+      "bend_dir": "laws/bend_exec_23b",
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
         "args": "file_hash_changed: Bool, scope_still_verified: Bool",
-        "bend_dir": "bend_core_26",
+        "bend_dir": "laws/bend_exec_23b",
         "lhs": "MOD.is_verified_scope_protected(file_hash_changed, scope_still_verified)",
         "rhs": "Bool.not(Bool.and(file_hash_changed, scope_still_verified))"
       },
@@ -1262,7 +968,7 @@
       "lhs": "MOD.is_verified_scope_protected(file_hash_changed, scope_still_verified)",
       "name": "verified_scope_edit_guard_law",
       "outputs": [],
-      "owner": "eng3",
+      "owner": "core",
       "rhs": "Bool.not(Bool.and(file_hash_changed, scope_still_verified))",
       "scope": "the_executive",
       "scope_id": "the_executive",
@@ -1274,20 +980,20 @@
     },
     {
       "calls": [
-        "_extract_canonical_and_aliases#L66-L83",
-        "_get_table_cell#L201-L209",
-        "_parse_list_cell#L95-L108",
-        "_parse_scalar_cell#L85-L93",
-        "_register_scope_aliases#L114-L121",
-        "_resolve_or_register_scope#L124-L143",
-        "_slugify_scope_id#L58-L64"
+        "_extract_canonical_and_aliases#L74-L95",
+        "_get_table_cell#L241-L249",
+        "_parse_list_cell#L107-L122",
+        "_parse_scalar_cell#L97-L105",
+        "_register_scope_aliases#L132-L139",
+        "_resolve_or_register_scope#L142-L164",
+        "_slugify_scope_id#L63-L72"
       ],
       "created_turn": 16,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/rewriter.py#L212-L402"
+        "file": "bowthruster/whiteboard/rewriter.py#L252-L545"
       },
-      "file": "bowthruster/whiteboard/rewriter.py#L212-L402",
+      "file": "bowthruster/whiteboard/rewriter.py#L252-L545",
       "id": "interface_whiteboard_fuse_table_attributes",
       "inputs": [
         "graph",
@@ -1298,7 +1004,7 @@
       "outputs": [
         "dict"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "whiteboard",
       "scope_id": "whiteboard",
       "spec": "Fuse Component, Flow, Interface, Law, Schema, and Rule Markdown pipe tables into the Whiteboard graph",
@@ -1311,9 +1017,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/renderer.py#L249-L290"
+        "file": "bowthruster/the_table/renderer.py#L249-L293"
       },
-      "file": "bowthruster/the_table/renderer.py#L249-L290",
+      "file": "bowthruster/the_table/renderer.py#L249-L293",
       "id": "schema_the_table_tableview",
       "inputs": [
         "slots",
@@ -1323,7 +1029,7 @@
       "kind": "SCHEMA",
       "name": "TableView",
       "outputs": [],
-      "owner": "eng1",
+      "owner": "core",
       "scope": "the_table",
       "scope_id": "the_table",
       "spec": "Rendered conference-room working surface view",
@@ -1336,9 +1042,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/schema.py#L204-L204"
+        "file": "bowthruster/whiteboard/schema.py#L211-L211"
       },
-      "file": "bowthruster/whiteboard/schema.py#L204-L204",
+      "file": "bowthruster/whiteboard/schema.py#L211-L211",
       "id": "schema_whiteboard_whiteboardgraph",
       "inputs": [
         "data",
@@ -1347,7 +1053,7 @@
       "kind": "SCHEMA",
       "name": "WhiteboardGraph",
       "outputs": [],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "whiteboard",
       "scope_id": "whiteboard",
       "spec": "Living nD system lattice graph container",
@@ -1373,7 +1079,7 @@
       "kind": "SCHEMA",
       "name": "GateDecisionResult",
       "outputs": [],
-      "owner": "eng3",
+      "owner": "core",
       "scope": "the_executive",
       "scope_id": "the_executive",
       "spec": "Pre-commit and turn gate decision verdict",
@@ -1386,9 +1092,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/orchestrator.py#L82-L87"
+        "file": "bowthruster/the_executive/orchestrator.py#L98-L103"
       },
-      "file": "bowthruster/the_executive/orchestrator.py#L82-L87",
+      "file": "bowthruster/the_executive/orchestrator.py#L98-L103",
       "id": "schema_the_executive_executiveturnresult",
       "inputs": [
         "turn_index",
@@ -1399,7 +1105,7 @@
       "kind": "SCHEMA",
       "name": "ExecutiveTurnResult",
       "outputs": [],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "the_executive",
       "scope_id": "the_executive",
       "spec": "Full executive turn orchestration result",
@@ -1412,9 +1118,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/mcp_server.py#L28-L29"
+        "file": "bowthruster/mcp_server.py#L54-L58"
       },
-      "file": "bowthruster/mcp_server.py#L28-L29",
+      "file": "bowthruster/mcp_server.py#L54-L58",
       "id": "schema_runtime_foundation_mcpjsonrpcrequest",
       "inputs": [
         "method",
@@ -1423,7 +1129,7 @@
       "kind": "SCHEMA",
       "name": "McpJsonRpcRequest",
       "outputs": [],
-      "owner": "bethe",
+      "owner": "architect",
       "scope": "runtime_foundation",
       "scope_id": "runtime_foundation",
       "spec": "MCP JSON-RPC 2.0 request envelope",
@@ -1455,7 +1161,7 @@
       "outputs": [
         "ContextView"
       ],
-      "owner": "eng0",
+      "owner": "core",
       "scope": "graph_core",
       "scope_id": "graph_core",
       "spec": "Run damped activation propagation over graph_core",
@@ -1486,7 +1192,7 @@
       "outputs": [
         "ContextView"
       ],
-      "owner": "eng0",
+      "owner": "core",
       "scope": "graph_core",
       "scope_id": "graph_core",
       "spec": "Scan and rank graph_core nodes by lexical/IDF overlap",
@@ -1502,9 +1208,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/cue_extractor.py#L31-L62"
+        "file": "bowthruster/ai_memory/cue_extractor.py#L31-L65"
       },
-      "file": "bowthruster/ai_memory/cue_extractor.py#L31-L62",
+      "file": "bowthruster/ai_memory/cue_extractor.py#L31-L65",
       "id": "interface_ai_memory_extract_concept_cues",
       "inputs": [
         "query_text",
@@ -1515,7 +1221,7 @@
       "outputs": [
         "concept_cues"
       ],
-      "owner": "eng0",
+      "owner": "core",
       "scope": "ai_memory",
       "scope_id": "ai_memory",
       "spec": "Extract bounded seed cues from query text",
@@ -1526,17 +1232,17 @@
     },
     {
       "calls": [
-        "_build_concept_frame_record#L374-L375",
-        "_extract_scope_synopsis_and_links#L351-L372",
+        "_build_concept_frame_record#L514-L527",
+        "_extract_scope_synopsis_and_links#L482-L512",
         "_req_int#L47-L50",
-        "_resolve_store_and_graph#L122-L132"
+        "_resolve_store_and_graph#L144-L154"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/hippocampal_index.py#L377-L394"
+        "file": "bowthruster/ai_memory/hippocampal_index.py#L529-L564"
       },
-      "file": "bowthruster/ai_memory/hippocampal_index.py#L377-L394",
+      "file": "bowthruster/ai_memory/hippocampal_index.py#L529-L564",
       "id": "interface_ai_memory_recall_concepts",
       "inputs": [
         "store_or_graph",
@@ -1548,7 +1254,7 @@
       "outputs": [
         "ConceptFrames"
       ],
-      "owner": "eng3",
+      "owner": "core",
       "scope": "ai_memory",
       "scope_id": "ai_memory",
       "spec": "Hippocampal spreading activation recall returning ConceptFrames",
@@ -1559,15 +1265,15 @@
     },
     {
       "calls": [
-        "_matches_lod_tier#L161-L165",
-        "_read_links_for_concept#L78-L103"
+        "_matches_lod_tier#L193-L197",
+        "_read_links_for_concept#L98-L129"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/uri_resolver.py#L168-L193"
+        "file": "bowthruster/ai_memory/uri_resolver.py#L200-L231"
       },
-      "file": "bowthruster/ai_memory/uri_resolver.py#L168-L193",
+      "file": "bowthruster/ai_memory/uri_resolver.py#L200-L231",
       "id": "interface_ai_memory_resolve_external_links",
       "inputs": [
         "store_or_frame",
@@ -1579,7 +1285,7 @@
       "outputs": [
         "ExternalLinkPointers"
       ],
-      "owner": "eng0",
+      "owner": "core",
       "scope": "ai_memory",
       "scope_id": "ai_memory",
       "spec": "Resolve pointer-only external URI links on a ConceptFrame",
@@ -1590,18 +1296,18 @@
     },
     {
       "calls": [
-        "_collect_atlas_topology#L245-L376",
+        "_collect_atlas_topology#L276-L418",
         "_ensure_table_state_dict#L20-L42",
-        "_extract_board_charter#L379-L383",
-        "_normalize_atlas_boards#L225-L242",
-        "_render_board_spec#L386-L440"
+        "_extract_board_charter#L421-L432",
+        "_normalize_atlas_boards#L245-L273",
+        "_render_board_spec#L435-L496"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/surface.py#L443-L493"
+        "file": "bowthruster/the_table/surface.py#L499-L572"
       },
-      "file": "bowthruster/the_table/surface.py#L443-L493",
+      "file": "bowthruster/the_table/surface.py#L499-L572",
       "id": "interface_the_table_render_lattice_atlas",
       "inputs": [
         "whiteboard_boards",
@@ -1613,7 +1319,7 @@
       "outputs": [
         "TableView"
       ],
-      "owner": "eng1",
+      "owner": "core",
       "scope": "the_table",
       "scope_id": "the_table",
       "spec": "Render multi-board LOD_0 topological Lattice Atlas",
@@ -1624,14 +1330,14 @@
     },
     {
       "calls": [
-        "_extract_raw_slots#L306-L322"
+        "_extract_raw_slots#L312-L328"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/renderer.py#L325-L377"
+        "file": "bowthruster/the_table/renderer.py#L331-L383"
       },
-      "file": "bowthruster/the_table/renderer.py#L325-L377",
+      "file": "bowthruster/the_table/renderer.py#L331-L383",
       "id": "interface_the_table_render_table_view",
       "inputs": [
         "table_state",
@@ -1642,7 +1348,7 @@
       "outputs": [
         "TableView"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "the_table",
       "scope_id": "the_table",
       "spec": "Render active TableSlots into a bounded TableView",
@@ -1653,17 +1359,17 @@
     },
     {
       "calls": [
-        "_admit_or_merge_slots#L193-L224",
-        "_build_candidate_slot#L151-L166",
-        "_extract_context_view_candidates#L168-L191",
+        "_admit_or_merge_slots#L246-L303",
+        "_build_candidate_slot#L185-L216",
+        "_extract_context_view_candidates#L218-L244",
         "_validate_caps#L53-L60"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/workspace_sync.py#L226-L262"
+        "file": "bowthruster/the_table/workspace_sync.py#L305-L357"
       },
-      "file": "bowthruster/the_table/workspace_sync.py#L226-L262",
+      "file": "bowthruster/the_table/workspace_sync.py#L305-L357",
       "id": "interface_the_table_sync_memory_to_table",
       "inputs": [
         "table_state",
@@ -1675,7 +1381,7 @@
       "outputs": [
         "TableView"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "the_table",
       "scope_id": "the_table",
       "spec": "Synchronize recalled ConceptFrames and ContextView into the_table",
@@ -1688,9 +1394,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L58-L136"
+        "file": "bowthruster/whiteboard/ingest.py#L66-L159"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L58-L136",
+      "file": "bowthruster/whiteboard/ingest.py#L66-L159",
       "id": "interface_whiteboard_ingest_intake_packet",
       "inputs": [
         "graph",
@@ -1701,7 +1407,7 @@
       "outputs": [
         "IngestionResult"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "whiteboard",
       "scope_id": "whiteboard",
       "spec": "Ingest deterministic IntakePacket into the Whiteboard graph",
@@ -1712,16 +1418,16 @@
     },
     {
       "calls": [
-        "_enrich_view_compact_lines#L35-L79",
-        "_node_matches_slice_dims#L229-L339",
-        "_scan_ast_symbols_on_disk#L358-L405"
+        "_enrich_view_compact_lines#L38-L97",
+        "_node_matches_slice_dims#L286-L406",
+        "_scan_ast_symbols_on_disk#L428-L502"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/read_engine.py#L408-L492"
+        "file": "bowthruster/whiteboard/read_engine.py#L505-L655"
       },
-      "file": "bowthruster/whiteboard/read_engine.py#L408-L492",
+      "file": "bowthruster/whiteboard/read_engine.py#L505-L655",
       "id": "interface_whiteboard_slice_lattice",
       "inputs": [
         "graph",
@@ -1733,7 +1439,7 @@
       "outputs": [
         "ContextView"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "whiteboard",
       "scope_id": "whiteboard",
       "spec": "Slice the nD Lattice graph with focused artifact filtering on exact AST symbol queries",
@@ -1744,14 +1450,14 @@
     },
     {
       "calls": [
-        "_parse_bend_law_args#L139-L152"
+        "_parse_bend_law_args#L162-L178"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L155-L180"
+        "file": "bowthruster/whiteboard/ingest.py#L181-L209"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L155-L180",
+      "file": "bowthruster/whiteboard/ingest.py#L181-L209",
       "id": "interface_whiteboard_compile_laws_bend",
       "inputs": [
         "scope_id",
@@ -1762,7 +1468,7 @@
       "outputs": [
         "str"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "whiteboard",
       "scope_id": "whiteboard",
       "spec": "Compile Bend 2 law theorems into LAWS.bend skeleton",
@@ -1775,9 +1481,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/mutations.py#L137-L170"
+        "file": "bowthruster/whiteboard/mutations.py#L167-L200"
       },
-      "file": "bowthruster/whiteboard/mutations.py#L137-L170",
+      "file": "bowthruster/whiteboard/mutations.py#L167-L200",
       "id": "interface_whiteboard_transition_component_build_status",
       "inputs": [
         "graph",
@@ -1789,7 +1495,7 @@
       "outputs": [
         "dict"
       ],
-      "owner": "eng1",
+      "owner": "core",
       "scope": "whiteboard",
       "scope_id": "whiteboard",
       "spec": "Transition a component scope between lifecycle build statuses",
@@ -1800,17 +1506,17 @@
     },
     {
       "calls": [
-        "_classify_table_kind#L225-L242",
+        "_classify_table_kind#L228-L245",
         "_clean_cell_val#L95-L99",
         "_norm_col_key#L89-L92",
-        "_split_list_cell#L102-L113"
+        "_split_list_cell#L102-L116"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/regiment/markdown_tables.py#L245-L284"
+        "file": "bowthruster/regiment/markdown_tables.py#L248-L297"
       },
-      "file": "bowthruster/regiment/markdown_tables.py#L245-L284",
+      "file": "bowthruster/regiment/markdown_tables.py#L248-L297",
       "id": "interface_regiment_extract_structured_table_rows",
       "inputs": [
         "doc_tables"
@@ -1820,7 +1526,7 @@
       "outputs": [
         "list"
       ],
-      "owner": "eng0",
+      "owner": "core",
       "scope": "regiment",
       "scope_id": "regiment",
       "spec": "Extract normalized structured records from Markdown pipe tables",
@@ -1831,20 +1537,20 @@
     },
     {
       "calls": [
-        "_collect_and_index_turn_rules#L54-L79",
-        "_find_owning_scopes#L208-L211",
-        "_parse_git_report_entries#L244-L269",
-        "_paths_match#L189-L191",
-        "_scope_direct_deps#L214-L221",
-        "_scope_file_refs#L194-L205",
-        "_upsert_contract_artifact#L224-L241"
+        "_collect_and_index_turn_rules#L57-L95",
+        "_find_owning_scopes#L298-L310",
+        "_parse_git_report_entries#L354-L418",
+        "_paths_match#L263-L266",
+        "_scope_direct_deps#L313-L320",
+        "_scope_file_refs#L269-L295",
+        "_upsert_contract_artifact#L323-L351"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/orchestrator.py#L272-L380"
+        "file": "bowthruster/the_executive/orchestrator.py#L421-L599"
       },
-      "file": "bowthruster/the_executive/orchestrator.py#L272-L380",
+      "file": "bowthruster/the_executive/orchestrator.py#L421-L599",
       "id": "interface_the_executive_sync_post_commit_to_lattice",
       "inputs": [
         "whiteboard_graph",
@@ -1855,7 +1561,7 @@
       "outputs": [
         "PostCommitSyncResult"
       ],
-      "owner": "eng2",
+      "owner": "core",
       "scope": "the_executive",
       "scope_id": "the_executive",
       "spec": "Synchronize post-commit file hashes, delegate all URI/line healing to ai_memory.sync_git_diff_uris, and cascade STALE",
@@ -1866,12 +1572,12 @@
     },
     {
       "args": "has_ast_symbol_range: Bool, uri_has_line_anchor: Bool",
-      "bend_dir": "bend_mem_24a",
+      "bend_dir": "laws/bend_mem_24a",
       "created_turn": 19,
       "dimensions": {
         "_from_table": true,
         "args": "has_ast_symbol_range: Bool, uri_has_line_anchor: Bool",
-        "bend_dir": "bend_mem_24a",
+        "bend_dir": "laws/bend_mem_24a",
         "lhs": "MOD.is_symbol_uri_anchored(has_ast_symbol_range, uri_has_line_anchor)",
         "rhs": "Bool.or(Bool.not(has_ast_symbol_range), uri_has_line_anchor)"
       },
@@ -1884,7 +1590,7 @@
       "lhs": "MOD.is_symbol_uri_anchored(has_ast_symbol_range, uri_has_line_anchor)",
       "name": "ast_symbol_uri_anchor_law",
       "outputs": [],
-      "owner": "eng0",
+      "owner": "core",
       "rhs": "Bool.or(Bool.not(has_ast_symbol_range), uri_has_line_anchor)",
       "scope": "ai_memory",
       "scope_id": "ai_memory",
@@ -1896,15 +1602,15 @@
     },
     {
       "calls": [
-        "_UriSyncState#L309-L426",
-        "_parse_git_diff_manifest#L234-L295"
+        "_UriSyncState#L418-L558",
+        "_parse_git_diff_manifest#L275-L395"
       ],
       "created_turn": 19,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/uri_resolver.py#L429-L490"
+        "file": "bowthruster/ai_memory/uri_resolver.py#L561-L648"
       },
-      "file": "bowthruster/ai_memory/uri_resolver.py#L429-L490",
+      "file": "bowthruster/ai_memory/uri_resolver.py#L561-L648",
       "id": "interface_ai_memory_sync_git_diff_uris",
       "inputs": [
         "store_or_graph",
@@ -1915,7 +1621,7 @@
       "outputs": [
         "dict"
       ],
-      "owner": "eng0",
+      "owner": "core",
       "scope": "ai_memory",
       "scope_id": "ai_memory",
       "spec": "Single-owner URI healer for renames, line_shifts, AST #Lstart-Lend anchors, and local helper call-tree pointers",
@@ -1926,16 +1632,16 @@
     },
     {
       "calls": [
-        "_expr#L279-L317",
-        "_stmts#L319-L335",
-        "_sub_ident#L260-L264"
+        "_expr#L288-L329",
+        "_stmts#L331-L347",
+        "_sub_ident#L266-L270"
       ],
       "created_turn": 31,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/nlp.py#L267-L337"
+        "file": "bowthruster/nlp.py#L273-L349"
       },
-      "file": "bowthruster/nlp.py#L267-L337",
+      "file": "bowthruster/nlp.py#L273-L349",
       "id": "interface_runtime_foundation_transpile_py_fn_to_bend_bool",
       "inputs": [
         "fn_node",
@@ -1947,7 +1653,7 @@
       "outputs": [
         "tuple"
       ],
-      "owner": "bethe",
+      "owner": "architect",
       "scope": "runtime_foundation",
       "scope_id": "runtime_foundation",
       "spec": "Transpile pure Python boolean decision function AST into a Bend 2 boolean expression",
@@ -1958,18 +1664,19 @@
     },
     {
       "calls": [
-        "_check_synthesized_bend_proof#L397-L406",
-        "_eval_bend_bool#L340-L367",
-        "_find_bend_binary#L390-L393",
-        "_gen_bool_case_proof#L370-L381",
-        "_norm_bend_expr#L384-L387"
+        "_check_bend_dir_proof#L433-L448",
+        "_check_synthesized_bend_proof#L417-L429",
+        "_eval_bend_bool#L352-L379",
+        "_find_bend_binary#L405-L413",
+        "_gen_bool_case_proof#L382-L393",
+        "_norm_bend_expr#L396-L402"
       ],
       "created_turn": 31,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/nlp.py#L409-L482"
+        "file": "bowthruster/nlp.py#L451-L552"
       },
-      "file": "bowthruster/nlp.py#L409-L482",
+      "file": "bowthruster/nlp.py#L451-L552",
       "id": "interface_runtime_foundation_verify_python_ast_laws_with_bend",
       "inputs": [
         "artifacts",
@@ -1981,7 +1688,7 @@
       "outputs": [
         "dict"
       ],
-      "owner": "bethe",
+      "owner": "architect",
       "scope": "runtime_foundation",
       "scope_id": "runtime_foundation",
       "spec": "Transpile staged Python % LAW functions to Bend 2 and verify LHS == RHS across all truth-table assignments and via bend",
@@ -1998,7 +1705,7 @@
     "flow_count": 8,
     "hard_violations": [],
     "is_proven": true,
-    "law_count": 12,
+    "law_count": 2,
     "open_gaps": [],
     "status": "PROVEN_COMPLETE"
   },
@@ -2024,10 +1731,10 @@
         "depends_on": "graph_core",
         "file_hashes": {
           "bowthruster/ai_memory/__init__.py": "f7b966ac6fb65cac",
-          "bowthruster/ai_memory/cue_extractor.py": "17f80b1609252625",
-          "bowthruster/ai_memory/hippocampal_index.py": "0601fe1ee78d5a64",
-          "bowthruster/ai_memory/schema.py": "bc1aaef53759fb5d",
-          "bowthruster/ai_memory/uri_resolver.py": "a11e37dd057ef4ca"
+          "bowthruster/ai_memory/cue_extractor.py": "5d2842cb22f8c799",
+          "bowthruster/ai_memory/hippocampal_index.py": "23706bcec777f510",
+          "bowthruster/ai_memory/schema.py": "8f9699735bc38020",
+          "bowthruster/ai_memory/uri_resolver.py": "b7cc7aa43a6f3c10"
         },
         "files": [
           "bowthruster/ai_memory/__init__.py",
@@ -2036,7 +1743,7 @@
           "bowthruster/ai_memory/hippocampal_index.py",
           "bowthruster/ai_memory/cue_extractor.py"
         ],
-        "owner": "eng0",
+        "owner": "core",
         "role": "Hippocampal Concept Index & Git-Diff URI Auto-Healer",
         "stage": "stage 24",
         "updated_turn": 30,
@@ -2053,10 +1760,10 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/ai_memory/__init__.py": "f7b966ac6fb65cac",
-        "bowthruster/ai_memory/cue_extractor.py": "17f80b1609252625",
-        "bowthruster/ai_memory/hippocampal_index.py": "0601fe1ee78d5a64",
-        "bowthruster/ai_memory/schema.py": "bc1aaef53759fb5d",
-        "bowthruster/ai_memory/uri_resolver.py": "a11e37dd057ef4ca"
+        "bowthruster/ai_memory/cue_extractor.py": "5d2842cb22f8c799",
+        "bowthruster/ai_memory/hippocampal_index.py": "23706bcec777f510",
+        "bowthruster/ai_memory/schema.py": "8f9699735bc38020",
+        "bowthruster/ai_memory/uri_resolver.py": "b7cc7aa43a6f3c10"
       },
       "files": [
         "bowthruster/ai_memory/__init__.py",
@@ -2072,9 +1779,9 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+      "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
       "outputs": [],
-      "owner": "eng0",
+      "owner": "core",
       "parent": null,
       "role": "Hippocampal Concept Index & Git-Diff URI Auto-Healer",
       "rules": [],
@@ -2089,7 +1796,7 @@
       "attributes": {
         "charter": {
           "name": "lattice_core",
-          "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines per file; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+          "principles": "Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; readable, unpacked modules with zero semicolon packing; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
           "summary": "Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically."
         },
         "lod1_synopsis": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines"
@@ -2127,33 +1834,10 @@
           "refs": [],
           "scope": "global_defaults",
           "target_prop": null,
-          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); <=500 lines per file; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices (<2KB); readable, unpacked modules with zero semicolon packing; Bend 2 formal equational proofs and AST pre-commit enforcement.",
           "turn": 29,
           "type": "FACT",
           "updated_turn": 29
-        },
-        {
-          "access_turns": [
-            35
-          ],
-          "bound_op": "<=",
-          "bound_val": 500,
-          "conditions": [],
-          "created_turn": 32,
-          "exceptions": [],
-          "facet": "Numeric_Bounds",
-          "id": "r_global_defaults_6",
-          "is_exception": false,
-          "meta_keys": [],
-          "meta_tokens": [],
-          "overrides": [],
-          "refs": [],
-          "scope": "global_defaults",
-          "target_prop": "max_file_lines",
-          "text": "Every source file must be at most 500 lines",
-          "turn": 35,
-          "type": "BOUND",
-          "updated_turn": 35
         },
         {
           "access_turns": [
@@ -2162,7 +1846,7 @@
           "bound_op": "!=",
           "bound_val": "imported",
           "conditions": [
-            "Never import regiment_nlp, spacy, torch, or onnxruntime inside lattice"
+            "Never import spacy, torch, or onnxruntime inside bowthruster"
           ],
           "created_turn": 17,
           "exceptions": [],
@@ -2180,8 +1864,8 @@
           ],
           "refs": [],
           "scope": "global_defaults",
-          "target_prop": "regiment_nlp",
-          "text": "In `global_defaults`, `regiment_nlp` != imported when Never import regiment_nlp, spacy, torch, or onnxruntime inside lattice.",
+          "target_prop": "spacy",
+          "text": "In `global_defaults`, `regiment_nlp` != imported when Never import spacy, torch, or onnxruntime inside bowthruster.",
           "turn": 17,
           "type": "PROHIBITION",
           "updated_turn": 17
@@ -2204,7 +1888,7 @@
           "refs": [],
           "scope": "global_defaults",
           "target_prop": null,
-          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; <=500 lines per file; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
+          "text": "Charter [lattice_core]: Architecture memory, focused code lookup, and pre-commit verification engine for AI coding agents \u2014 making the Lattice itself the living specification so design and code stay in sync automatically. | Principles: Zero LLM calls and zero third-party runtime dependencies (<50ms deterministic execution); 1-hop bounded context slices; readable, unpacked modules with zero semicolon packing; no silent truncation of slices or diagnostics; Bend 2 formal equational proofs and AST pre-commit enforcement.",
           "turn": 36,
           "type": "FACT",
           "updated_turn": 36
@@ -2230,9 +1914,9 @@
         "file_hashes": {
           "bowthruster/graph_core/__init__.py": "1ab860b33a0a5646",
           "bowthruster/graph_core/activation.py": "4724c468b79bcca0",
-          "bowthruster/graph_core/formatting.py": "cf797465195aa0e7",
+          "bowthruster/graph_core/formatting.py": "e6d90df9ff275b5f",
           "bowthruster/graph_core/propagation.py": "6cc40ae7cbf800bf",
-          "bowthruster/graph_core/sqlite_store.py": "6d1323280473c608"
+          "bowthruster/graph_core/sqlite_store.py": "af98a2405cd82e9d"
         },
         "files": [
           "bowthruster/graph_core/__init__.py",
@@ -2241,7 +1925,7 @@
           "bowthruster/graph_core/formatting.py",
           "bowthruster/graph_core/propagation.py"
         ],
-        "owner": "eng0",
+        "owner": "core",
         "role": "Shared SQLite & Spreading-Activation Graph Substrate",
         "stage": "stage 21",
         "updated_turn": 30,
@@ -2257,9 +1941,9 @@
       "file_hashes": {
         "bowthruster/graph_core/__init__.py": "1ab860b33a0a5646",
         "bowthruster/graph_core/activation.py": "4724c468b79bcca0",
-        "bowthruster/graph_core/formatting.py": "cf797465195aa0e7",
+        "bowthruster/graph_core/formatting.py": "e6d90df9ff275b5f",
         "bowthruster/graph_core/propagation.py": "6cc40ae7cbf800bf",
-        "bowthruster/graph_core/sqlite_store.py": "6d1323280473c608"
+        "bowthruster/graph_core/sqlite_store.py": "af98a2405cd82e9d"
       },
       "files": [
         "bowthruster/graph_core/__init__.py",
@@ -2278,9 +1962,9 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+      "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
       "outputs": [],
-      "owner": "eng0",
+      "owner": "core",
       "parent": null,
       "role": "Shared SQLite & Spreading-Activation Graph Substrate",
       "rules": [],
@@ -2305,16 +1989,16 @@
         "_table_role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
         "depends_on": "",
         "file_hashes": {
-          "bowthruster/regiment/__init__.py": "ce28bc3c6a652ec6",
-          "bowthruster/regiment/intake_packet.py": "71802b9116545544",
-          "bowthruster/regiment/markdown_tables.py": "3f86c178e3427109"
+          "bowthruster/regiment/__init__.py": "0ecfcf900348cc9f",
+          "bowthruster/regiment/intake_packet.py": "24c4a14bee0a9987",
+          "bowthruster/regiment/markdown_tables.py": "9ae84f153329a2af"
         },
         "files": [
           "bowthruster/regiment/__init__.py",
           "bowthruster/regiment/markdown_tables.py",
           "bowthruster/regiment/intake_packet.py"
         ],
-        "owner": "eng0, eng1, eng2, eng3",
+        "owner": "core",
         "role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
         "stage": "Stages 15-18",
         "updated_turn": 30,
@@ -2328,9 +2012,9 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/regiment/__init__.py": "ce28bc3c6a652ec6",
-        "bowthruster/regiment/intake_packet.py": "71802b9116545544",
-        "bowthruster/regiment/markdown_tables.py": "3f86c178e3427109"
+        "bowthruster/regiment/__init__.py": "0ecfcf900348cc9f",
+        "bowthruster/regiment/intake_packet.py": "24c4a14bee0a9987",
+        "bowthruster/regiment/markdown_tables.py": "9ae84f153329a2af"
       },
       "files": [
         "bowthruster/regiment/__init__.py",
@@ -2344,9 +2028,9 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+      "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
       "outputs": [],
-      "owner": "eng0, eng1, eng2, eng3",
+      "owner": "core",
       "parent": null,
       "role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
       "rules": [],
@@ -2368,18 +2052,20 @@
           "bowthruster/cli.py",
           "bowthruster/mcp_server.py",
           "bowthruster/mcp_verifier.py",
-          "bowthruster/git_manifest.py"
+          "bowthruster/git_manifest.py",
+          "bowthruster/mcp_schemas.py"
         ],
         "_table_role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
         "depends_on": "",
         "file_hashes": {
-          "bowthruster/__init__.py": "49f3707cc729d5c6",
-          "bowthruster/cli.py": "4a7c499795a62199",
-          "bowthruster/git_manifest.py": "befa73142858b064",
-          "bowthruster/mcp_server.py": "2b44c9a6db02f7b9",
+          "bowthruster/__init__.py": "94399be0bf49a49a",
+          "bowthruster/cli.py": "b4d5bbd5bd87e2f2",
+          "bowthruster/git_manifest.py": "6b79e2c9e6482fe4",
+          "bowthruster/mcp_schemas.py": "3e417df645a87474",
+          "bowthruster/mcp_server.py": "1b222ad7afa6501a",
           "bowthruster/mcp_verifier.py": "f26a549bab41d90f",
-          "bowthruster/nlp.py": "98220ee239475eac",
-          "bowthruster/types.py": "2172d10c1427d1b2"
+          "bowthruster/nlp.py": "0bfe9aecff248d80",
+          "bowthruster/types.py": "fecf50e47338bd94"
         },
         "files": [
           "bowthruster/__init__.py",
@@ -2388,9 +2074,10 @@
           "bowthruster/cli.py",
           "bowthruster/mcp_server.py",
           "bowthruster/mcp_verifier.py",
-          "bowthruster/git_manifest.py"
+          "bowthruster/git_manifest.py",
+          "bowthruster/mcp_schemas.py"
         ],
-        "owner": "bethe",
+        "owner": "architect",
         "role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
         "stage": "Stage 15",
         "updated_turn": 30,
@@ -2404,13 +2091,14 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/__init__.py": "49f3707cc729d5c6",
-        "bowthruster/cli.py": "4a7c499795a62199",
-        "bowthruster/git_manifest.py": "befa73142858b064",
-        "bowthruster/mcp_server.py": "2b44c9a6db02f7b9",
+        "bowthruster/__init__.py": "94399be0bf49a49a",
+        "bowthruster/cli.py": "b4d5bbd5bd87e2f2",
+        "bowthruster/git_manifest.py": "6b79e2c9e6482fe4",
+        "bowthruster/mcp_schemas.py": "3e417df645a87474",
+        "bowthruster/mcp_server.py": "1b222ad7afa6501a",
         "bowthruster/mcp_verifier.py": "f26a549bab41d90f",
-        "bowthruster/nlp.py": "98220ee239475eac",
-        "bowthruster/types.py": "2172d10c1427d1b2"
+        "bowthruster/nlp.py": "0bfe9aecff248d80",
+        "bowthruster/types.py": "fecf50e47338bd94"
       },
       "files": [
         "bowthruster/__init__.py",
@@ -2419,7 +2107,8 @@
         "bowthruster/cli.py",
         "bowthruster/mcp_server.py",
         "bowthruster/mcp_verifier.py",
-        "bowthruster/git_manifest.py"
+        "bowthruster/git_manifest.py",
+        "bowthruster/mcp_schemas.py"
       ],
       "id": "runtime_foundation",
       "in_edges": [
@@ -2427,9 +2116,9 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+      "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
       "outputs": [],
-      "owner": "bethe",
+      "owner": "architect",
       "parent": null,
       "role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
       "rules": [],
@@ -2459,12 +2148,12 @@
         "_table_role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
-          "bowthruster/the_executive/__init__.py": "4aaddb0a7df56492",
-          "bowthruster/the_executive/call_graph.py": "5093db95621ec8ea",
-          "bowthruster/the_executive/gate.py": "7cec5b7c78442c57",
-          "bowthruster/the_executive/orchestrator.py": "8a0bd9229b62934d",
-          "bowthruster/the_executive/preflight.py": "d3a94384b1c86639",
-          "bowthruster/the_executive/voice.py": "36432a4bba43c32d"
+          "bowthruster/the_executive/__init__.py": "362d9eee4e1defe6",
+          "bowthruster/the_executive/call_graph.py": "d957b413fe54b60b",
+          "bowthruster/the_executive/gate.py": "642b7b069eb5a297",
+          "bowthruster/the_executive/orchestrator.py": "1b7ae011e075b8ae",
+          "bowthruster/the_executive/preflight.py": "c1be5661ee0640d5",
+          "bowthruster/the_executive/voice.py": "0205b21dde9492be"
         },
         "files": [
           "bowthruster/the_executive/__init__.py",
@@ -2474,7 +2163,7 @@
           "bowthruster/the_executive/preflight.py",
           "bowthruster/the_executive/voice.py"
         ],
-        "owner": "eng2",
+        "owner": "core",
         "role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
         "stage": "stage 23",
         "updated_turn": 30,
@@ -2492,12 +2181,12 @@
       ],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/the_executive/__init__.py": "4aaddb0a7df56492",
-        "bowthruster/the_executive/call_graph.py": "5093db95621ec8ea",
-        "bowthruster/the_executive/gate.py": "7cec5b7c78442c57",
-        "bowthruster/the_executive/orchestrator.py": "8a0bd9229b62934d",
-        "bowthruster/the_executive/preflight.py": "d3a94384b1c86639",
-        "bowthruster/the_executive/voice.py": "36432a4bba43c32d"
+        "bowthruster/the_executive/__init__.py": "362d9eee4e1defe6",
+        "bowthruster/the_executive/call_graph.py": "d957b413fe54b60b",
+        "bowthruster/the_executive/gate.py": "642b7b069eb5a297",
+        "bowthruster/the_executive/orchestrator.py": "1b7ae011e075b8ae",
+        "bowthruster/the_executive/preflight.py": "c1be5661ee0640d5",
+        "bowthruster/the_executive/voice.py": "0205b21dde9492be"
       },
       "files": [
         "bowthruster/the_executive/__init__.py",
@@ -2516,9 +2205,9 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+      "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
       "outputs": [],
-      "owner": "eng2",
+      "owner": "core",
       "parent": null,
       "role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
       "rules": [],
@@ -2549,10 +2238,10 @@
         "depends_on": "graph_core, whiteboard, ai_memory",
         "file_hashes": {
           "bowthruster/the_table/__init__.py": "f337efdea9f47eed",
-          "bowthruster/the_table/renderer.py": "6f53203f9c0740a3",
-          "bowthruster/the_table/schema.py": "10df40a71799203c",
-          "bowthruster/the_table/surface.py": "547634bc776f453c",
-          "bowthruster/the_table/workspace_sync.py": "a0fc76cf5f7d65cd"
+          "bowthruster/the_table/renderer.py": "d05a277b45f67d07",
+          "bowthruster/the_table/schema.py": "10348f3ebb883082",
+          "bowthruster/the_table/surface.py": "74edb52763c4778b",
+          "bowthruster/the_table/workspace_sync.py": "43e385f712e99d56"
         },
         "files": [
           "bowthruster/the_table/__init__.py",
@@ -2561,7 +2250,7 @@
           "bowthruster/the_table/renderer.py",
           "bowthruster/the_table/workspace_sync.py"
         ],
-        "owner": "eng1",
+        "owner": "core",
         "role": "Bounded Working Surface, LOD_0 Atlas & Living Spec Renderer",
         "stage": "stage 25",
         "updated_turn": 30,
@@ -2580,10 +2269,10 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/the_table/__init__.py": "f337efdea9f47eed",
-        "bowthruster/the_table/renderer.py": "6f53203f9c0740a3",
-        "bowthruster/the_table/schema.py": "10df40a71799203c",
-        "bowthruster/the_table/surface.py": "547634bc776f453c",
-        "bowthruster/the_table/workspace_sync.py": "a0fc76cf5f7d65cd"
+        "bowthruster/the_table/renderer.py": "d05a277b45f67d07",
+        "bowthruster/the_table/schema.py": "10348f3ebb883082",
+        "bowthruster/the_table/surface.py": "74edb52763c4778b",
+        "bowthruster/the_table/workspace_sync.py": "43e385f712e99d56"
       },
       "files": [
         "bowthruster/the_table/__init__.py",
@@ -2599,9 +2288,9 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+      "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
       "outputs": [],
-      "owner": "eng1",
+      "owner": "core",
       "parent": null,
       "role": "Bounded Working Surface, LOD_0 Atlas & Living Spec Renderer",
       "rules": [],
@@ -2632,14 +2321,14 @@
         "_table_role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
         "depends_on": "graph_core, regiment",
         "file_hashes": {
-          "bowthruster/whiteboard/__init__.py": "f865c74c77afe81d",
-          "bowthruster/whiteboard/frustration.py": "0e61fe15239a0633",
-          "bowthruster/whiteboard/ingest.py": "34c0f16eccbb5945",
-          "bowthruster/whiteboard/linker.py": "39eeea71eba6e525",
-          "bowthruster/whiteboard/mutations.py": "4cf43d9060a27345",
-          "bowthruster/whiteboard/read_engine.py": "ae038e314b6d13ce",
-          "bowthruster/whiteboard/rewriter.py": "04e20ec934fbb86b",
-          "bowthruster/whiteboard/schema.py": "937223b5316f9410"
+          "bowthruster/whiteboard/__init__.py": "5034c6b2ba4827c0",
+          "bowthruster/whiteboard/frustration.py": "02a4f81bab3a681f",
+          "bowthruster/whiteboard/ingest.py": "fc2670364356ae71",
+          "bowthruster/whiteboard/linker.py": "1b41e2213984ecef",
+          "bowthruster/whiteboard/mutations.py": "e8b84526e06c01f4",
+          "bowthruster/whiteboard/read_engine.py": "dcbabb2f4130b7eb",
+          "bowthruster/whiteboard/rewriter.py": "a775a64b18583e8b",
+          "bowthruster/whiteboard/schema.py": "eb84fbdc9f337c7d"
         },
         "files": [
           "bowthruster/whiteboard/__init__.py",
@@ -2651,11 +2340,11 @@
           "bowthruster/whiteboard/read_engine.py",
           "bowthruster/whiteboard/frustration.py"
         ],
-        "owner": "eng2",
+        "owner": "core",
         "role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
         "stage": "stage 22",
         "updated_turn": 30,
-        "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves <2KB 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
+        "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
       },
       "build_status": "VERIFIED",
       "build_tag": "s22c-eng2-compiler-1",
@@ -2668,14 +2357,14 @@
       ],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/whiteboard/__init__.py": "f865c74c77afe81d",
-        "bowthruster/whiteboard/frustration.py": "0e61fe15239a0633",
-        "bowthruster/whiteboard/ingest.py": "34c0f16eccbb5945",
-        "bowthruster/whiteboard/linker.py": "39eeea71eba6e525",
-        "bowthruster/whiteboard/mutations.py": "4cf43d9060a27345",
-        "bowthruster/whiteboard/read_engine.py": "ae038e314b6d13ce",
-        "bowthruster/whiteboard/rewriter.py": "04e20ec934fbb86b",
-        "bowthruster/whiteboard/schema.py": "937223b5316f9410"
+        "bowthruster/whiteboard/__init__.py": "5034c6b2ba4827c0",
+        "bowthruster/whiteboard/frustration.py": "02a4f81bab3a681f",
+        "bowthruster/whiteboard/ingest.py": "fc2670364356ae71",
+        "bowthruster/whiteboard/linker.py": "1b41e2213984ecef",
+        "bowthruster/whiteboard/mutations.py": "e8b84526e06c01f4",
+        "bowthruster/whiteboard/read_engine.py": "dcbabb2f4130b7eb",
+        "bowthruster/whiteboard/rewriter.py": "a775a64b18583e8b",
+        "bowthruster/whiteboard/schema.py": "eb84fbdc9f337c7d"
       },
       "files": [
         "bowthruster/whiteboard/__init__.py",
@@ -2695,16 +2384,16 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+      "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
       "outputs": [],
-      "owner": "eng2",
+      "owner": "core",
       "parent": null,
       "role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
       "rules": [],
       "stage": "stage 22",
       "status": "VERIFIED",
       "updated_turn": 1,
-      "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves <2KB 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
+      "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },
   "turn": 36,

@@ -101,14 +101,12 @@ from .ingest import (
     ingest_into_context_graph,
     ingest_into_whiteboard,
     is_python_skeleton_complete,
-    is_work_packet_self_contained,
     phase4,
     query_context_graph,
     query_whiteboard,
     resolve_ingestion_status,
     run_phase4,
     run_turn,
-    status_sync_and_spec_docstring_law,
 )
 from .linker import (
     DeltaOperation,
@@ -140,12 +138,8 @@ from .rewriter import (
     _resolve_or_register_scope,
     _slugify_scope_id,
     create_empty_context_graph,
-    flow_and_rule_table_fusion_law,
     fuse_table_attributes,
-    is_flow_or_rule_table_fused,
-    is_table_schema_valid,
     resolve_mcu_scopes_and_refs,
-    table_header_schema_law,
 )
 
 try:
@@ -170,7 +164,11 @@ except (ImportError, ModuleNotFoundError):
 
 
 def __getattr__(name: str):
-    if name in ("PostCommitSyncResult", "WorkingTreeDriftReport", "detect_working_tree_drift", "should_mark_dependent_stale_on_commit", "sync_post_commit_to_lattice"):
+    if name in (
+        "PostCommitSyncResult", "WorkingTreeDriftReport",
+        "detect_working_tree_drift", "should_mark_dependent_stale_on_commit",
+        "sync_post_commit_to_lattice"
+    ):
         from bowthruster.the_executive import orchestrator as _orch
         return getattr(_orch, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
@@ -257,7 +255,6 @@ __all__ = [
     "evict_from_ring",
     "expand_graph_node",
     "expand_node",
-    "flow_and_rule_table_fusion_law",
     "format_compact_view",
     "fuse_table_attributes",
     "graduate_task_to_fact",
@@ -266,10 +263,7 @@ __all__ = [
     "ingest_into_context_graph",
     "ingest_into_whiteboard",
     "init_graph_db",
-    "is_flow_or_rule_table_fused",
     "is_python_skeleton_complete",
-    "is_table_schema_valid",
-    "is_work_packet_self_contained",
     "lexical_token_similarity",
     "markovian_overwrite_rule",
     "matches_nd_slice",
@@ -293,11 +287,9 @@ __all__ = [
     "should_register_as_scope",
     "slice_lattice",
     "soft_token_overlap_count",
-    "status_sync_and_spec_docstring_law",
     "step_component_lifecycle_on_edit",
     "sync_post_commit_to_lattice",
     "sync_to_sqlite",
-    "table_header_schema_law",
     "token_cost",
     "tokenize_content_words",
     "transition_component_build_status",

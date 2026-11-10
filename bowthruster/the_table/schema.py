@@ -136,7 +136,10 @@ class TableSlot(_TableBaseDict):
             raw_cost = src.get("token_cost", token_cost)
             raw_links = src.get("external_links") if "external_links" in src else src.get("source_links", external_links)
             raw_turn = src.get("updated_turn", src.get("turn", updated_turn))
-            rem = {k: copy.deepcopy(v) for k, v in src.items() if k not in (*_BASE_SLOT_KEYS, "lod1_synopsis", "source_links")}
+            rem = {
+                k: copy.deepcopy(v) for k, v in src.items()
+                if k not in (*_BASE_SLOT_KEYS, "lod1_synopsis", "source_links")
+            }
         else:
             raw_sid = str(slot_id or concept_id or "").strip()
             raw_cid = str(concept_id or raw_sid).strip()
@@ -145,7 +148,10 @@ class TableSlot(_TableBaseDict):
             raw_cost, raw_links, raw_turn, rem = token_cost, external_links, updated_turn, copy.deepcopy(extra)
 
         clean_sum = " ".join(restore_ascii_dots(str(raw_sum or "")).strip().split())
-        comp_cost = int(raw_cost) if (raw_cost is not None and not isinstance(raw_cost, bool)) else max(1, _compute_token_cost(clean_sum or raw_cid or raw_sid or "slot"))
+        comp_cost = (
+            int(raw_cost) if (raw_cost is not None and not isinstance(raw_cost, bool))
+            else max(1, _compute_token_cost(clean_sum or raw_cid or raw_sid or "slot"))
+        )
         self.update(
             slot_id=raw_sid, concept_id=raw_cid, lod_tier=normalize_lod_tier(raw_tier), pinned=bool(raw_pinned),
             token_cost=comp_cost, summary=clean_sum, external_links=_normalize_slot_links(raw_links, raw_cid or raw_sid),
@@ -174,10 +180,18 @@ class TableSlot(_TableBaseDict):
         return default
 
     def __getitem__(self, key: Any) -> Any:
-        if super().__contains__(key) or key in ("lod1_synopsis", "source_links", "admitted", "slot", "admitted_slot", "evicted_slots", "evicted_slot_ids"):
+        if super().__contains__(key) or key in (
+            "lod1_synopsis", "source_links", "admitted",
+            "slot", "admitted_slot", "evicted_slots",
+            "evicted_slot_ids"
+        ):
             return self.get(key)
         tstate = object.__getattribute__(self, "_table_state")
-        if isinstance(tstate, dict) and key in ("table_state", "slots", "active_slots", "total_tokens", "max_slots", "max_tokens", "max_pinned_slots"):
+        if isinstance(tstate, dict) and key in (
+            "table_state", "slots", "active_slots",
+            "total_tokens", "max_slots", "max_tokens",
+            "max_pinned_slots"
+        ):
             return self.get(key)
         raise KeyError(key)
 
@@ -198,12 +212,20 @@ class TableView(_TableBaseDict):
 class TableState(_TableBaseDict):
     """Bounded Conference Room working surface state (`slots`, `total_tokens`, `max_slots`, `max_tokens`, `max_pinned_slots`)."""
 
-    def __init__(self, data: dict[str, Any] | None = None, *, store: SQLiteGraphStore | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, data: dict[str, Any] | None = None,
+        *, store: SQLiteGraphStore | None = None,
+        **kwargs: Any
+    ) -> None:
         inherited_store = store if store is not None else getattr(data, "_sqlite_store", None)
         super().__init__(data or {}, **kwargs)
         object.__setattr__(self, "_sqlite_store", inherited_store)
         raw_slots = list(self["slots"].values()) if isinstance(self.get("slots"), dict) else self.get("slots", [])
-        slots = [s if isinstance(s, TableSlot) else TableSlot(s) for s in (raw_slots if isinstance(raw_slots, list) else []) if isinstance(s, dict)]
+        slots = [
+            s if isinstance(s, TableSlot) else TableSlot(s)
+            for s in (raw_slots if isinstance(raw_slots, list) else [])
+            if isinstance(s, dict)
+        ]
         self["slots"] = slots
         self["total_tokens"] = sum(int(s.get("token_cost", 0)) for s in slots)
         self.setdefault("max_slots", MAX_TABLE_SLOTS)
@@ -312,7 +334,11 @@ def validate_table_state(table_state: dict[str, Any] | TableState) -> TableState
 
     store = getattr(table_state, "_sqlite_store", None) or table_state.get("_sqlite_store")
     return TableState(
-        {**table_state, "slots": validated_slots, "total_tokens": computed_tokens, "max_slots": max_slots, "max_tokens": max_tokens, "max_pinned_slots": max_pinned},
+        {
+            **table_state, "slots": validated_slots,
+            "total_tokens": computed_tokens, "max_slots": max_slots,
+            "max_tokens": max_tokens, "max_pinned_slots": max_pinned
+        },
         store=store if isinstance(store, SQLiteGraphStore) else None,
     )
 
@@ -367,7 +393,10 @@ def create_empty_table_state(
     return state
 
 
-def list_table_slots(store_or_state: SQLiteGraphStore | dict[str, Any], *, pinned_only: bool = False) -> list[TableSlot]:
+def list_table_slots(
+    store_or_state: SQLiteGraphStore | dict[str, Any],
+    *, pinned_only: bool = False
+) -> list[TableSlot]:
     """Lists all `TableSlot` records from `SQLiteGraphStore` or an in-memory `TableState` dict."""
     if isinstance(store_or_state, SQLiteGraphStore):
         _ensure_table_slots_ddl(store_or_state)
@@ -386,7 +415,11 @@ def list_table_slots(store_or_state: SQLiteGraphStore | dict[str, Any], *, pinne
         return slots
     if isinstance(store_or_state, dict):
         raw_slots = store_or_state.get("slots", [])
-        out = [s if isinstance(s, TableSlot) else TableSlot(s) for s in (raw_slots if isinstance(raw_slots, list) else []) if isinstance(s, dict)]
+        out = [
+            s if isinstance(s, TableSlot) else TableSlot(s)
+            for s in (raw_slots if isinstance(raw_slots, list) else [])
+            if isinstance(s, dict)
+        ]
         return [s for s in out if not pinned_only or s["pinned"]]
     raise ValueError(f"Expected SQLiteGraphStore or TableState dict, got {type(store_or_state).__name__}")
 
@@ -396,7 +429,10 @@ def get_table_slot(store_or_state: SQLiteGraphStore | dict[str, Any], slot_id: s
     if not isinstance(slot_id, str) or not slot_id.strip():
         return None
     target = slot_id.strip()
-    return next((s for s in list_table_slots(store_or_state) if s["slot_id"] == target or s["concept_id"] == target), None)
+    return next(
+        (s for s in list_table_slots(store_or_state) if s["slot_id"] == target or s["concept_id"] == target),
+        None
+    )
 
 
 def upsert_table_slot(
@@ -418,7 +454,11 @@ def upsert_table_slot(
             _insert_slot_row(store_or_state, ts)
         return ts
     if isinstance(store_or_state, dict):
-        slots = [s if isinstance(s, TableSlot) else TableSlot(s) for s in store_or_state.get("slots", []) if isinstance(s, dict)]
+        slots = [
+            s if isinstance(s, TableSlot) else TableSlot(s)
+            for s in store_or_state.get("slots", [])
+            if isinstance(s, dict)
+        ]
         if (idx := next((i for i, s in enumerate(slots) if s["slot_id"] == ts["slot_id"]), None)) is not None:
             slots[idx] = ts
         else:
@@ -438,7 +478,10 @@ def delete_table_slot(store_or_state: SQLiteGraphStore | dict[str, Any], slot_id
     if isinstance(store_or_state, SQLiteGraphStore):
         _ensure_table_slots_ddl(store_or_state)
         with store_or_state.conn:
-            cur = store_or_state.conn.execute("DELETE FROM table_slots WHERE slot_id = ? OR concept_id = ?", (target, target))
+            cur = store_or_state.conn.execute(
+                "DELETE FROM table_slots WHERE slot_id = ? OR concept_id = ?",
+                (target, target)
+            )
         return cur.rowcount > 0
     if isinstance(store_or_state, dict):
         if not isinstance(slots := store_or_state.get("slots", []), list):
@@ -453,6 +496,11 @@ def delete_table_slot(store_or_state: SQLiteGraphStore | dict[str, Any], slot_id
     raise ValueError(f"Expected SQLiteGraphStore or TableState dict, got {type(store_or_state).__name__}")
 
 
-for _m, _f in (("upsert_table_slot", upsert_table_slot), ("list_table_slots", list_table_slots), ("delete_table_slot", delete_table_slot), ("get_table_slot", get_table_slot)):
+for _m, _f in (
+    ("upsert_table_slot", upsert_table_slot),
+    ("list_table_slots", list_table_slots),
+    ("delete_table_slot", delete_table_slot),
+    ("get_table_slot", get_table_slot)
+):
     if not hasattr(SQLiteGraphStore, _m):
         setattr(SQLiteGraphStore, _m, _f)

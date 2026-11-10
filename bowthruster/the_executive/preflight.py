@@ -50,7 +50,7 @@ def _err(code: str, msg: str) -> ExecutivePreflightError:
 def classify_mcu_status(
     has_unclear: bool, is_question: bool, has_clash: bool, has_flawed_idea: bool = False
 ) -> str:
-    """Pure per-MCU status classifier governed by Bend 2 Laws 1–4 (`ModelCircuits/eng1/bend_exec_23a/LAWS.bend`)."""
+    """Pure per-MCU status classifier governed by Bend 2 Laws 1–4 (`laws/bend_exec_23a/LAWS.bend`)."""
     if has_clash:
         return McuPreflightStatus.RULE_CONFLICT.value
     if has_flawed_idea:
@@ -112,9 +112,15 @@ def normalize_intake_packet(packet_or_phase3: dict[str, Any], *, turn_index: int
 
     if isinstance(raw_pkt.get("grounding_status"), str) and raw_pkt["grounding_status"].strip():
         grounding_status = raw_pkt["grounding_status"].strip()
-    elif cqs or any(bool(pm.get("unclear_spans")) or pm.get("grounding_status") == "NEEDS_CLARIFICATION" for pm in mcus_copy):
+    elif cqs or any(
+        bool(pm.get("unclear_spans")) or pm.get("grounding_status") == "NEEDS_CLARIFICATION"
+        for pm in mcus_copy
+    ):
         grounding_status = "NEEDS_CLARIFICATION"
-    elif oqs or any(pm.get("type") == "QUESTION" or pm.get("grounding_status") == "HAS_OPEN_QUESTIONS" for pm in mcus_copy):
+    elif oqs or any(
+        pm.get("type") == "QUESTION" or pm.get("grounding_status") == "HAS_OPEN_QUESTIONS"
+        for pm in mcus_copy
+    ):
         grounding_status = "HAS_OPEN_QUESTIONS"
     else:
         grounding_status = "GROUNDED"
@@ -176,7 +182,11 @@ def _normalized_rule_view(entry: dict[str, Any], *, default_type: str | None = N
     b_val, b_op = entry.get("bound_val"), entry.get("bound_op")
     if b_op is None and b_val is not None:
         b_op = "!=" if rtype == "PROHIBITION" else "=="
-    return {"type": rtype, "target_prop": entry.get("target_prop"), "bound_op": b_op, "bound_val": b_val, "conditions": list(entry.get("conditions", []))}
+    return {
+        "type": rtype, "target_prop": entry.get("target_prop"),
+        "bound_op": b_op, "bound_val": b_val,
+        "conditions": list(entry.get("conditions", []))
+    }
 
 
 def _check_standing_rule_clash(pmcu: dict[str, Any], r_old: dict[str, Any]) -> bool:
@@ -191,7 +201,10 @@ def _check_standing_rule_clash(pmcu: dict[str, Any], r_old: dict[str, Any]) -> b
     pmcu_view, old_view = _normalized_rule_view(pmcu), _normalized_rule_view(r_old)
     same_prop_clash = tp_new is not None and tp_old == tp_new and (
         _inherited_rules_clash(pmcu_view, old_view, False)
-        or (r_type == "BOUND" and pmcu.get("bound_val") is not None and _rules_clash(_normalized_rule_view(pmcu, default_type="BOUND"), old_view))
+        or (
+            r_type == "BOUND" and pmcu.get("bound_val") is not None
+            and _rules_clash(_normalized_rule_view(pmcu, default_type="BOUND"), old_view)
+        )
     )
     if pmcu_type == "ACTION":
         if r_type == "PROHIBITION" and (tp_old is None or tp_old == tp_new):
@@ -208,14 +221,20 @@ def _check_fact_or_goal_clash(pmcu: dict[str, Any], r_ref: dict[str, Any], *, re
     pmcu_type = str(pmcu.get("type") or "OBLIGATION")
     if ref_kind == "FACT" and pmcu_type not in ("PROPOSAL", "ACTION", "OBLIGATION", "BOUND", "PROHIBITION", "POLICY"):
         return False
-    if ref_kind == "GOAL" and pmcu_type not in ("PROPOSAL", "ACTION", "OBLIGATION", "BOUND", "PROHIBITION", "POLICY", "GOAL"):
+    if ref_kind == "GOAL" and pmcu_type not in (
+        "PROPOSAL", "ACTION", "OBLIGATION",
+        "BOUND", "PROHIBITION", "POLICY", "GOAL"
+    ):
         return False
 
     pmcu_view, ref_view = _normalized_rule_view(pmcu), _normalized_rule_view(r_ref, default_type="OBLIGATION")
     if _inherited_rules_clash(pmcu_view, ref_view, False):
         return True
     if pmcu.get("bound_val") is not None and r_ref.get("bound_val") is not None:
-        if _rules_clash(_normalized_rule_view(pmcu, default_type="BOUND"), _normalized_rule_view(r_ref, default_type="BOUND")):
+        if _rules_clash(
+            _normalized_rule_view(pmcu, default_type="BOUND"),
+            _normalized_rule_view(r_ref, default_type="BOUND")
+        ):
             return True
     if ref_kind == "GOAL" and (pmcu_type == "PROHIBITION" or pmcu_view.get("bound_op") == "!=") != (ref_view.get("bound_op") == "!="):
         if pmcu.get("bound_val") is None or r_ref.get("bound_val") is None:
@@ -245,8 +264,18 @@ def _make_conflict(
     cid: str, mcu_id: int, scope: str, target_prop: Any, rule_ids: list[str],
     old_rid: str, old_text: str, incoming_text: str, desc: str, base: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    out = copy.deepcopy(base) if base else {"id": cid, "type": "CONFLICT", "scope": scope, "target_prop": target_prop, "rule_ids": rule_ids, "text": desc}
-    out.update({"conflict_id": cid, "mcu_id": mcu_id, "existing_rule_id": old_rid, "existing_rule_text": old_text, "incoming_text": incoming_text, "description": desc})
+    out = copy.deepcopy(base) if base else {
+        "id": cid, "type": "CONFLICT", "scope": scope,
+        "target_prop": target_prop, "rule_ids": rule_ids,
+        "text": desc
+    }
+    out.update({
+        "conflict_id": cid, "mcu_id": mcu_id,
+        "existing_rule_id": old_rid,
+        "existing_rule_text": old_text,
+        "incoming_text": incoming_text,
+        "description": desc
+    })
     return out
 
 
@@ -262,7 +291,10 @@ def inspect_turn_preflight(
     if flawed_idea_critiques is not None and not isinstance(flawed_idea_critiques, list):
         raise _err("preflight_invalid_critiques", f"flawed_idea_critiques must be a list or None, got {type(flawed_idea_critiques).__name__}")
 
-    prev_turn = max(int(whiteboard_graph.get("turn", 0) or 0), int(whiteboard_graph.get("turn_index", 0) or 0)) if isinstance(whiteboard_graph, dict) else 0
+    prev_turn = max(
+        int(whiteboard_graph.get("turn", 0) or 0),
+        int(whiteboard_graph.get("turn_index", 0) or 0)
+    ) if isinstance(whiteboard_graph, dict) else 0
     raw_t = turn_index if turn_index is not None else packet_or_phase3.get("turn_index")
     if raw_t is None and isinstance(packet_or_phase3.get("intake_packet"), dict):
         raw_t = packet_or_phase3["intake_packet"].get("turn_index")
@@ -279,7 +311,10 @@ def inspect_turn_preflight(
     base_rules_by_id = _collect_rules_by_id(base_graph)
 
     trial_res = ingest_intake_packet(trial_graph, packet)
-    new_frustrations = [copy.deepcopy(c) for c in trial_res.get("conflicts", []) if isinstance(c, dict) and str(c.get("id", "")) not in pre_conflict_ids]
+    new_frustrations = [
+        copy.deepcopy(c) for c in trial_res.get("conflicts", [])
+        if isinstance(c, dict) and str(c.get("id", "")) not in pre_conflict_ids
+    ]
     trial_rules_by_id = _collect_rules_by_id(trial_graph)
     all_rules_by_id = {**base_rules_by_id, **trial_rules_by_id}
     delta_log = [d for d in trial_res.get("delta_log", []) if isinstance(d, dict)]
@@ -296,7 +331,10 @@ def inspect_turn_preflight(
         mcu_id = int(pmcu.get("mcu_id", idx + 1))
         mcu_text = restore_ascii_dots(str(pmcu.get("text") or pmcu.get("canonical_text") or "")).strip()
         delta_entry = delta_by_mcu.get(pmcu.get("mcu_id")) or delta_by_mcu.get(mcu_id)
-        scope_id = str(delta_entry["scope"]) if (isinstance(delta_entry, dict) and delta_entry.get("scope")) else resolve_mcu_scopes_and_refs(clone_whiteboard_for_trial(base_graph), pmcu)[0]
+        scope_id = str(delta_entry["scope"]) if (isinstance(delta_entry, dict) and delta_entry.get("scope")) else resolve_mcu_scopes_and_refs(
+            clone_whiteboard_for_trial(base_graph),
+            pmcu
+        )[0]
 
         root_sid = scope_id.split("::")[0]
         ancestors = _ancestor_scopes(base_graph.get("scopes", {}), scope_id) | _ancestor_scopes(trial_graph.get("scopes", {}), scope_id)
@@ -305,7 +343,10 @@ def inspect_turn_preflight(
             if isinstance(snode, dict) and _is_in_scope_family(sid, scope_id, root_sid, ancestors)
             for r in snode.get("rules", []) if isinstance(r, dict) and r.get("id")
         ]
-        cand_all_rules = cand_base_rules + [(sid, r) for sid, r in prior_turn_rules if _is_in_scope_family(sid, scope_id, root_sid, ancestors)]
+        cand_all_rules = cand_base_rules + [
+            (sid, r) for sid, r in prior_turn_rules
+            if _is_in_scope_family(sid, scope_id, root_sid, ancestors)
+        ]
 
         mcu_conflicts, mcu_flaws = [], []
         delta_rule_id = str(delta_entry["rule_id"]) if isinstance(delta_entry, dict) and delta_entry.get("rule_id") else None
@@ -324,7 +365,13 @@ def inspect_turn_preflight(
                 other_rule = all_rules_by_id.get(other_rid, ("", {}))[1]
                 if str(other_rule.get("type") or "") in _STANDING_RULE_TYPES and (mcu_id, other_rid) not in seen_conflict_keys:
                     seen_conflict_keys.add((mcu_id, other_rid))
-                    c_entry = _make_conflict(cid or f"conflict_m{mcu_id}_{other_rid}", mcu_id, scope_id, target_prop, rids, other_rid, str(other_rule.get("text", "")), mcu_text, str(frust.get("text", "")), frust)
+                    c_entry = _make_conflict(
+                        cid or f"conflict_m{mcu_id}_{other_rid}",
+                        mcu_id, scope_id, target_prop, rids,
+                        other_rid, str(other_rule.get("text", "")),
+                        mcu_text, str(frust.get("text", "")),
+                        frust
+                    )
                     mcu_conflicts.append(c_entry)
                     conflicts.append(c_entry)
             elif (is_flow_mcu or is_comp_mcu) and cid.startswith(_SBF_CONFLICT_PREFIXES):
@@ -337,7 +384,13 @@ def inspect_turn_preflight(
                     seen_conflict_keys.add((mcu_id, cid))
                     ref_rid = rids[0] if rids else cid
                     ref_rule = all_rules_by_id.get(ref_rid, ("", {}))[1]
-                    c_entry = _make_conflict(cid, mcu_id, scope_id, target_prop or frust.get("target_prop"), rids or [cid], ref_rid, str(ref_rule.get("text") or frust.get("text") or ""), mcu_text, str(frust.get("text", "")), frust)
+                    c_entry = _make_conflict(
+                        cid, mcu_id, scope_id, target_prop
+                        or frust.get("target_prop"), rids or [cid],
+                        ref_rid, str(ref_rule.get("text") or frust.get("text") or ""),
+                        mcu_text, str(frust.get("text", "")),
+                        frust
+                    )
                     mcu_conflicts.append(c_entry)
                     conflicts.append(c_entry)
 
@@ -348,7 +401,12 @@ def inspect_turn_preflight(
                 cid = f"conflict_t{eff_turn}_m{mcu_id}_{old_rid}"
                 desc = f"MCU {mcu_id} ({pmcu_type} on target_prop={target_prop!r}) conflicts with standing {r_old.get('type')} rule {old_rid!r}: {r_old.get('text', '')}"
                 rids = [old_rid] if not delta_rule_id else sorted({old_rid, delta_rule_id})
-                c_entry = _make_conflict(cid, mcu_id, scope_id, target_prop if target_prop is not None else r_old.get("target_prop"), rids, old_rid, str(r_old.get("text", "")), mcu_text, desc)
+                c_entry = _make_conflict(
+                    cid, mcu_id, scope_id, target_prop
+                    if target_prop is not None else r_old.get("target_prop"),
+                    rids, old_rid, str(r_old.get("text", "")),
+                    mcu_text, desc
+                )
                 mcu_conflicts.append(c_entry)
                 conflicts.append(c_entry)
 
@@ -360,7 +418,12 @@ def inspect_turn_preflight(
                 if (mcu_id, f_kind, ref_id) not in seen_flaw_keys:
                     seen_flaw_keys.add((mcu_id, f_kind, ref_id))
                     desc = f"MCU {mcu_id} {verb} {ref_id!r} on {target_prop!r}: {r_ref.get('text', '')}"
-                    f_entry = _make_flaw(f"flaw_t{eff_turn}_m{mcu_id}_{ref_id}", mcu_id, f_kind, scope_id, target_prop, mcu_text, ref_id, str(r_ref.get("text", "")), desc)
+                    f_entry = _make_flaw(
+                        f"flaw_t{eff_turn}_m{mcu_id}_{ref_id}",
+                        mcu_id, f_kind, scope_id, target_prop,
+                        mcu_text, ref_id, str(r_ref.get("text", "")),
+                        desc
+                    )
                     mcu_flaws.append(f_entry)
                     flawed_ideas.append(f_entry)
 
@@ -372,12 +435,23 @@ def inspect_turn_preflight(
                     attrs = snode.get("attributes", {})
                     if isinstance(attrs, dict) and target_prop in attrs and target_prop not in _META_ATTR_KEYS:
                         attr_val = attrs[target_prop]
-                        synth_fact = {"type": "FACT", "target_prop": target_prop, "bound_op": "==", "bound_val": attr_val}
+                        synth_fact = {
+                            "type": "FACT", "target_prop": target_prop,
+                            "bound_op": "==", "bound_val": attr_val
+                        }
                         basis_id = f"attr:{sid}.{target_prop}"
-                        if (mcu_id, FLAW_KIND_FACT_CONTRADICTION, basis_id) not in seen_flaw_keys and _rules_clash(_normalized_rule_view(pmcu, default_type="BOUND"), synth_fact):
+                        if (mcu_id, FLAW_KIND_FACT_CONTRADICTION, basis_id) not in seen_flaw_keys and _rules_clash(
+                            _normalized_rule_view(pmcu, default_type="BOUND"),
+                            synth_fact
+                        ):
                             seen_flaw_keys.add((mcu_id, FLAW_KIND_FACT_CONTRADICTION, basis_id))
                             basis_txt = f"{sid}.{target_prop} == {attr_val!r}"
-                            f_entry = _make_flaw(f"flaw_t{eff_turn}_m{mcu_id}_attr_{target_prop}", mcu_id, FLAW_KIND_FACT_CONTRADICTION, scope_id, target_prop, mcu_text, basis_id, basis_txt, f"MCU {mcu_id} contradicts table attribute {basis_txt}")
+                            f_entry = _make_flaw(
+                                f"flaw_t{eff_turn}_m{mcu_id}_attr_{target_prop}",
+                                mcu_id, FLAW_KIND_FACT_CONTRADICTION,
+                                scope_id, target_prop, mcu_text, basis_id,
+                                basis_txt, f"MCU {mcu_id} contradicts table attribute {basis_txt}"
+                            )
                             mcu_flaws.append(f_entry)
                             flawed_ideas.append(f_entry)
 
@@ -387,7 +461,13 @@ def inspect_turn_preflight(
             basis_id = str(pmcu.get("flawed_basis_id") or f"mcu_{mcu_id}_flawed_reason")
             if (mcu_id, FLAW_KIND_CRITIQUE_FLAGGED, basis_id) not in seen_flaw_keys:
                 seen_flaw_keys.add((mcu_id, FLAW_KIND_CRITIQUE_FLAGGED, basis_id))
-                f_entry = _make_flaw(f"flaw_t{eff_turn}_m{mcu_id}_critique", mcu_id, FLAW_KIND_CRITIQUE_FLAGGED, scope_id, target_prop, mcu_text, basis_id, str(pmcu.get("flawed_basis_text") or reason_clean), reason_clean)
+                f_entry = _make_flaw(
+                    f"flaw_t{eff_turn}_m{mcu_id}_critique",
+                    mcu_id, FLAW_KIND_CRITIQUE_FLAGGED,
+                    scope_id, target_prop, mcu_text, basis_id,
+                    str(pmcu.get("flawed_basis_text") or reason_clean),
+                    reason_clean
+                )
                 mcu_flaws.append(f_entry)
                 flawed_ideas.append(f_entry)
 
@@ -398,7 +478,14 @@ def inspect_turn_preflight(
                 if (mcu_id, f_kind, basis_id) not in seen_flaw_keys:
                     seen_flaw_keys.add((mcu_id, f_kind, basis_id))
                     desc = restore_ascii_dots(str(crit.get("description") or crit.get("reason") or crit.get("basis_text") or "Critique flagged flawed premise")).strip()
-                    f_entry = _make_flaw(str(crit.get("flaw_id") or f"flaw_t{eff_turn}_m{mcu_id}_crit_{c_idx + 1}"), mcu_id, f_kind, str(crit.get("scope") or scope_id), crit.get("target_prop", target_prop), str(crit.get("incoming_text") or mcu_text), basis_id, str(crit.get("basis_text") or desc), desc)
+                    f_entry = _make_flaw(
+                        str(crit.get("flaw_id") or f"flaw_t{eff_turn}_m{mcu_id}_crit_{c_idx + 1}"),
+                        mcu_id, f_kind, str(crit.get("scope") or scope_id),
+                        crit.get("target_prop", target_prop),
+                        str(crit.get("incoming_text") or mcu_text),
+                        basis_id, str(crit.get("basis_text") or desc),
+                        desc
+                    )
                     mcu_flaws.append(f_entry)
                     flawed_ideas.append(f_entry)
 

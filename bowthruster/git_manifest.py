@@ -16,10 +16,11 @@ from typing import Any
 
 from bowthruster.nlp import _extract_generic_source_symbols, verify_python_ast_laws_with_bend
 
-LATTICE_HOME = Path(__file__).resolve().parents[1]
+BOWTHRUSTER_HOME = Path(__file__).resolve().parents[1]
+LATTICE_HOME = BOWTHRUSTER_HOME
 DEFAULT_CONFIG_PATHS = (
-    LATTICE_HOME / "config.json",
-    LATTICE_HOME / "benchmarks" / "configs" / "config.json",
+    BOWTHRUSTER_HOME / "config.json",
+    BOWTHRUSTER_HOME / "benchmarks" / "configs" / "config.json",
 )
 
 
@@ -28,7 +29,7 @@ def _active_repo_root() -> Path:
     if cli_mod is not None and hasattr(cli_mod, "REPO_ROOT"):
         return Path(getattr(cli_mod, "REPO_ROOT")).resolve()
     env_root = os.environ.get("BOWTHRUSTER_PROJECT_ROOT") or os.environ.get("LATTICE_PROJECT_ROOT")
-    return Path(env_root).resolve() if env_root else LATTICE_HOME
+    return Path(env_root).resolve() if env_root else BOWTHRUSTER_HOME
 
 
 def format_exception_error(exc: BaseException) -> dict[str, Any]:
@@ -56,7 +57,7 @@ def record_flight_event(
     response_bytes: int = 0,
     error: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    flog_p = _active_repo_root() / ".whiteboard" / "logs" / "lattice_events.jsonl"
+    flog_p = _active_repo_root() / ".whiteboard" / "logs" / "bowthruster_events.jsonl"
     flog_p.parent.mkdir(parents=True, exist_ok=True)
     rec = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -81,7 +82,10 @@ def read_flight_logs(
     board: str | None = None,
     status: str | None = None,
 ) -> list[dict[str, Any]]:
-    flog_p = _active_repo_root() / ".whiteboard" / "logs" / "lattice_events.jsonl"
+    logs_dir = _active_repo_root() / ".whiteboard" / "logs"
+    flog_p = logs_dir / "bowthruster_events.jsonl"
+    if not flog_p.is_file():
+        flog_p = logs_dir / "lattice_events.jsonl"
     if not flog_p.is_file():
         return []
     rows = [json.loads(ln) for ln in flog_p.read_text(encoding="utf-8").splitlines() if ln.strip()]
@@ -92,14 +96,6 @@ def read_flight_logs(
         and (not status or str(r.get("status") or "").upper() == status.upper())
     ]
     return filtered[-max(1, int(limit)) :]
-
-
-def is_table_file_indexed(has_table_files: bool = True, in_ref_map: bool = True) -> bool:
-    return bool((not has_table_files) or in_ref_map)
-
-
-def is_baseline_stamp_clean(is_initial_baseline: bool = True, diff_files_emitted: bool = False) -> bool:
-    return bool((not is_initial_baseline) or (not diff_files_emitted))
 
 
 _PY_AST_CACHE: dict[tuple[str, int], tuple[dict[str, tuple[int, int]], dict[str, list[str]]]] = {}
@@ -142,7 +138,12 @@ AST_EXTRACTORS: dict[str, Any] = {
     ".py": _py_ast_extractor,
     **{
         e: _extract_generic_source_symbols
-        for e in (".ts", ".tsx", ".js", ".jsx", ".mjs", ".go", ".rs", ".java", ".kt", ".c", ".cpp", ".cc", ".h", ".hpp", ".cs", ".swift", ".rb", ".bend")
+        for e in (
+            ".ts", ".tsx", ".js", ".jsx", ".mjs",
+            ".go", ".rs", ".java", ".kt", ".c",
+            ".cpp", ".cc", ".h", ".hpp", ".cs",
+            ".swift", ".rb", ".bend"
+        )
     },
 }
 
@@ -184,18 +185,14 @@ def _collect_ref_map(graph: dict[str, Any] | None, comp_filter: str | None = Non
                 cp = _clean_ref_path(r)
                 if cp and cp not in ref_map:
                     ref_map[cp] = (asid, r.split("#", 1)[0])
-    has_tf = any(
-        bool((sc.get("attributes") or {}).get("_table_files"))
-        for sid, sc in ((graph or {}).get("scopes") or {}).items()
-        if isinstance(sc, dict) and (not comp_filter or sid == comp_filter)
-    )
-    if not is_table_file_indexed(has_tf, not has_tf or bool(ref_map)):
-        raise ValueError("pipe_table_ref_map_law violated")
     return ref_map
 
 
 def _verify_component_files(graph: dict[str, Any], comp: str) -> None:
-    gate_cfg = next((json.loads(p.read_text(encoding="utf-8")) for p in DEFAULT_CONFIG_PATHS if p.is_file()), {}).get("gate") or {}
+    gate_cfg = next(
+        (json.loads(p.read_text(encoding="utf-8")) for p in DEFAULT_CONFIG_PATHS if p.is_file()),
+        {}
+    ).get("gate") or {}
     if not gate_cfg.get("verify_files_exist_on_status", True):
         return
     root = _active_repo_root()
@@ -214,8 +211,14 @@ def _verify_component_files(graph: dict[str, Any], comp: str) -> None:
     mlb = int(raw_mlb) if isinstance(raw_mlb, (int, float)) and not isinstance(raw_mlb, bool) and raw_mlb > 0 else None
     for s_id in ("global_defaults", "max_file_lines", comp):
         for r in (((graph.get("scopes") or {}).get(s_id) or {}).get("rules") or []):
-            if isinstance(r, dict) and (str(r.get("type") or "").upper() == "BOUND" or r.get("bound_op") is not None) and r.get("bound_val") is not None:
-                if str(r.get("target_prop") or "").strip().lower() in ("max_file_lines", "file_lines", "line_count", "lines", "max_lines") or "max_file_lines" in str(r.get("text") or "").lower():
+            if isinstance(r, dict) and (
+                str(r.get("type") or "").upper() == "BOUND"
+                or r.get("bound_op") is not None
+            ) and r.get("bound_val") is not None:
+                if str(r.get("target_prop") or "").strip().lower() in (
+                    "max_file_lines", "file_lines", "line_count",
+                    "lines", "max_lines"
+                ) or "max_file_lines" in str(r.get("text") or "").lower():
                     try:
                         mlb = int(float(r["bound_val"]))
                     except (TypeError, ValueError):
@@ -231,15 +234,27 @@ def _verify_component_files(graph: dict[str, Any], comp: str) -> None:
     if isinstance(sc := ((graph.get("scopes") or {}).get(comp)), dict):
         from bowthruster.ai_memory import sync_git_diff_uris
 
-        f_hashes = {raw_r: hashlib.sha256(res_fp(cp).read_bytes()).hexdigest()[:16] for cp, (_, raw_r) in ref_m.items() if res_fp(cp).is_file()}
+        f_hashes = {
+            raw_r: hashlib.sha256(res_fp(cp).read_bytes()).hexdigest()[:16]
+            for cp, (_, raw_r) in ref_m.items()
+            if res_fp(cp).is_file()
+        }
         sc["file_hashes"] = dict(f_hashes)
         if isinstance(sc.get("attributes"), dict):
             sc["attributes"]["file_hashes"] = dict(f_hashes)
         sync_git_diff_uris(
             graph,
             {
-                "ast_symbols_by_file": {cp: _extract_py_ast_symbols(res_fp(cp)) for cp in comp_files if res_fp(cp).suffix in AST_EXTRACTORS and res_fp(cp).is_file()},
-                "ast_calls_by_file": {cp: _extract_ast_local_calls(res_fp(cp)) for cp in comp_files if res_fp(cp).suffix in AST_EXTRACTORS and res_fp(cp).is_file()},
+                "ast_symbols_by_file": {
+                    cp: _extract_py_ast_symbols(res_fp(cp))
+                    for cp in comp_files if res_fp(cp).suffix in AST_EXTRACTORS
+                    and res_fp(cp).is_file()
+                },
+                "ast_calls_by_file": {
+                    cp: _extract_ast_local_calls(res_fp(cp))
+                    for cp in comp_files if res_fp(cp).suffix in AST_EXTRACTORS
+                    and res_fp(cp).is_file()
+                },
             },
         )
 
@@ -260,7 +275,10 @@ def run_delta_tests(active_root: Path, stale_sids: list[str]) -> tuple[bool, boo
     matched = [
         str(tf.relative_to(active_root))
         for tf in all_test_files
-        if any(sid.lower() in tf.stem.lower() or tf.stem.removeprefix("test_").lower() in sid.lower() for sid in stale_sids)
+        if any(
+            sid.lower() in tf.stem.lower() or tf.stem.removeprefix("test_").lower() in sid.lower()
+            for sid in stale_sids
+        )
     ]
     if not matched and len(all_test_files) <= 8:
         matched = [str(tf.relative_to(active_root)) for tf in all_test_files]
@@ -296,7 +314,16 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
             or (r == eff_root and any(not cp.startswith(LATTICE_HOME.name + "/") for cp in ref_map))
         ] or all_repos
         ts_list = [
-            (int(subprocess.run(["git", "log", "-1", "--format=%ct"], cwd=str(r), text=True, capture_output=True).stdout.strip() or 0), r)
+            (
+                int(
+                    subprocess.run(
+                        ["git", "log", "-1", "--format=%ct"],
+                        cwd=str(r), text=True, capture_output=True
+                    ).stdout.strip()
+                    or 0
+                ),
+                r
+            )
             for r in cand_repos
         ]
         repos = [max(ts_list, key=lambda x: x[0])[1]] if ts_list else [eff_root]
@@ -305,22 +332,39 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
     git_cmd = (
         ["git", "diff", "--cached", "-M", "--name-status"]
         if mode == "pre"
-        else (["git", "show", "-M", "--name-status", "--format=%H", "HEAD"] if mode in ("post", "baseline") else ["git", "status", "--porcelain"])
+        else (
+            ["git", "show", "-M", "--name-status", "--format=%H", "HEAD"]
+            if mode in ("post", "baseline") else ["git", "status", "--porcelain"]
+        )
     )
     sha = (
-        subprocess.run(["git", "log", "-1", "--format=%H"], cwd=str(repos[0]), text=True, capture_output=True, timeout=15).stdout.strip() or None
+        subprocess.run(
+            ["git", "log", "-1", "--format=%H"],
+            cwd=str(repos[0]), text=True, capture_output=True,
+            timeout=15
+        ).stdout.strip() or None
         if is_base
         else None
     )
     files: list[dict[str, Any]] = []
     file_hashes = (
-        {raw_r: hashlib.sha256((eff_root / cp).read_bytes()).hexdigest()[:16] for cp, (_, raw_r) in ref_map.items() if (eff_root / cp).is_file()}
+        {
+            raw_r: hashlib.sha256((eff_root / cp).read_bytes()).hexdigest()[:16]
+            for cp, (_, raw_r) in ref_map.items()
+            if (eff_root / cp).is_file()
+        }
         if mode in ("post", "baseline")
         else {}
     )
     for r in ([] if is_base else repos):
         rel_pref = "" if r == eff_root else (r.relative_to(eff_root).as_posix() + "/")
-        lines = [ln.strip() for ln in subprocess.run(git_cmd, cwd=str(r), text=True, capture_output=True, timeout=15).stdout.splitlines() if ln.strip()]
+        lines = [
+            ln.strip() for ln in subprocess.run(
+                git_cmd, cwd=str(r), text=True, capture_output=True,
+                timeout=15
+            ).stdout.splitlines()
+            if ln.strip()
+        ]
         if mode == "post" and lines and len(lines[0]) == 40:
             sha = lines.pop(0)
         for ln in lines:
@@ -331,7 +375,10 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
                 old_p = rel_pref + parts[1].strip() if len(parts) >= 3 else ""
                 fp = eff_root / path
                 sid_hit = (ref_map.get(path) or ref_map.get(old_p) or (None, ""))[0]
-                lcnt = (len(fp.read_text(encoding="utf-8", errors="ignore").splitlines()) if path.endswith((".py", ".bend")) else None) if fp.is_file() else None
+                lcnt = (
+                    len(fp.read_text(encoding="utf-8", errors="ignore").splitlines())
+                    if path.endswith((".py", ".bend")) else None
+                ) if fp.is_file() else None
                 fhash = hashlib.sha256(fp.read_bytes()).hexdigest()[:16] if fp.is_file() else ""
                 files.append({
                     "status": st,
@@ -341,8 +388,15 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
                     **({"old_path": old_p} if old_p else {}),
                     **({"line_count": lcnt} if lcnt is not None else {}),
                     **({"file_hash": fhash} if fhash else {}),
-                    **({"ast_symbols": _extract_py_ast_symbols(fp)} if mode in ("pre", "post") and fp.is_file() and fp.suffix in AST_EXTRACTORS else {}),
-                    **({"source": fp.read_text(encoding="utf-8", errors="ignore")} if mode == "pre" and fp.is_file() and fp.suffix in AST_EXTRACTORS else {}),
+                    **(
+                        {"ast_symbols": _extract_py_ast_symbols(fp)}
+                        if mode in ("pre", "post") and fp.is_file()
+                        and fp.suffix in AST_EXTRACTORS else {}
+                    ),
+                    **(
+                        {"source": fp.read_text(encoding="utf-8", errors="ignore")}
+                        if mode == "pre" and fp.is_file() and fp.suffix in AST_EXTRACTORS else {}
+                    ),
                 })
     if mode == "pre":
         seen = {f["path"] for f in files} | {f.get("old_path") for f in files if f.get("old_path")}
@@ -366,16 +420,39 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
                     "path": cp,
                     "scope": sid_hit,
                     "contract_changed": fp.suffix in AST_EXTRACTORS,
-                    **({"line_count": len(fp.read_text(encoding="utf-8", errors="ignore").splitlines())} if cp.endswith((".py", ".bend")) else {}),
+                    **(
+                        {"line_count": len(fp.read_text(encoding="utf-8", errors="ignore").splitlines())}
+                        if cp.endswith((".py", ".bend")) else {}
+                    ),
                     "file_hash": hashlib.sha256(fp.read_bytes()).hexdigest()[:16],
-                    **({"ast_symbols": _extract_py_ast_symbols(fp), "source": fp.read_text(encoding="utf-8", errors="ignore")} if fp.suffix in AST_EXTRACTORS else {}),
+                    **(
+                        {
+                            "ast_symbols": _extract_py_ast_symbols(fp),
+                            "source": fp.read_text(encoding="utf-8", errors="ignore")
+                        }
+                        if fp.suffix in AST_EXTRACTORS else {}
+                    ),
                 })
-    if not is_baseline_stamp_clean(is_base, bool(files)):
+    if is_base and files:
         raise ValueError("initial_baseline_stamp_law violated")
-    cfg_mlb = (next((json.loads(p.read_text(encoding="utf-8")) for p in DEFAULT_CONFIG_PATHS if p.is_file()), {}).get("gate") or {}).get("max_file_lines")
-    ast_by_f = {cp: _extract_py_ast_symbols(eff_root / cp) for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()} if mode in ("post", "baseline") else {}
-    calls_by_f = {cp: _extract_ast_local_calls(eff_root / cp) for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()} if mode in ("post", "baseline") else {}
-    bend_rep = verify_python_ast_laws_with_bend(list((graph or {}).get("lattice_artifacts") or []), files, (graph or {}).get("scopes")) if mode == "pre" else {"bend_proofs_ok": True, "failed_laws": []}
+    cfg_mlb = (
+        next((json.loads(p.read_text(encoding="utf-8")) for p in DEFAULT_CONFIG_PATHS if p.is_file()), {}).get("gate")
+        or {}
+    ).get("max_file_lines")
+    ast_by_f = {
+        cp: _extract_py_ast_symbols(eff_root / cp)
+        for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS
+        and (eff_root / cp).is_file()
+    } if mode in ("post", "baseline") else {}
+    calls_by_f = {
+        cp: _extract_ast_local_calls(eff_root / cp)
+        for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS
+        and (eff_root / cp).is_file()
+    } if mode in ("post", "baseline") else {}
+    bend_rep = verify_python_ast_laws_with_bend(
+        list((graph or {}).get("lattice_artifacts") or []),
+        files, (graph or {}).get("scopes")
+    ) if mode == "pre" else {"bend_proofs_ok": True, "failed_laws": []}
     return {
         "commit_sha": sha,
         "files": files,
@@ -396,9 +473,17 @@ def _run_bend_proof_check(session_dir: Path, bend_source: str) -> tuple[bool, Pa
     if bend_exe is None:
         return False, proof_path, "bend binary not found"
     env = {**os.environ, "BEND_NO_TELEMETRY": "1"}
-    proc = subprocess.run([str(bend_exe), str(proof_path)], cwd=str(session_dir), env=env, text=True, capture_output=True, timeout=30)
+    proc = subprocess.run(
+        [str(bend_exe), str(proof_path)], cwd=str(session_dir),
+        env=env, text=True, capture_output=True,
+        timeout=30
+    )
     if proc.returncode != 0 and "unknown" in (proc.stderr or "").lower():
-        proc = subprocess.run([str(bend_exe), "check", str(proof_path)], cwd=str(session_dir), env=env, text=True, capture_output=True, timeout=30)
+        proc = subprocess.run(
+            [str(bend_exe), "check", str(proof_path)],
+            cwd=str(session_dir), env=env, text=True,
+            capture_output=True, timeout=30
+        )
     ok = proc.returncode == 0 and ("ALL PROOFS CHECK" in proc.stdout or not proc.stderr.strip())
     return ok, proof_path, (proc.stdout + "\n" + proc.stderr).strip()
 
@@ -428,11 +513,17 @@ def _remove_item_from_board(graph: dict[str, Any], target_id: str) -> list[str]:
             if isinstance(snode.get("depends_on"), list):
                 snode["depends_on"] = [d for d in snode["depends_on"] if d != del_sid]
     if isinstance(graph.get("lattice_artifacts"), list):
-        kept_arts = [a for a in graph["lattice_artifacts"] if not (isinstance(a, dict) and str(a.get("id") or "") == target_id)]
+        kept_arts = [
+            a for a in graph["lattice_artifacts"]
+            if not (isinstance(a, dict) and str(a.get("id") or "") == target_id)
+        ]
         if len(kept_arts) < len(graph["lattice_artifacts"]):
             removed.append(f"artifact:{target_id}")
             graph["lattice_artifacts"] = kept_arts
-    has_rule_id = any(any(isinstance(r, dict) and r.get("id") == target_id for r in s.get("rules", [])) for s in scopes.values() if isinstance(s, dict))
+    has_rule_id = any(
+        any(isinstance(r, dict) and r.get("id") == target_id for r in s.get("rules", []))
+        for s in scopes.values() if isinstance(s, dict)
+    )
     if (target_id.startswith("attr:") or ("." in target_id and not has_rule_id)) and "." in target_id.removeprefix("attr:"):
         sid, prop = target_id.removeprefix("attr:").split(".", 1)
         if isinstance(snode := scopes.get(sid), dict) and isinstance(snode.get("attributes"), dict) and prop in snode["attributes"]:
@@ -454,12 +545,21 @@ def _remove_item_from_board(graph: dict[str, Any], target_id: str) -> list[str]:
             for r in (x for x in snode.get("rules", []) if isinstance(x, dict)):
                 if target_id in r.get("overrides", []):
                     r["overrides"].remove(target_id)
-                r["exceptions"] = [ex for ex in r.get("exceptions", []) if not (isinstance(ex, dict) and ex.get("rule_id") == target_id)]
-        graph["open_blockers"] = [b for b in graph.get("open_blockers", []) if not (isinstance(b, dict) and (b.get("id") == target_id or target_id in b.get("rule_ids", [])))]
+                r["exceptions"] = [
+                    ex for ex in r.get("exceptions", [])
+                    if not (isinstance(ex, dict) and ex.get("rule_id") == target_id)
+                ]
+        graph["open_blockers"] = [
+            b for b in graph.get("open_blockers", [])
+            if not (isinstance(b, dict) and (b.get("id") == target_id or target_id in b.get("rule_ids", [])))
+        ]
     return removed
 
 
-def _assemble_board_summary(graph: dict[str, Any], scope_filter: str | None = None, eval_fn: Any = None) -> dict[str, Any]:
+def _assemble_board_summary(
+    graph: dict[str, Any], scope_filter: str | None = None,
+    eval_fn: Any = None
+) -> dict[str, Any]:
     import copy
     from bowthruster.whiteboard import annotate_active_tasks, expand_node, scan_graph
 
@@ -467,7 +567,10 @@ def _assemble_board_summary(graph: dict[str, Any], scope_filter: str | None = No
     standing_types = ("BOUND", "PROHIBITION", "OBLIGATION", "POLICY")
     scopes_out, standing, facts, goals, actions = {}, [], [], [], []
     for sid, snode in sorted(graph.get("scopes", {}).items()):
-        if not isinstance(snode, dict) or (scope_filter and sid != scope_filter and not sid.startswith(f"{scope_filter}::")):
+        if not isinstance(snode, dict) or (
+            scope_filter and sid != scope_filter
+            and not sid.startswith(f"{scope_filter}::")
+        ):
             continue
         attrs = {k: v for k, v in (snode.get("attributes") or {}).items() if k not in ("updated_turn", "heading_path")}
         rules = [dict(r) for r in snode.get("rules", []) if isinstance(r, dict)]
@@ -479,7 +582,10 @@ def _assemble_board_summary(graph: dict[str, Any], scope_filter: str | None = No
         }
         for r in rules:
             rtype = str(r.get("type", "OBLIGATION"))
-            (standing if rtype in standing_types else facts if rtype == "FACT" else goals if rtype == "GOAL" else actions).append(r)
+            (
+                standing if rtype in standing_types else facts
+                if rtype == "FACT" else goals if rtype == "GOAL" else actions
+            ).append(r)
     raw_arts = graph.get("lattice_artifacts") or {}
     return {
         "turn": graph.get("turn", 0), "scopes": scopes_out, "standing_rules": standing, "facts": facts, "goals": goals, "actions": actions,

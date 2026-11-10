@@ -233,7 +233,10 @@ def validate_context_graph(
                 errors.append(f"ambient_notes[{idx}] must be a dict")
                 continue
             aturns = note.get("access_turns")
-            if not isinstance(aturns, list) or not aturns or not all(isinstance(t, int) and not isinstance(t, bool) for t in aturns):
+            if not isinstance(aturns, list) or not aturns or not all(
+                isinstance(t, int) and not isinstance(t, bool)
+                for t in aturns
+            ):
                 errors.append(f"ambient_notes[{idx}] must contain non-empty access_turns: list[int]")
 
     return errors

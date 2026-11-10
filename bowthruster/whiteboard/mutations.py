@@ -70,9 +70,25 @@ def upsert_flow_edge(
     cond_val, text_val, pay_val = _clean_opt_str(condition), restore_ascii_dots(str(text or "")).strip(), _clean_opt_str(payload)
     fnm = _clean_opt_str((dimensions or {}).get("flow_name")) if isinstance(dimensions, dict) else None
     flows = graph.setdefault("flows", [])
-    entry = next((f for f in flows if isinstance(f, dict) and (f.get("source"), f.get("target")) == (src_sid, tgt_sid) and ((pay_val is not None and _clean_opt_str(f.get("payload")) == pay_val) or (fnm is not None and _clean_opt_str((f.get("dimensions") or {}).get("flow_name")) == fnm) or (pay_val is None and f.get("condition") == cond_val))), None)
+    entry = next(
+        (
+            f for f in flows if isinstance(f, dict)
+            and (f.get("source"), f.get("target")) == (src_sid, tgt_sid)
+            and (
+                (pay_val is not None and _clean_opt_str(f.get("payload")) == pay_val)
+                or (fnm is not None and _clean_opt_str((f.get("dimensions") or {}).get("flow_name")) == fnm)
+                or (pay_val is None and f.get("condition") == cond_val)
+            )
+        ),
+        None
+    )
     if entry is None:
-        entry = FlowEntry({"id": f"flow_{len(flows) + 1}", "kind": "FLOW", "source": src_sid, "target": tgt_sid, "condition": cond_val, "created_turn": int(current_turn)})
+        entry = FlowEntry({
+            "id": f"flow_{len(flows) + 1}",
+            "kind": "FLOW", "source": src_sid,
+            "target": tgt_sid, "condition": cond_val,
+            "created_turn": int(current_turn)
+        })
         flows.append(entry)
     elif cond_val is not None:
         entry["condition"] = cond_val
@@ -110,9 +126,23 @@ def upsert_lattice_artifact(
     _ensure_scope_node_nosync(graph, sid)
 
     artifacts = graph.setdefault("lattice_artifacts", [])
-    entry = next((a for a in artifacts if isinstance(a, dict) and (a.get("kind"), a.get("scope_id", a.get("scope")), str(a.get("name", "")).lower()) == (kind_clean, sid, name_clean.lower())), None)
+    entry = next(
+        (
+            a for a in artifacts if isinstance(a, dict)
+            and (
+                a.get("kind"), a.get("scope_id", a.get("scope")),
+                str(a.get("name", "")).lower()
+            ) == (kind_clean, sid, name_clean.lower())
+        ),
+        None
+    )
     if entry is None:
-        entry = ArtifactEntry({"id": f"{kind_clean.lower()}_{sid}_{name_clean.lower()}", "kind": kind_clean, "name": name_clean, "scope_id": sid, "scope": sid, "created_turn": int(current_turn)})
+        entry = ArtifactEntry({
+            "id": f"{kind_clean.lower()}_{sid}_{name_clean.lower()}",
+            "kind": kind_clean, "name": name_clean,
+            "scope_id": sid, "scope": sid,
+            "created_turn": int(current_turn)
+        })
         artifacts.append(entry)
     spec_clean, text_clean = restore_ascii_dots(str(spec or "")).strip(), restore_ascii_dots(str(text or "")).strip()
     entry["name"] = name_clean
@@ -206,7 +236,10 @@ def wire_lex_specialis_override(
     sync_to_sqlite(graph)
 
 
-def markovian_overwrite_rule(graph: dict[str, Any], scope_id: str, old_rule_id: str, new_rule_data: dict[str, Any]) -> dict[str, Any]:
+def markovian_overwrite_rule(
+    graph: dict[str, Any], scope_id: str,
+    old_rule_id: str, new_rule_data: dict[str, Any]
+) -> dict[str, Any]:
     """Mutates `old_rule_id` in place with `new_rule_data`, venting superseded values and bounding `_meta` (Spec 22A §2.2)."""
     scope = _ensure_scope_node_nosync(graph, scope_id)
     if (target_rule := next((r for r in scope.get("rules", []) if r.get("id") == old_rule_id), None)) is None:
@@ -250,16 +283,43 @@ def markovian_overwrite_rule(graph: dict[str, Any], scope_id: str, old_rule_id: 
 def prune_dysfluency_and_upsert_rule(graph: dict[str, Any], scope_id: str, rule_data: dict[str, Any]) -> dict[str, Any]:
     """Upserts a clean rule into `scopes[scope_id]`, enforcing `_meta` caps, bidirectional `refs`, and SQLite sync (Spec 22A §2.2)."""
     scope, all_sc = _ensure_scope_node_nosync(graph, scope_id), (graph.get("scopes", {}) if isinstance(graph.get("scopes"), dict) else {})
-    if not rule_data.get("id") and (tp := rule_data.get("target_prop")) is not None and not rule_data.get("is_exception") and (m := next(((s, r["id"]) for s, sc in all_sc.items() if isinstance(sc, dict) and (s == scope_id or s.startswith(f"{scope_id}::")) for r in sc.get("rules", []) if isinstance(r, dict) and r.get("target_prop") == tp and set(r.get("conditions", [])) == set(rule_data.get("conditions", []))), None)):
+    if not rule_data.get("id") and (tp := rule_data.get("target_prop")) is not None and not rule_data.get("is_exception") and (m := next(
+        (
+            (s, r["id"])
+            for s, sc in all_sc.items()
+            if isinstance(sc, dict) and (s == scope_id or s.startswith(f"{scope_id}::"))
+            for r in sc.get("rules", [])
+            if isinstance(r, dict) and r.get("target_prop") == tp and not r.get("is_exception")
+            and list(r.get("conditions") or []) == conds and r.get("id")
+        ),
+        None
+    )):
         return markovian_overwrite_rule(graph, m[0], str(m[1]), rule_data)
-    all_rids = {str(r.get("id")) for sc in all_sc.values() if isinstance(sc, dict) for r in sc.get("rules", []) if isinstance(r, dict) and r.get("id")}
-    rid = str(rule_data.get("id") or next(f"r_{scope_id}_{i}" for i in range(len(scope.get("rules", [])) + 1, len(all_rids) + len(scope.get("rules", [])) + 5) if f"r_{scope_id}_{i}" not in all_rids))
-    if m_sid := next((s for s, sc in all_sc.items() if isinstance(sc, dict) and (s == scope_id or s.startswith(f"{scope_id}::")) and any(isinstance(r, dict) and r.get("id") == rid for r in sc.get("rules", []))), None):
+    all_rids = {
+        str(r.get("id")) for sc in all_sc.values()
+        if isinstance(sc, dict) for r in sc.get("rules", [])
+        if isinstance(r, dict) and r.get("id")
+    }
+    rid = str(rule_data.get("id") or next(f"r_{scope_id}_{i}" for i in range(
+        len(scope.get("rules", [])) + 1,
+        len(all_rids) + len(scope.get("rules", [])) + 5
+    ) if f"r_{scope_id}_{i}" not in all_rids))
+    if m_sid := next(
+        (
+            s for s, sc in all_sc.items() if isinstance(sc, dict)
+            and (s == scope_id or s.startswith(f"{scope_id}::"))
+            and any(isinstance(r, dict) and r.get("id") == rid for r in sc.get("rules", []))
+        ),
+        None
+    ):
         return markovian_overwrite_rule(graph, m_sid, rid, rule_data)
     rtype = str(rule_data.get("type", "OBLIGATION"))
     rfacet = rule_data.get("facet") or _TYPE_TO_FACET.get(rtype, "obligations")
     clamped_meta, meta_keys, meta_tokens = clamp_rule_meta(rule_data.get("meta"))
-    if not meta_tokens and isinstance(rule_data.get("meta_tokens"), list): meta_tokens = [str(x).lower() for x in rule_data["meta_tokens"] if str(x).strip()]
+    if not meta_tokens and isinstance(rule_data.get("meta_tokens"), list): meta_tokens = [
+        str(x).lower() for x in rule_data["meta_tokens"]
+        if str(x).strip()
+    ]
     if not meta_keys and isinstance(rule_data.get("meta_keys"), list): meta_keys = [str(x) for x in rule_data["meta_keys"][:3]]
 
     raw_g_turn = graph.get("turn") if graph.get("turn") is not None else graph.get("turn_index")
@@ -322,16 +382,26 @@ def revoke_rule(graph: dict[str, Any], rule_id: str) -> dict[str, Any] | None:
     return None
 
 
-def replace_rule(graph: dict[str, Any], old_rule_id: str, new_rule_data: dict[str, Any] | None = None, *, scope_id: str | None = None) -> dict[str, Any] | None:
+def replace_rule(
+    graph: dict[str, Any], old_rule_id: str,
+    new_rule_data: dict[str, Any] | None = None,
+    *, scope_id: str | None = None
+) -> dict[str, Any] | None:
     """Replaces `old_rule_id` with `new_rule_data` (or revokes if `new_rule_data is None`), invalidating the scope and dependents (Spec 22A §2.2)."""
     if new_rule_data is None:
         return revoke_rule(graph, old_rule_id)
     scopes = graph.get("scopes", {}) if isinstance(graph.get("scopes"), dict) else {}
     target_sid = scope_id or next(
-        (sid for sid, sc in scopes.items() if isinstance(sc, dict) and any(isinstance(r, dict) and r.get("id") == old_rule_id for r in sc.get("rules", []))),
+        (
+            sid for sid, sc in scopes.items() if isinstance(sc, dict)
+            and any(isinstance(r, dict) and r.get("id") == old_rule_id for r in sc.get("rules", []))
+        ),
         str(new_rule_data.get("scope") or "global_defaults"),
     )
-    if target_sid in scopes and any(isinstance(r, dict) and r.get("id") == old_rule_id for r in scopes[target_sid].get("rules", [])):
+    if target_sid in scopes and any(
+        isinstance(r, dict) and r.get("id") == old_rule_id
+        for r in scopes[target_sid].get("rules", [])
+    ):
         if new_rule_data.get("id") in (None, "", old_rule_id):
             return markovian_overwrite_rule(graph, target_sid, old_rule_id, new_rule_data)
     revoke_rule(graph, old_rule_id)
@@ -389,7 +459,13 @@ def upsert_ambient_note(
     else:
         raise ValueError(f"note must be a dict or str, got {type(note).__name__}")
 
-    existing = next((n for n in ring if isinstance(n, dict) and ((note_id is not None and n.get("id") == note_id) or (note_text and n.get("text") == note_text))), None)
+    existing = next(
+        (
+            n for n in ring if isinstance(n, dict)
+            and ((note_id is not None and n.get("id") == note_id) or (note_text and n.get("text") == note_text))
+        ),
+        None
+    )
     if existing is not None:
         if note_text:
             existing["text"] = note_text
@@ -412,7 +488,11 @@ def upsert_ambient_note(
     graph["ambient_notes"] = evicted_ring
     target_entry = next(
         (n for n in evicted_ring if isinstance(n, dict) and n.get("id") == target_id),
-        evicted_ring[-1] if evicted_ring else {"id": target_id, "text": note_text, "access_turns": [turn_val], "turn": turn_val, "activation": 0.0},
+        evicted_ring[-1] if evicted_ring else {
+            "id": target_id, "text": note_text,
+            "access_turns": [turn_val], "turn": turn_val,
+            "activation": 0.0
+        },
     )
     sync_to_sqlite(graph)
     return target_entry

@@ -110,25 +110,25 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+  "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
   "lattice_artifacts": [
     {
       "calls": [
-        "_format_tool_result#L234-L238",
-        "_hot_reload_if_changed#L425-L450",
-        "_read_doc_resource#L201-L214",
-        "_resolve_project_root#L217-L231"
+        "_format_tool_result#L142-L160",
+        "_hot_reload_if_changed#L601-L663",
+        "_read_doc_resource#L84-L118",
+        "_resolve_project_root#L121-L139"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L241-L421",
+        "file": "bowthruster/mcp_server.py#L163-L592",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L241-L421",
+      "file": "bowthruster/mcp_server.py#L163-L592",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -139,7 +139,7 @@
       "outputs": [
         "McpToolCallResult"
       ],
-      "owner": "groves",
+      "owner": "core",
       "scope": "mcp_server",
       "scope_id": "mcp_server",
       "spec": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
@@ -150,19 +150,19 @@
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L425-L450",
-        "_read_doc_resource#L201-L214"
+        "_hot_reload_if_changed#L601-L663",
+        "_read_doc_resource#L84-L118"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "bowthruster/mcp_server.py#L453-L475",
+        "file": "bowthruster/mcp_server.py#L666-L718",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "bowthruster/mcp_server.py#L453-L475",
+      "file": "bowthruster/mcp_server.py#L666-L718",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -172,7 +172,7 @@
       "outputs": [
         "McpJsonRpcResponse"
       ],
-      "owner": "groves",
+      "owner": "core",
       "scope": "mcp_server",
       "scope_id": "mcp_server",
       "spec": "Handle JSON-RPC 2.0 MCP requests with self-describing tool schemas",
@@ -211,33 +211,6 @@
       "updated_turn": 15
     },
     {
-      "args": "has_name, board_nonempty",
-      "created_turn": 1,
-      "dimensions": {
-        "_from_table": true,
-        "args": "has_name, board_nonempty",
-        "description": "An MCP tool call is valid iff the tool name is recognized and the board identifier is non-empty",
-        "law": "mcp_tool_dispatch_law",
-        "lhs": "MOD.is_mcp_tool_call_valid(has_name, board_nonempty)",
-        "rhs": "and(has_name, board_nonempty)"
-      },
-      "id": "law_mcp_server_mcp_tool_dispatch_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_mcp_tool_call_valid(has_name, board_nonempty)",
-      "name": "mcp_tool_dispatch_law",
-      "outputs": [],
-      "owner": null,
-      "rhs": "and(has_name, board_nonempty)",
-      "scope": "mcp_server",
-      "scope_id": "mcp_server",
-      "spec": "mcp_tool_dispatch_law: MOD.is_mcp_tool_call_valid(has_name, board_nonempty) == and(has_name, board_nonempty)",
-      "stage": null,
-      "text": "mcp_tool_dispatch_law: MOD.is_mcp_tool_call_valid(has_name, board_nonempty) == and(has_name, board_nonempty).",
-      "turn": 1,
-      "updated_turn": 1
-    },
-    {
       "args": "init_ok, list_ok, call_ok",
       "created_turn": 1,
       "dimensions": {
@@ -269,10 +242,10 @@
       "dimensions": {
         "description": "JSON-RPC 2.0 MCP request envelope",
         "fields": "jsonrpc, id, method, params",
-        "file": "bowthruster/mcp_server.py#L28-L29",
+        "file": "bowthruster/mcp_server.py#L54-L58",
         "schema": "McpJsonRpcRequest"
       },
-      "file": "bowthruster/mcp_server.py#L28-L29",
+      "file": "bowthruster/mcp_server.py#L54-L58",
       "id": "schema_mcp_server_mcpjsonrpcrequest",
       "inputs": [],
       "kind": "SCHEMA",
@@ -289,16 +262,16 @@
     },
     {
       "args": "is_verified: Bool, files_exist: Bool, within_max_lines: Bool",
-      "bend_dir": "bend_exec_23c",
+      "bend_dir": "laws/bend_wb_22b",
       "created_turn": 2,
       "dimensions": {
         "_from_table": true,
         "args": "is_verified: Bool, files_exist: Bool, within_max_lines: Bool",
-        "bend_dir": "bend_exec_23c",
+        "bend_dir": "laws/bend_wb_22b",
         "component": "mcp_server",
         "law": "verified_status_files_exist_law",
         "lhs": "MOD.can_transition_to_verified(is_verified, files_exist, within_max_lines)",
-        "owner": "groves",
+        "owner": "core",
         "rhs": "Bool.or(Bool.not(is_verified), Bool.and(files_exist, within_max_lines))",
         "spec": "Spec 28",
         "stage": "28"
@@ -309,7 +282,7 @@
       "lhs": "MOD.can_transition_to_verified(is_verified, files_exist, within_max_lines)",
       "name": "verified_status_files_exist_law",
       "outputs": [],
-      "owner": "groves",
+      "owner": "core",
       "rhs": "Bool.or(Bool.not(is_verified), Bool.and(files_exist, within_max_lines))",
       "scope": "mcp_server",
       "scope_id": "mcp_server",
@@ -318,38 +291,6 @@
       "text": "The mcp_server component must verify that verified_status_files_exist_law applies to groves at stage bend_exec_23c with parameters is_verified: Bool, files_exist: Bool, within_max_lines: Bool, such that MOD.can_transition_to_verified(is_verified, files_exist, within_max_lines) returns Bool.or(Bool.not(is_verified), Bool.and(files_exist, within_max_lines)) per Spec 28.",
       "turn": 2,
       "updated_turn": 2
-    },
-    {
-      "args": "is_skills_section: Bool, returns_skill_templates: Bool",
-      "bend_dir": "bend_exec_23c",
-      "created_turn": 3,
-      "dimensions": {
-        "_from_table": true,
-        "args": "is_skills_section: Bool, returns_skill_templates: Bool",
-        "bend_dir": "bend_exec_23c",
-        "component": "mcp_server",
-        "law": "skills_section_routing_law",
-        "lhs": "MOD.is_skills_section_routed(is_skills_section, returns_skill_templates)",
-        "owner": "groves",
-        "rhs": "Bool.or(Bool.not(is_skills_section), returns_skill_templates)",
-        "spec": "Spec 28",
-        "stage": "28"
-      },
-      "id": "law_mcp_server_skills_section_routing_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_skills_section_routed(is_skills_section, returns_skill_templates)",
-      "name": "skills_section_routing_law",
-      "outputs": [],
-      "owner": "groves",
-      "rhs": "Bool.or(Bool.not(is_skills_section), returns_skill_templates)",
-      "scope": "mcp_server",
-      "scope_id": "mcp_server",
-      "spec": "skills_section_routing_law: MOD.is_skills_section_routed(is_skills_section, returns_skill_templates) == Bool.or(Bool.not(is_skills_section), returns_skill_templates)",
-      "stage": "28",
-      "text": "skills_section_routing_law: MOD.is_skills_section_routed(is_skills_section, returns_skill_templates) == Bool.or(Bool.not(is_skills_section), returns_skill_templates).",
-      "turn": 3,
-      "updated_turn": 3
     }
   ],
   "lattice_proof": {
@@ -359,7 +300,7 @@
     "flow_count": 1,
     "hard_violations": [],
     "is_proven": true,
-    "law_count": 4,
+    "law_count": 2,
     "open_gaps": [],
     "status": "PROVEN_COMPLETE"
   },
@@ -393,52 +334,6 @@
       "parent": null,
       "role": null,
       "rules": [
-        {
-          "access_turns": [
-            14
-          ],
-          "bound_op": "<=",
-          "bound_val": 500,
-          "conditions": [],
-          "created_turn": 9,
-          "exceptions": [],
-          "facet": "Numeric_Bounds",
-          "id": "r_global_defaults_3",
-          "is_exception": false,
-          "meta_keys": [],
-          "meta_tokens": [],
-          "overrides": [],
-          "refs": [],
-          "scope": "global_defaults",
-          "target_prop": "max_file_lines",
-          "text": "Every source file must be at most 500 lines",
-          "turn": 14,
-          "type": "BOUND",
-          "updated_turn": 14
-        },
-        {
-          "access_turns": [
-            12
-          ],
-          "bound_op": "<=",
-          "bound_val": 500,
-          "conditions": [],
-          "created_turn": 10,
-          "exceptions": [],
-          "facet": "context_facts",
-          "id": "r_global_defaults_4",
-          "is_exception": false,
-          "meta_keys": [],
-          "meta_tokens": [],
-          "overrides": [],
-          "refs": [],
-          "scope": "global_defaults",
-          "target_prop": "max_file_lines",
-          "text": "Every source file must be at most 500 lines",
-          "turn": 12,
-          "type": "BOUND",
-          "updated_turn": 12
-        },
         {
           "access_turns": [
             15
@@ -484,7 +379,7 @@
         "files": [
           "bowthruster/mcp_verifier.py"
         ],
-        "owner": "groves",
+        "owner": "core",
         "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
         "stage": 28,
         "updated_turn": 10,
@@ -511,9 +406,9 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+      "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
       "outputs": [],
-      "owner": "groves",
+      "owner": "core",
       "parent": null,
       "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
       "rules": [],
@@ -528,7 +423,8 @@
       "attributes": {
         "_table_depends_on": [],
         "_table_files": [
-          "bowthruster/mcp_server.py"
+          "bowthruster/mcp_server.py",
+          "bowthruster/mcp_schemas.py"
         ],
         "_table_role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
         "depends_on": "",
@@ -536,13 +432,15 @@
         "fields": "content, isError, structuredContent",
         "file": "bowthruster/mcp_server.py",
         "file_hashes": {
-          "bowthruster/mcp_server.py": "2b44c9a6db02f7b9"
+          "bowthruster/mcp_schemas.py": "3e417df645a87474",
+          "bowthruster/mcp_server.py": "1b222ad7afa6501a"
         },
         "files": [
-          "bowthruster/mcp_server.py"
+          "bowthruster/mcp_server.py",
+          "bowthruster/mcp_schemas.py"
         ],
         "lod1_synopsis": "The mcp_server component must route skills sections according to Spec 28.",
-        "owner": "groves",
+        "owner": "core",
         "role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
         "schema": "McpToolCallResult",
         "stage": 28,
@@ -557,10 +455,12 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/mcp_server.py": "2b44c9a6db02f7b9"
+        "bowthruster/mcp_schemas.py": "3e417df645a87474",
+        "bowthruster/mcp_server.py": "1b222ad7afa6501a"
       },
       "files": [
-        "bowthruster/mcp_server.py"
+        "bowthruster/mcp_server.py",
+        "bowthruster/mcp_schemas.py"
       ],
       "id": "mcp_server",
       "in_edges": [
@@ -568,9 +468,9 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
+      "last_commit_sha": "6842991dd4a4dcea6a0d8b2399c26c6850f9e8aa",
       "outputs": [],
-      "owner": "groves",
+      "owner": "core",
       "parent": null,
       "role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
       "rules": [

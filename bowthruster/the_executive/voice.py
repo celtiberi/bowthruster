@@ -26,12 +26,9 @@ class ExecutiveVoiceError(ValueError):
 
 
 def _resolve_executive_prompt_path() -> Path:
-    """Locates `prompts/executive/executive.json` in promoted `core/circuit/` or workbench `ModelCircuits/eng2/`."""
+    """Locates `prompts/executive/executive.json` relative to the package root."""
     here = Path(__file__).resolve()
-    if here.parents[1].name in ("circuit", "lattice"):
-        target = here.parents[1] / "prompts" / "executive" / "executive.json"
-    else:
-        target = here.parents[2] / "core" / "circuit" / "prompts" / "executive" / "executive.json"
+    target = here.parents[1] / "prompts" / "executive" / "executive.json"
     if target.is_file():
         return target
     raise ExecutiveVoiceError("executive_prompt_not_found", [f"executive.json not found at {target}"])
@@ -113,7 +110,10 @@ def format_executive_prompt(gate_result: dict[str, Any]) -> str:
         committed_items=json.dumps(gate_result.get("committed_items", []), indent=2, ensure_ascii=False),
         conflicts=json.dumps(gate_result.get("conflicts", []), indent=2, ensure_ascii=False),
         flawed_ideas=json.dumps(gate_result.get("flawed_ideas", []), indent=2, ensure_ascii=False),
-        clarification_questions=json.dumps(gate_result.get("clarification_questions", []), indent=2, ensure_ascii=False),
+        clarification_questions=json.dumps(
+            gate_result.get("clarification_questions", []),
+            indent=2, ensure_ascii=False
+        ),
         open_questions=json.dumps(gate_result.get("open_questions", []), indent=2, ensure_ascii=False),
         whiteboard_summary=_summarize_whiteboard_for_prompt(gate_result.get("whiteboard_graph")),
     )

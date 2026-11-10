@@ -20,12 +20,14 @@ from .linker import (
     IngestionResult, IngestionStatus, Phase4InvariantError, VALID_INGESTION_STATUSES,
     _resolve_known_component_scope, _resolve_or_register_scope, _slugify_scope_id,
     classify_and_apply_delta, create_empty_context_graph, fuse_table_attributes,
-    is_flow_or_rule_table_fused, is_table_schema_valid,
 )
 from .read_engine import annotate_active_tasks, expand_node, propagate_graph, scan_graph, slice_lattice
 
 
-def resolve_ingestion_status(intake_packet: dict[str, Any], open_blockers: list[dict[str, Any]], conflicts: list[dict[str, Any]]) -> IngestionStatus:
+def resolve_ingestion_status(
+    intake_packet: dict[str, Any], open_blockers: list[dict[str, Any]],
+    conflicts: list[dict[str, Any]]
+) -> IngestionStatus:
     """Explicit state machine transition for Stage 4C ingestion status (Spec 22C §2.2, Law 6)."""
     has_clarification = intake_packet.get("grounding_status") == IngestionStatus.NEEDS_CLARIFICATION.value or any(
         isinstance(b, dict) and b.get("type") == "CLARIFICATION" and b.get("status") != "RESOLVED" for b in open_blockers
@@ -33,7 +35,10 @@ def resolve_ingestion_status(intake_packet: dict[str, Any], open_blockers: list[
     return IngestionStatus.NEEDS_CLARIFICATION if has_clarification else (IngestionStatus.CONFLICT if conflicts else IngestionStatus.COMMITTED)
 
 
-def check_phase4_invariants(result: dict[str, Any], *, k_cap: int = DEFAULT_K_CAP, max_ring: int = DEFAULT_MAX_RING) -> list[str]:
+def check_phase4_invariants(
+    result: dict[str, Any], *, k_cap: int = DEFAULT_K_CAP,
+    max_ring: int = DEFAULT_MAX_RING
+) -> list[str]:
     """Verifies all Spec 22A–22C post-ingestion invariants on an `IngestionResult` or `WhiteboardGraph` dict."""
     if not isinstance(result, dict):
         return [f"result must be a dict, got {type(result).__name__}"]
@@ -50,7 +55,10 @@ def check_phase4_invariants(result: dict[str, Any], *, k_cap: int = DEFAULT_K_CA
             errors.append(f"ring_size={result['ring_size']} exceeds max_ring={max_ring}")
         if result.get("conflicts") and status == IngestionStatus.COMMITTED.value:
             errors.append("result has active conflicts but status is 'COMMITTED'")
-        if any(isinstance(b, dict) and b.get("type") == "CLARIFICATION" and b.get("status") != "RESOLVED" for b in graph.get("open_blockers", [])) and status == IngestionStatus.COMMITTED.value:
+        if any(
+            isinstance(b, dict) and b.get("type") == "CLARIFICATION"
+            and b.get("status") != "RESOLVED" for b in graph.get("open_blockers", [])
+        ) and status == IngestionStatus.COMMITTED.value:
             errors.append("result has unresolved CLARIFICATION blockers but status is 'COMMITTED'")
     return errors
 
@@ -90,7 +98,11 @@ def ingest_intake_packet(
             raw_primary = str(pmcu.get("primary_scope") or "").strip()
             pmcu_text = str(pmcu.get("text") or pmcu.get("canonical_text") or pmcu.get("raw_text") or "").strip()
             lp = pmcu.get("lattice_payload") if isinstance(pmcu.get("lattice_payload"), dict) else {}
-            lkind = str(pmcu.get("lattice_kind") or lp.get("kind") or str(lp.get("op") or "").removeprefix("UPSERT_") or "").strip().upper()
+            lkind = str(
+                pmcu.get("lattice_kind") or lp.get("kind")
+                or str(lp.get("op") or "").removeprefix("UPSERT_")
+                or ""
+            ).strip().upper()
             if raw_primary and lkind not in ("SCHEMA", "INTERFACE", "LAW"):
                 _resolve_known_component_scope(graph, raw_primary, pmcu_text, pmcu)
     delta_log: list[dict[str, Any]] = []
@@ -98,10 +110,18 @@ def ingest_intake_packet(
         if not isinstance(pmcu, dict):
             continue
         delta_log.append(classify_and_apply_delta(graph, pmcu, turn_index=eff_turn))
-        if pmcu.get("primary_scope") in (None, "", "global_defaults") and str(pmcu.get("type") or "").upper() in ("FACT", "GOAL", "PROPOSAL") and pmcu.get("target_prop") is None:
+        if (
+            pmcu.get("primary_scope") in (None, "", "global_defaults")
+            and str(pmcu.get("type") or "").upper() in ("FACT", "GOAL", "PROPOSAL")
+            and pmcu.get("target_prop") is None
+        ):
             upsert_ambient_note(
                 graph,
-                {"id": f"ambient_t{eff_turn}_m{pmcu.get('mcu_id', len(delta_log))}", "text": str(pmcu.get("text") or pmcu.get("canonical_text") or ""), "turn": eff_turn},
+                {
+                    "id": f"ambient_t{eff_turn}_m{pmcu.get('mcu_id', len(delta_log))}",
+                    "text": str(pmcu.get("text") or pmcu.get("canonical_text") or ""),
+                    "turn": eff_turn
+                },
                 current_turn=eff_turn, max_ring=max_ring,
             )
     for cq in intake_packet.get("clarification_questions", []):
@@ -120,7 +140,10 @@ def ingest_intake_packet(
             open_blockers.insert(0, copy.deepcopy(c))
     annotate_active_tasks(graph, conflicts)
     status = resolve_ingestion_status(intake_packet, open_blockers, conflicts).value
-    max_rules_per_scope = max((len(s.get("rules", [])) for s in graph.get("scopes", {}).values() if isinstance(s, dict)), default=0)
+    max_rules_per_scope = max(
+        (len(s.get("rules", [])) for s in graph.get("scopes", {}).values() if isinstance(s, dict)),
+        default=0
+    )
     ring_size = len(graph.get("ambient_notes", []))
     lattice_proof = evaluate_lattice_proof(graph)
     graph["lattice_proof"] = lattice_proof
@@ -137,7 +160,10 @@ def ingest_intake_packet(
 
 
 def _parse_bend_law_args(raw_args: Any) -> list[str]:
-    chunks = [str(x) for x in raw_args] if isinstance(raw_args, list) else (raw_args.replace("\n", ",").replace(";", ",").split(",") if isinstance(raw_args, str) else [])
+    chunks = [str(x) for x in raw_args] if isinstance(raw_args, list) else (
+        raw_args.replace("\n", ",").replace(";", ",").split(",")
+        if isinstance(raw_args, str) else []
+    )
     out: list[str] = []
     for chunk in chunks:
         for sub in chunk.split(" for "):
@@ -156,7 +182,10 @@ def compile_laws_bend(scope_id: str, law_records: list[dict[str, Any]], *, modul
     """Compiles `% LAW` records for `scope_id` into a standalone Bend 2 `LAWS.bend` file (Spec 22C §2.2)."""
     sid = str(scope_id or "global_defaults").strip() or "global_defaults"
     alias = str(module_alias or "MOD").strip() or "MOD"
-    lines: list[str] = [f"# LAWS.bend — Compiled by Whiteboard from % LAW records for {sid}", "", "import Base", f"import ./main.bend as {alias}"]
+    lines: list[str] = [
+        f"# LAWS.bend — Compiled by Whiteboard from % LAW records for {sid}",
+        "", "import Base", f"import ./main.bend as {alias}"
+    ]
     seen_names: set[str] = set()
     for law in law_records if isinstance(law_records, list) else []:
         if not isinstance(law, dict):
@@ -183,9 +212,6 @@ def compile_laws_bend(scope_id: str, law_records: list[dict[str, Any]], *, modul
 def is_python_skeleton_complete(has_schemas: bool, has_interfaces: bool, has_law_stubs: bool) -> bool:
     """Pure completeness guard governed by Bend 2 Law 12 (`python_skeleton_completeness_law`, Stage 27)."""
     return bool(has_schemas) and bool(has_interfaces) and bool(has_law_stubs)
-def is_work_packet_self_contained(status_synced: bool, spec_in_docstring: bool) -> bool:
-    return bool(status_synced) and bool(spec_in_docstring)
-status_sync_and_spec_docstring_law = is_work_packet_self_contained
 
 
 def _py_ident(raw: Any, default: str = "stub") -> str:
@@ -253,19 +279,36 @@ def _extract_law_stub_spec(law: dict[str, Any], conflict_names: set[str]) -> tup
         fn_name = f"check_{fn_name}"
     alias_name = law_title if (law_title and law_title != fn_name and law_title not in conflict_names) else None
     raw_args = law.get("args") if law.get("args") is not None else dims.get("args")
-    params = [_py_ident(a.lstrip("+-").split(":", 1)[0].strip(), default=f"arg_{i}") for i, a in enumerate(_parse_bend_law_args(raw_args))]
+    params = [
+        _py_ident(a.lstrip("+-").split(":", 1)[0].strip(), default=f"arg_{i}")
+        for i, a in enumerate(_parse_bend_law_args(raw_args))
+    ]
     if not params and "(" in call_target and ")" in call_target:
         raw_call_args = _split_top_comma(call_target[call_target.find("(") + 1 : call_target.rfind(")")])
-        params = [_py_ident(ca, default=f"arg_{i}") for i, ca in enumerate(raw_call_args) if ca and ca not in ("True{}", "False{}") and "(" not in ca and "." not in ca]
+        params = [
+            _py_ident(ca, default=f"arg_{i}") for i,
+            ca in enumerate(raw_call_args) if ca
+            and ca not in ("True{}", "False{}")
+            and "(" not in ca and "." not in ca
+        ]
     params = params or ["x"]
-    return fn_name, alias_name, params, _bend_bool_to_py(target_rhs if target_rhs and target_rhs not in ("True{}", "True") else "", params)
+    return fn_name, alias_name, params, _bend_bool_to_py(
+        target_rhs if target_rhs and target_rhs not in ("True{}", "True") else "",
+        params
+    )
 
 
 def _extract_item_names(raw: Any) -> list[str]:
-    items = raw if isinstance(raw, list) else ([p.strip() for p in str(raw).split(",") if p.strip()] if isinstance(raw, str) and raw.strip() else [])
+    items = raw if isinstance(raw, list) else (
+        [p.strip() for p in str(raw).split(",") if p.strip()]
+        if isinstance(raw, str) and raw.strip() else []
+    )
     out: list[str] = []
     for item in items:
-        raw_s = str((item.get("name") or item.get("field") or item.get("id")) if isinstance(item, dict) else item).strip()
+        raw_s = str(
+            (item.get("name") or item.get("field") or item.get("id"))
+            if isinstance(item, dict) else item
+        ).strip()
         if raw_s and raw_s.lower() not in ("none", "-", "—", "n/a", "null"):
             ident = _py_ident(raw_s.split(":", 1)[0].strip(), default="")
             if ident and ident not in out:
@@ -277,7 +320,10 @@ def _fmt_spec_doc(raw_doc: str) -> list[str]:
     clean = str(raw_doc or "").strip().replace('"""', "'''")
     if not clean: return []
     parts = [p.strip() for p in clean.split(";") if p.strip()]
-    return [f'    """{clean}"""'] if len(parts) <= 1 else [f'    """{parts[0]}', *(f"    - {p}" for p in parts[1:]), '    """']
+    return [f'    """{clean}"""'] if len(parts) <= 1 else [
+        f'    """{parts[0]}', *(f"    - {p}" for p in parts[1:]),
+        '    """'
+    ]
 
 
 def compile_python_skeleton(
@@ -287,29 +333,66 @@ def compile_python_skeleton(
     """Deterministically compiles an AST-parseable Python structural skeleton stub for `scope_id` from its `SCHEMA`, `INTERFACE`, and `LAW` artifacts (Stage 27)."""
     sid = str(scope_id or "global_defaults").strip() or "global_defaults"
     all_arts = [a for a in (artifacts or []) if isinstance(a, dict)]
-    schema_list = [a for a in (schemas if schemas is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "SCHEMA"]) if isinstance(a, dict)]
-    iface_list = [a for a in (interfaces if interfaces is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "INTERFACE"]) if isinstance(a, dict)]
-    law_list = [a for a in (laws if laws is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "LAW"]) if isinstance(a, dict)]
+    schema_list = [
+        a for a in (schemas if schemas is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "SCHEMA"])
+        if isinstance(a, dict)
+    ]
+    iface_list = [
+        a for a in (interfaces if interfaces is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "INTERFACE"])
+        if isinstance(a, dict)
+    ]
+    law_list = [
+        a for a in (laws if laws is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "LAW"])
+        if isinstance(a, dict)
+    ]
 
-    lines: list[str] = [f"# Python Structural Skeleton — Compiled by Whiteboard for {sid}", "from __future__ import annotations", "", "from dataclasses import dataclass", "from typing import Any"]
+    lines: list[str] = [
+        f"# Python Structural Skeleton — Compiled by Whiteboard for {sid}",
+        "from __future__ import annotations",
+        "", "from dataclasses import dataclass",
+        "from typing import Any"
+    ]
     seen_consts: set[str] = set()
     for r in (rules or []):
-        if isinstance(r, dict) and str(r.get("type") or "").upper() == "BOUND" and isinstance(r.get("bound_val"), (int, float)) and not isinstance(r.get("bound_val"), bool):
+        if (
+            isinstance(r, dict) and str(r.get("type") or "").upper() == "BOUND"
+            and isinstance(r.get("bound_val"), (int, float))
+            and not isinstance(r.get("bound_val"), bool)
+        ):
             tp = str(r.get("target_prop") or "").strip()
-            if tp and tp.isidentifier() and tp.lower() not in ("max_file_lines", "import", "depends_on", "value", "rule") and tp.upper() not in seen_consts:
-                seen_consts.add(tp.upper()); lines.append(f"{tp.upper()} = {r['bound_val']!r}  # BOUND: {tp} {r.get('bound_op') or '<='} {r['bound_val']!r}")
+            if tp and tp.isidentifier() and tp.lower() not in (
+                "max_file_lines", "import", "depends_on",
+                "value", "rule"
+            ) and tp.upper() not in seen_consts:
+                seen_consts.add(tp.upper())
+                lines.append(f"{tp.upper()} = {r['bound_val']!r}  # BOUND: {tp} {r.get('bound_op') or '<='} {r['bound_val']!r}")
     seen_schemas: set[str] = set()
     for sc_art in schema_list:
-        sname = _py_ident(sc_art.get("name") or sc_art.get("schema") or sc_art.get("id") or "SchemaStub", default="SchemaStub")
+        sname = _py_ident(
+            sc_art.get("name") or sc_art.get("schema")
+            or sc_art.get("id") or "SchemaStub",
+            default="SchemaStub"
+        )
         if sname in seen_schemas: continue
         seen_schemas.add(sname)
         dims = sc_art.get("dimensions") if isinstance(sc_art.get("dimensions"), dict) else {}
         sfile = str(sc_art.get("file") or dims.get("file") or "").strip()
         sc_doc = str(sc_art.get("spec") or dims.get("spec") or sc_art.get("text") or "").strip()
-        fields = _extract_item_names(sc_art.get("fields") or dims.get("fields")) or _extract_item_names(sc_art.get("inputs") or sc_art.get("outputs") or dims.get("inputs") or dims.get("outputs")) or ["value"]
-        lines.extend(("", *([f"# FILE: {sfile}"] if sfile else []), "@dataclass(frozen=True)", f"class {sname}:", *_fmt_spec_doc(sc_doc), *(f"    {f_name}: Any = None" for f_name in fields)))
+        fields = _extract_item_names(sc_art.get("fields") or dims.get("fields")) or _extract_item_names(
+            sc_art.get("inputs") or sc_art.get("outputs")
+            or dims.get("inputs") or dims.get("outputs")
+        ) or ["value"]
+        lines.extend((
+            "", *([f"# FILE: {sfile}"] if sfile else []),
+            "@dataclass(frozen=True)",
+            f"class {sname}:", *_fmt_spec_doc(sc_doc),
+            *(f"    {f_name}: Any = None" for f_name in fields)
+        ))
 
-    iface_names = {_py_ident(ia.get("name") or ia.get("interface") or ia.get("id") or "interface_stub", default="interface_stub") for ia in iface_list}
+    iface_names = {
+        _py_ident(ia.get("name") or ia.get("interface") or ia.get("id") or "interface_stub", default="interface_stub")
+        for ia in iface_list
+    }
     emitted_laws, seen_laws = [], set()
     for law_art in law_list:
         lfn, lalias, lparams, py_expr = _extract_law_stub_spec(law_art, iface_names | seen_schemas)
@@ -317,27 +400,39 @@ def compile_python_skeleton(
         l_doc = str(law_art.get("spec") or ldims.get("spec") or law_art.get("text") or "").strip()
         for fn_id in (lfn, lalias):
             if fn_id and fn_id not in seen_laws:
-                seen_laws.add(fn_id); emitted_laws.append((fn_id, lparams))
-                lines.extend(("", f"def {fn_id}({', '.join(f'{p}: bool = True' for p in lparams)}) -> bool:", *_fmt_spec_doc(l_doc), f"    return bool({py_expr})"))
+                seen_laws.add(fn_id)
+                emitted_laws.append((fn_id, lparams))
+                lines.extend((
+                    "", f"def {fn_id}({', '.join(f'{p}: bool = True' for p in lparams)}) -> bool:",
+                    *_fmt_spec_doc(l_doc), f"    return bool({py_expr})"
+                ))
 
     seen_ifaces: set[str] = set()
     for ia in iface_list:
-        iname = _py_ident(ia.get("name") or ia.get("interface") or ia.get("id") or "interface_stub", default="interface_stub")
+        iname = _py_ident(
+            ia.get("name") or ia.get("interface")
+            or ia.get("id") or "interface_stub",
+            default="interface_stub"
+        )
         if iname in seen_ifaces: continue
         seen_ifaces.add(iname)
         dims = ia.get("dimensions") if isinstance(ia.get("dimensions"), dict) else {}
         ifile = str(ia.get("file") or dims.get("file") or "").strip()
         i_doc = str(ia.get("spec") or dims.get("spec") or ia.get("text") or "").strip()
         in_params = _extract_item_names(ia.get("inputs") or ia.get("args") or dims.get("inputs") or dims.get("args"))
-        out_types = _extract_item_names(ia.get("outputs") or ia.get("output") or ia.get("returns") or dims.get("outputs"))
+        out_types = _extract_item_names(
+            ia.get("outputs") or ia.get("output")
+            or ia.get("returns") or dims.get("outputs")
+        )
         ret_ann = out_types[0] if len(out_types) == 1 else (f"tuple[{', '.join(out_types)}]" if len(out_types) > 1 else "Any")
-        lines.extend(("", *([f"# FILE: {ifile}"] if ifile else []), f"def {iname}({', '.join(f'{p}: Any = None' for p in in_params)}) -> {ret_ann}:", *_fmt_spec_doc(i_doc)))
+        lines.extend((
+            "", *([f"# FILE: {ifile}"] if ifile else []),
+            f"def {iname}({', '.join(f'{p}: Any = None' for p in in_params)}) -> {ret_ann}:",
+            *_fmt_spec_doc(i_doc)
+        ))
         for lfn, lparams in emitted_laws:
             lines.extend((f"    # MUST CALL: {lfn}({', '.join(lparams)})", f"    _law_{lfn} = {lfn}({', '.join('True' for _ in lparams)})"))
         lines.append(f"    {'return ' + out_types[0] + '()' if (len(out_types) == 1 and out_types[0] in seen_schemas) else ('return _law_' + emitted_laws[0][0] if emitted_laws else 'return None')}")
-    has_defs = bool(seen_schemas or seen_ifaces or seen_laws or lines)
-    if not (is_work_packet_self_contained(has_defs, bool(lines)) and is_table_schema_valid(has_defs, bool(lines)) and is_flow_or_rule_table_fused(bool(all_arts), has_defs)):
-        raise ValueError("status_sync_and_spec_docstring_law violated")
     code = "\n".join(lines) + "\n"
     ast.parse(code)
     return code
@@ -357,11 +452,21 @@ def _build_slice_packet(
     scope_laws = [copy.deepcopy(a) for a in arts if str(a.get("kind") or "").upper() == "LAW"]
     scope_rules = list(sl.get("active_rules", []))
     compiled_laws = compile_laws_bend(sid, scope_laws)
-    py_skeleton = compile_python_skeleton(sid, schemas=scope_schemas, interfaces=scope_ifaces, laws=scope_laws, rules=scope_rules)
-    _af = lambda a: str(a.get("file") or (a.get("dimensions") or {}).get("file") or "").split("#", 1)[0].split(":L", 1)[0].strip()
+    py_skeleton = compile_python_skeleton(
+        sid, schemas=scope_schemas, interfaces=scope_ifaces,
+        laws=scope_laws, rules=scope_rules
+    )
+    _af = lambda a: str(
+        a.get("file") or (a.get("dimensions") or {}).get("file")
+        or ""
+    ).split("#", 1)[0].split(":L", 1)[0].strip()
     art_files = sorted({_af(a) for a in [*scope_schemas, *scope_ifaces] if _af(a)})
     by_file = {
-        f: compile_python_skeleton(sid, schemas=[s for s in scope_schemas if _af(s) in ("", f)], interfaces=[i for i in scope_ifaces if _af(i) == f], laws=scope_laws, rules=scope_rules)
+        f: compile_python_skeleton(
+            sid, schemas=[s for s in scope_schemas if _af(s) in ("", f)],
+            interfaces=[i for i in scope_ifaces if _af(i) == f],
+            laws=scope_laws, rules=scope_rules
+        )
         for f in art_files
     }
     return {
@@ -381,7 +486,10 @@ def _build_slice_packet(
     }
 
 
-def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_filter: str | None = None) -> dict[str, Any]:
+def compile_work_packets(
+    graph: dict[str, Any], *, force: bool = False,
+    status_filter: str | None = None
+) -> dict[str, Any]:
     """Compiles dependency-ordered parallel Work Packets across Wave 0, Wave 1, and Wave 2 (Spec 22C §2.2)."""
     if not isinstance(graph, dict):
         raise Phase4InvariantError("phase4_invalid_graph", [f"graph must be a dict, got {type(graph).__name__}"])
@@ -400,7 +508,7 @@ def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_f
         w0_py_skel = compile_python_skeleton("schemas", schemas=schemas, interfaces=all_ifaces, laws=all_laws)
         wave0.append({
             "packet_id": "pkt_wave0_schemas", "wave": 0, "kind": "SCHEMA_CONTRACTS", "component": "schemas", "scope": "schemas",
-            "owner": (schemas[0].get("owner") if schemas else (all_laws[0].get("owner") if all_laws else "bethe")) or "bethe",
+            "owner": (schemas[0].get("owner") if schemas else (all_laws[0].get("owner") if all_laws else "architect")) or "architect",
             "stage": schemas[0].get("stage") if schemas else (all_laws[0].get("stage") if all_laws else None),
             "build_status": resolve_packet_lifecycle_status("DRAFT", is_proven, True), "build_tag": None, "core_tag": None, "failure_diagnostic": None,
             "depends_on": [], "schemas": schemas, "contracts": schemas, "laws": all_laws,
@@ -408,29 +516,53 @@ def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_f
             "python_skeleton": w0_py_skel, "is_skeleton_complete": is_python_skeleton_complete(bool(schemas), bool(all_ifaces), bool(all_laws)),
             "flows": [], "rules": [], "tasks": [], "prompt_slice": w0_slice["compact_view"],
         })
-    sbf_scopes = [(sid, sc) for sid, sc in scopes.items() if isinstance(sc, dict) and sid != "global_defaults" and not str(sid).startswith("global_defaults::") and (str(sc.get("kind") or "").strip().upper() == "COMPONENT" or bool(sc.get("role") or sc.get("owner") or sc.get("stage") or sc.get("depends_on") or sc.get("children") or sc.get("parent") or sc.get("files")))]
+    sbf_scopes = [
+        (sid, sc) for sid, sc in scopes.items()
+        if isinstance(sc, dict) and sid != "global_defaults"
+        and not str(sid).startswith("global_defaults::")
+        and (
+            str(sc.get("kind") or "").strip().upper() == "COMPONENT"
+            or bool(
+                sc.get("role") or sc.get("owner") or sc.get("stage")
+                or sc.get("depends_on") or sc.get("children")
+                or sc.get("parent") or sc.get("files")
+            )
+        )
+    ]
     non_qa_raw, qa_scopes = [], []
     for sid, sc in sbf_scopes:
         owner_low, stage_low = str(sc.get("owner") or "").strip().lower(), str(sc.get("stage") or "").strip().lower()
-        (qa_scopes if (sid.lower().startswith(("test_", "tests/")) or owner_low in ("bobo", "qa", "q-division") or stage_low == "qa") else non_qa_raw).append((sid, sc))
+        (qa_scopes if (sid.lower().startswith(("test_", "tests/", "qa_")) or owner_low in ("qa", "q-division") or stage_low == "qa") else non_qa_raw).append((sid, sc))
     has_owned_non_qa = any(bool(sc.get("owner")) for _, sc in non_qa_raw)
-    w1_candidates = [(sid, sc) for sid, sc in non_qa_raw if (bool(sc.get("owner")) if has_owned_non_qa else not bool(sc.get("children")))] or list(non_qa_raw)
+    w1_candidates = [
+        (sid, sc) for sid, sc in non_qa_raw
+        if (bool(sc.get("owner")) if has_owned_non_qa else not bool(sc.get("children")))
+    ] or list(non_qa_raw)
     w1_candidates.sort(key=lambda item: (len(item[1].get("depends_on") or []), item[0]))
     owned_non_qa_set = {sid for sid, _ in w1_candidates}
     wave1: list[dict[str, Any]] = []
     for sid, sc in w1_candidates:
-        all_deps_verified = all(scopes.get(d, {}).get("status") == "VERIFIED" for d in sc.get("depends_on", []) if d in owned_non_qa_set and bool(scopes.get(d, {}).get("rules") or scopes.get(d, {}).get("role") or scopes.get(d, {}).get("owner")))
+        all_deps_verified = all(
+            scopes.get(d, {}).get("status") == "VERIFIED"
+            for d in sc.get("depends_on", []) if d in owned_non_qa_set
+            and bool(scopes.get(d, {}).get("rules") or scopes.get(d, {}).get("role") or scopes.get(d, {}).get("owner"))
+        )
         eff_status = resolve_packet_lifecycle_status(sc.get("status"), is_proven, all_deps_verified)
-        sc["status"] = sc["build_status"] = eff_status if sc.get("status") in (None, "", "DRAFT", "BLOCKED_BY_DEP", "READY") else (sc.get("status") or eff_status)
+        sc["status"] = sc["build_status"] = eff_status if sc.get("status") in (
+            None, "", "DRAFT", "BLOCKED_BY_DEP",
+            "READY"
+        ) else (sc.get("status") or eff_status)
         wave1.append(_build_slice_packet(graph, f"pkt_wave1_{sid}", 1, "COMPONENT_SLICE", sid, sc, eff_status))
     wave2: list[dict[str, Any]] = []
     for sid, sc in qa_scopes:
         target_deps = [d for d in sc.get("depends_on", []) if d in owned_non_qa_set] or list(owned_non_qa_set)
         eff_status = resolve_packet_lifecycle_status(sc.get("status"), is_proven, all(scopes.get(d, {}).get("status") == "VERIFIED" for d in target_deps))
-        sc["status"] = sc["build_status"] = eff_status if sc.get("status") in (None, "", "DRAFT", "BLOCKED_BY_DEP", "READY") else (sc.get("status") or eff_status)
-        wave2.append(_build_slice_packet(graph, f"pkt_wave2_{sid}", 2, "QA_VERIFICATION", sid, sc, eff_status, default_owner="bobo"))
-    status_synced = all(sc.get("status") == sc.get("build_status") for _, sc in [*w1_candidates, *qa_scopes])
-    if not is_work_packet_self_contained(status_synced, bool(proof)):
+        sc["status"] = sc["build_status"] = eff_status if sc.get("status") in (
+            None, "", "DRAFT", "BLOCKED_BY_DEP",
+            "READY"
+        ) else (sc.get("status") or eff_status)
+        wave2.append(_build_slice_packet(graph, f"pkt_wave2_{sid}", 2, "QA_VERIFICATION", sid, sc, eff_status, default_owner="qa"))
+    if not all(sc.get("status") == sc.get("build_status") for _, sc in [*w1_candidates, *qa_scopes]):
         raise Phase4InvariantError("phase4_status_sync_violation", ["status != build_status after packet compilation"])
     if isinstance(status_filter, str) and status_filter.strip():
         sf = status_filter.strip().upper()
@@ -441,7 +573,11 @@ def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_f
         "status": proof["status"], "is_proven": is_proven, "ready_to_emit": is_proven,
         "open_gaps": list(proof.get("open_gaps", [])), "hard_violations": list(proof.get("hard_violations", [])),
         "lattice_proof": proof, "packets": (wave0 + wave1 + wave2) if emit else [],
-        "waves": {"wave_0_schemas": wave0 if emit else [], "wave_1_components": wave1 if emit else [], "wave_2_qa": wave2 if emit else []},
+        "waves": {
+            "wave_0_schemas": wave0 if emit else [],
+            "wave_1_components": wave1 if emit else [],
+            "wave_2_qa": wave2 if emit else []
+        },
     }
 
 
@@ -455,8 +591,16 @@ def query_context_graph(
     """Queries `graph` in `'propagate'`, `'scan'`, or `'expand'` mode via the Whiteboard read engine (Spec 22C §2.1)."""
     if not isinstance(graph, dict): raise Phase4InvariantError("phase4_invalid_graph", [f"graph must be a dict, got {type(graph).__name__}"])
     if mode not in ("propagate", "scan", "expand"): raise ValueError(f"invalid query mode={mode!r}, expected 'propagate', 'scan', or 'expand'")
-    if mode == "expand": return expand_node(graph, node_id if (isinstance(node_id, str) and node_id.strip()) else str(query or "").strip(), query=str(query or ""), token_budget=token_budget, max_lines=max_lines)
-    if mode == "scan" or not isinstance(query, str) or not query.strip(): return scan_graph(graph, str(query or "") if mode == "scan" else "", temperature=temperature, token_budget=token_budget, max_lines=max_lines)
+    if mode == "expand": return expand_node(
+        graph, node_id if (isinstance(node_id, str) and node_id.strip()) else str(query or "").strip(),
+        query=str(query or ""), token_budget=token_budget,
+        max_lines=max_lines
+    )
+    if mode == "scan" or not isinstance(query, str) or not query.strip(): return scan_graph(
+        graph, str(query or "") if mode == "scan" else "",
+        temperature=temperature, token_budget=token_budget,
+        max_lines=max_lines
+    )
     return propagate_graph(graph, query, temperature=temperature, token_budget=token_budget, max_lines=max_lines)
 
 
@@ -477,17 +621,33 @@ def run_turn(
         raise Phase4InvariantError("phase4_invalid_intake_packet", [f"turn_index must be an int, got {turn_index!r}"])
     eff_turn = int(turn_index) if turn_index is not None else max(1, prev_turn + 1)
     if intake_packet is not None:
-        if not isinstance(intake_packet, dict): raise Phase4InvariantError("phase4_invalid_intake_packet", [f"intake_packet must be a dict, got {type(intake_packet).__name__}"])
+        if not isinstance(intake_packet, dict): raise Phase4InvariantError(
+            "phase4_invalid_intake_packet",
+            [f"intake_packet must be a dict, got {type(intake_packet).__name__}"]
+        )
         packet, p3 = dict(intake_packet, turn_index=eff_turn), phase3_result
     elif phase3_result is not None:
         p3, packet = phase3_result, compile_intake_packet(phase3_result, turn_index=eff_turn)
     else:
         if not isinstance(raw_text, str): raise Phase4InvariantError("phase4_invalid_raw_text", [f"raw_text must be a str, got {type(raw_text).__name__}"])
         packet = compile_markdown_turn(raw_text, turn_index=eff_turn)
-        p3 = {"raw_text": raw_text, "doc_tables": packet["doc_tables"], "structured_table_rows": packet["structured_table_rows"], "parsed_mcus": packet["parsed_mcus"], "intake_packet": packet, "grounding_status": "GROUNDED", "is_locked": True, "clarification_questions": [], "open_questions": []}
+        p3 = {
+            "raw_text": raw_text, "doc_tables": packet["doc_tables"],
+            "structured_table_rows": packet["structured_table_rows"],
+            "parsed_mcus": packet["parsed_mcus"],
+            "intake_packet": packet, "grounding_status": "GROUNDED",
+            "is_locked": True, "clarification_questions": [],
+            "open_questions": []
+        }
     res = ingest_intake_packet(graph, packet, k_cap=k_cap, max_ring=max_ring, store=store, db_path=db_path)
     eff_query = query if query is not None else (raw_text if isinstance(raw_text, str) else "")
     res["intake_packet"], res["phase3_result"] = packet, p3
-    res["scan_view"] = query_context_graph(res["graph"], eff_query, mode="scan", token_budget=token_budget, max_lines=max_lines)
-    res["readout"] = query_context_graph(res["graph"], eff_query, mode="propagate", token_budget=token_budget, max_lines=max_lines)
+    res["scan_view"] = query_context_graph(
+        res["graph"], eff_query, mode="scan",
+        token_budget=token_budget, max_lines=max_lines
+    )
+    res["readout"] = query_context_graph(
+        res["graph"], eff_query, mode="propagate",
+        token_budget=token_budget, max_lines=max_lines
+    )
     return res

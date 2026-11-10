@@ -1,14 +1,10 @@
-"""Deterministic Markdown Pipe-Table Regiment Package (`lattice.regiment`).
-
-Zero LLM calls, zero `spacy`/`torch`/`onnxruntime` dependencies (`< 5ms` per turn).
-"""
+"""Deterministic Markdown Pipe-Table Regiment Package (`bowthruster.regiment`)."""
 
 from __future__ import annotations
 
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-import importlib
 from typing import Any, Iterator
 
 from bowthruster.types import ParserLimit, SizeLimits, attempts_of, budget_key, model_key
@@ -27,14 +23,6 @@ from .intake_packet import (
     extract_flow_sentences,
     extract_markdown_tables,
     extract_structured_table_rows,
-    is_markdown_only_turn_valid,
-    is_pass3b_fastpath_valid,
-    is_universal_bound_routed,
-    literal_conservation_law,
-    markdown_only_turn_law,
-    partition_completeness_law,
-    pass3b_table_fastpath_law,
-    universal_bound_scope_law,
 )
 
 THETA = 0.5
@@ -81,14 +69,14 @@ def _rec() -> Record:
 def _jev_budget(jev: Any, limits: SizeLimits) -> int | None:
     key = model_key(jev)[0]
     if key not in limits.budgets:
-        raise ValueError(f"jev: no size-limits entry for {key!r} (Spec 14 §6)")
+        raise ValueError(f"jev: no size-limits entry for {key!r}")
     return limits.budgets[key].bytes()
 
 
 def _parser_limit(gen: Any, limits: SizeLimits) -> ParserLimit:
     key = budget_key("parser", gen)
     if key not in limits.budgets:
-        raise ValueError(f"parser: budget_key {key!r} has no entry in the size-limits file (Spec 14 §6)")
+        raise ValueError(f"parser: budget_key {key!r} has no entry in the size-limits file")
     return ParserLimit(limits.budgets[key])
 
 
@@ -101,34 +89,33 @@ def _attempts(meta: Any, failure: BaseException | None) -> dict[str, Any]:
     }
 
 
-def __getattr__(name: str) -> Any:
-    try:
-        r_nlp = importlib.import_module("regiment_nlp.regiment")
-        return getattr(r_nlp, name)
-    except (ImportError, ModuleNotFoundError, AttributeError):
-        pass
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
 def run_phase0(raw_text: str, gen: object = None, limits: object = None, **kwargs: object) -> dict[str, object]:
     """Deterministic compatibility wrapper returning `raw_text` and extracted Markdown tables."""
     _ = gen, limits, kwargs
     return {"raw_text": raw_text, "doc_tables": extract_markdown_tables(raw_text)}
 
 
-def run_phase1(p0_res: dict[str, object], jev: object = None, limits: object = None, **kwargs: object) -> dict[str, object]:
+def run_phase1(
+    p0_res: dict[str, object], jev: object = None,
+    limits: object = None, **kwargs: object
+) -> dict[str, object]:
     """Deterministic pass-through compatibility wrapper."""
     _ = jev, limits, kwargs
     return dict(p0_res)
 
 
-def run_phase2(p1_res: dict[str, object], jev: object = None, limits: object = None, **kwargs: object) -> dict[str, object]:
+def run_phase2(
+    p1_res: dict[str, object], jev: object = None,
+    limits: object = None, **kwargs: object
+) -> dict[str, object]:
     """Deterministic pass-through compatibility wrapper."""
     _ = jev, limits, kwargs
     return dict(p1_res)
 
 
-def run_phase3(p2_res: dict[str, object] | str, gen: object = None, limits: object = None, **kwargs: object) -> dict[str, object]:
+def run_phase3(
+    p2_res: dict[str, object] | str, gen: object = None, limits: object = None, **kwargs: object
+) -> dict[str, object]:
     """Deterministic Markdown-table compiler returning a `Phase3Result`-shaped dict with `intake_packet`."""
     _ = gen, limits, kwargs
     raw_text = p2_res if isinstance(p2_res, str) else str(p2_res.get("raw_text") or "")
@@ -150,6 +137,7 @@ __all__ = [
     "CANONICAL_HEADERS_ERROR_MSG",
     "CANONICAL_PIPE_TABLE_HEADERS",
     "IntakePacket",
+    "PARSED_MCU_KEYS",
     "Phase3InvariantError",
     "TableParserState",
     "TableScanMode",
@@ -160,16 +148,8 @@ __all__ = [
     "extract_flow_sentences",
     "extract_markdown_tables",
     "extract_structured_table_rows",
-    "is_markdown_only_turn_valid",
-    "is_pass3b_fastpath_valid",
-    "is_universal_bound_routed",
-    "literal_conservation_law",
-    "markdown_only_turn_law",
-    "partition_completeness_law",
-    "pass3b_table_fastpath_law",
     "run_phase0",
     "run_phase1",
     "run_phase2",
     "run_phase3",
-    "universal_bound_scope_law",
 ]

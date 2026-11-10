@@ -31,11 +31,24 @@ class ExternalLinkPointer(dict):
         super().__init__()
         src = dict(link_id) if isinstance(link_id, dict) else extra
         meta = src.get("metadata") if isinstance(src.get("metadata"), dict) else {}
-        raw_uri = (src.get("target_uri") or meta.get("target_uri") or src.get("uri") or target_uri) if isinstance(link_id, dict) else (target_uri or src.pop("uri", ""))
-        raw_kind = (src.get("artifact_kind") or meta.get("artifact_kind") or src.get("kind") or artifact_kind) if isinstance(link_id, dict) else (src.pop("kind", artifact_kind) if artifact_kind == "doc" and "kind" in src else artifact_kind)
-        raw_tier = (src.get("lod_tier") or meta.get("lod_tier") or src.get("summary") or lod_tier) if isinstance(link_id, dict) else lod_tier
+        raw_uri = (
+            src.get("target_uri") or meta.get("target_uri")
+            or src.get("uri") or target_uri
+        ) if isinstance(link_id, dict) else (target_uri or src.pop("uri", ""))
+        raw_kind = (src.get("artifact_kind") or meta.get("artifact_kind") or src.get("kind") or artifact_kind) if isinstance(link_id, dict) else (
+            src.pop("kind", artifact_kind) if artifact_kind == "doc"
+            and "kind" in src else artifact_kind
+        )
+        raw_tier = (
+            src.get("lod_tier") or meta.get("lod_tier")
+            or src.get("summary") or lod_tier
+        ) if isinstance(link_id, dict) else lod_tier
         raw_lid = src.get("link_id") if isinstance(link_id, dict) else link_id
-        cid = str((src.get("concept_id") or src.get("node_id") or concept_id) if isinstance(link_id, dict) else (concept_id or src.pop("node_id", "")) or "").strip()
+        cid = str(
+            (src.get("concept_id") or src.get("node_id") or concept_id)
+            if isinstance(link_id, dict) else (concept_id or src.pop("node_id", ""))
+            or ""
+        ).strip()
         for fk in (*_FORBIDDEN_RAW_DOC_KEYS, "source_links", "external_uris"):
             if fk in src and src[fk] is not None:
                 self[fk] = src[fk]
@@ -48,7 +61,11 @@ class ExternalLinkPointer(dict):
         self.update(link_id=lid_clean, target_uri=uri_clean, artifact_kind=kind_clean, lod_tier=tier_clean)
 
     def __getattr__(self, name: str) -> Any:
-        if name in ("link_id", "target_uri", "artifact_kind", "lod_tier", "uri", "kind", "source_links", "external_uris"):
+        if name in (
+            "link_id", "target_uri", "artifact_kind",
+            "lod_tier", "uri", "kind", "source_links",
+            "external_uris"
+        ):
             return self.get(name)
         raise AttributeError(name)
 
@@ -58,7 +75,11 @@ class ExternalLinkPointer(dict):
         if key in ("uri", "kind", "summary"):
             return super().get({"uri": "target_uri", "kind": "artifact_kind", "summary": "lod_tier"}[key], default)
         if key == "metadata":
-            return {"lod_tier": super().get("lod_tier", LOD_1), "artifact_kind": super().get("artifact_kind", "doc"), "target_uri": super().get("target_uri", "")}
+            return {
+                "lod_tier": super().get("lod_tier", LOD_1),
+                "artifact_kind": super().get("artifact_kind", "doc"),
+                "target_uri": super().get("target_uri", "")
+            }
         if key in ("source_links", "external_uris"):
             u = super().get("target_uri", "")
             return [str(u)] if u else []
@@ -70,7 +91,11 @@ class ExternalLinkPointer(dict):
         raise KeyError(key)
 
     def to_dict(self) -> dict[str, Any]:
-        return {"link_id": self.link_id, "target_uri": self.target_uri, "artifact_kind": self.artifact_kind, "lod_tier": self.lod_tier}
+        return {
+            "link_id": self.link_id, "target_uri": self.target_uri,
+            "artifact_kind": self.artifact_kind,
+            "lod_tier": self.lod_tier
+        }
 
 
 def normalize_external_link(link: Any, *, concept_id: str = "") -> ExternalLinkPointer:
@@ -112,7 +137,10 @@ class ConceptFrame(dict):
         self["concept_id"] = cid
         self["lod1_synopsis"] = " ".join(str(syn).split()) if isinstance(syn, str) else syn
         self["external_links"] = [
-            ExternalLinkPointer(lk, concept_id=cid) if isinstance(lk, dict) else (ExternalLinkPointer(None, lk, concept_id=cid) if isinstance(lk, str) else lk)
+            ExternalLinkPointer(lk, concept_id=cid) if isinstance(lk, dict) else (
+                ExternalLinkPointer(None, lk, concept_id=cid)
+                if isinstance(lk, str) else lk
+            )
             for lk in raw_links
         ] if isinstance(raw_links, list) else raw_links
         if act is not None:
@@ -139,7 +167,11 @@ class ConceptFrame(dict):
             return super().get(key, default)
         if key in ("source_links", "external_uris"):
             links = super().get("external_links", [])
-            return [str(lk.get("target_uri") or lk.get("uri")) for lk in (links if isinstance(links, list) else []) if isinstance(lk, dict) and (lk.get("target_uri") or lk.get("uri"))]
+            return [
+                str(lk.get("target_uri") or lk.get("uri"))
+                for lk in (links if isinstance(links, list) else [])
+                if isinstance(lk, dict) and (lk.get("target_uri") or lk.get("uri"))
+            ]
         return default
 
     def __getitem__(self, key: Any) -> Any:
@@ -162,7 +194,10 @@ def validate_concept_frame(frame: dict[str, Any] | ConceptFrame) -> ConceptFrame
     has_raw_doc = any(k in frame and frame[k] is not None for k in _FORBIDDEN_RAW_DOC_KEYS) or any(
         isinstance(lk, dict) and any(k in lk and lk[k] is not None for k in _FORBIDDEN_RAW_DOC_KEYS) for lk in raw_links
     )
-    if not is_valid_concept_storage(has_raw_doc, len(synopsis_words) <= MAX_SYNOPSIS_WORDS, len(raw_links) <= MAX_LINKS_PER_NODE):
+    if not is_valid_concept_storage(
+        has_raw_doc, len(synopsis_words) <= MAX_SYNOPSIS_WORDS,
+        len(raw_links) <= MAX_LINKS_PER_NODE
+    ):
         raise ValueError(f"pointer_only_storage_law violated on {cid_clean!r} (raw={has_raw_doc}, words={len(synopsis_words)}, links={len(raw_links)})")
     norm_links: list[ExternalLinkPointer] = []
     seen_uris: set[str] = set()
@@ -179,8 +214,20 @@ def validate_concept_frame(frame: dict[str, Any] | ConceptFrame) -> ConceptFrame
     hop_val = frame.get("hop_distance")
     if hop_val is not None and (not isinstance(hop_val, int) or isinstance(hop_val, bool) or hop_val < 0):
         raise ValueError(f"ConceptFrame.hop_distance must be a non-negative int, got {hop_val!r}")
-    extra_clean = {k: copy.deepcopy(v) for k, v in frame.items() if k not in ("concept_id", "lod1_synopsis", "external_links", "activation", "hop_distance", "updated_turn", "source_links", "external_uris")}
-    return ConceptFrame(cid_clean, " ".join(synopsis_words), norm_links, activation=frame.get("activation"), hop_distance=hop_val, updated_turn=frame.get("updated_turn"), **extra_clean)
+    extra_clean = {
+        k: copy.deepcopy(v) for k, v in frame.items()
+        if k not in (
+            "concept_id", "lod1_synopsis", "external_links",
+            "activation", "hop_distance", "updated_turn",
+            "source_links", "external_uris"
+        )
+    }
+    return ConceptFrame(
+        cid_clean, " ".join(synopsis_words),
+        norm_links, activation=frame.get("activation"),
+        hop_distance=hop_val, updated_turn=frame.get("updated_turn"),
+        **extra_clean
+    )
 
 
 def upsert_concept_frame(
@@ -204,14 +251,26 @@ def upsert_concept_frame(
     else:
         cid_arg = str(concept_id_or_frame if concept_id_or_frame is not None else (concept_id or "")).strip()
         syn_arg = lod1_synopsis if lod1_synopsis is not None else (synopsis if synopsis is not None else "")
-        cand = {"concept_id": cid_arg, "lod1_synopsis": syn_arg, "external_links": [] if external_links is None else external_links, "updated_turn": turn_val, **extra}
+        cand = {
+            "concept_id": cid_arg, "lod1_synopsis": syn_arg,
+            "external_links": [] if external_links is None else external_links,
+            "updated_turn": turn_val, **extra
+        }
     if activation is not None:
         cand["activation"] = activation
     if hop_distance is not None:
         cand["hop_distance"] = hop_distance
     validated = validate_concept_frame(cand)
     cid = validated.concept_id
-    rels = [str(r).strip() for r in (related_concepts or related_frames or validated.get("related_concepts") or validated.get("refs") or []) if isinstance(r, str) and str(r).strip() and str(r).strip() != cid]
+    rels = [
+        str(r).strip() for r in (
+            related_concepts or related_frames
+            or validated.get("related_concepts")
+            or validated.get("refs") or []
+        )
+        if isinstance(r, str) and str(r).strip()
+        and str(r).strip() != cid
+    ]
     is_sqlite = isinstance(store, SQLiteGraphStore)
     graph = store.load_graph() if is_sqlite else store
     if not isinstance(graph, dict):
@@ -220,7 +279,10 @@ def upsert_concept_frame(
     ex_scope = scopes.get(cid) if isinstance(scopes.get(cid), dict) else {}
     ex_rules = ex_scope.get("rules", []) if isinstance(ex_scope.get("rules"), list) else []
     merged_refs = list(dict.fromkeys([*(ref for r in ex_rules if isinstance(r, dict) for ref in r.get("refs", []) if isinstance(ref, str)), *rels]))
-    attrs = (dict(ex_scope.get("attributes", {})) if isinstance(ex_scope.get("attributes"), dict) else {}) | (copy.deepcopy(attributes) if isinstance(attributes, dict) else {})
+    attrs = (
+        dict(ex_scope.get("attributes", {}))
+        if isinstance(ex_scope.get("attributes"), dict) else {}
+    ) | (copy.deepcopy(attributes) if isinstance(attributes, dict) else {})
     attrs.update(role="concept_frame", lod1_synopsis=validated.lod1_synopsis, updated_turn=int(validated.updated_turn))
     for k in ("activation", "hop_distance"):
         if k in validated:
@@ -243,7 +305,14 @@ def upsert_concept_frame(
     ext_map = graph.setdefault("external_links", {})
     if not isinstance(ext_map, dict):
         ext_map = graph["external_links"] = {}
-    ext_map[cid] = [{"link_id": p.link_id, "node_id": cid, "uri": p.target_uri, "kind": p.artifact_kind, "summary": p.lod_tier, "metadata": p.get("metadata")} for p in validated.external_links]
+    ext_map[cid] = [
+        {
+            "link_id": p.link_id, "node_id": cid,
+            "uri": p.target_uri, "kind": p.artifact_kind,
+            "summary": p.lod_tier, "metadata": p.get("metadata")
+        }
+        for p in validated.external_links
+    ]
     for tgt_cid in merged_refs:
         if tgt_cid in scopes and isinstance(scopes[tgt_cid], dict) and rule_id not in scopes[tgt_cid].setdefault("in_edges", []):
             scopes[tgt_cid]["in_edges"].append(rule_id)
@@ -264,10 +333,27 @@ def get_concept_frame(store: SQLiteGraphStore | dict[str, Any], concept_id: str)
     attrs, rules = (scope.get("attributes") or {}), (scope.get("rules") or [])
     synopsis = attrs.get("lod1_synopsis")
     if not isinstance(synopsis, str):
-        synopsis = next((r["text"].strip() for r in rules if isinstance(r, dict) and isinstance(r.get("text"), str) and r["text"].strip()), "")
-    raw_links = store.get_external_links(cid) if is_sqlite else ((graph.get("external_links") or {}).get(cid, []) if isinstance(graph.get("external_links"), dict) else [])
+        synopsis = next(
+            (
+                r["text"].strip() for r in rules if isinstance(r, dict)
+                and isinstance(r.get("text"), str)
+                and r["text"].strip()
+            ),
+            ""
+        )
+    raw_links = store.get_external_links(cid) if is_sqlite else (
+        (graph.get("external_links") or {}).get(cid, [])
+        if isinstance(graph.get("external_links"), dict) else []
+    )
     if not raw_links:
-        raw_links = next((r["external_links"] for r in rules if isinstance(r, dict) and isinstance(r.get("external_links"), list) and r["external_links"]), [])
+        raw_links = next(
+            (
+                r["external_links"] for r in rules
+                if isinstance(r, dict) and isinstance(r.get("external_links"), list)
+                and r["external_links"]
+            ),
+            []
+        )
     norm_links: list[ExternalLinkPointer] = []
     seen_uris: set[str] = set()
     for lk in raw_links:
@@ -276,8 +362,15 @@ def get_concept_frame(store: SQLiteGraphStore | dict[str, Any], concept_id: str)
             seen_uris.add(ptr.target_uri)
             norm_links.append(ptr)
     refs = list(dict.fromkeys(ref for r in rules if isinstance(r, dict) for ref in r.get("refs", []) if isinstance(ref, str)))
-    updated_turn = attrs.get("updated_turn", rules[0].get("updated_turn", 1) if rules and isinstance(rules[0], dict) else 1)
-    return ConceptFrame(cid, synopsis, norm_links, activation=attrs.get("activation"), hop_distance=attrs.get("hop_distance"), updated_turn=updated_turn, **({"refs": refs} if refs else {}))
+    updated_turn = attrs.get(
+        "updated_turn", rules[0].get("updated_turn", 1)
+        if rules and isinstance(rules[0], dict) else 1
+    )
+    return ConceptFrame(
+        cid, synopsis, norm_links, activation=attrs.get("activation"),
+        hop_distance=attrs.get("hop_distance"),
+        updated_turn=updated_turn, **({"refs": refs} if refs else {})
+    )
 
 
 def list_concept_frames(store: SQLiteGraphStore | dict[str, Any]) -> list[ConceptFrame]:
@@ -285,10 +378,17 @@ def list_concept_frames(store: SQLiteGraphStore | dict[str, Any]) -> list[Concep
     is_sqlite = isinstance(store, SQLiteGraphStore)
     graph = store.load_graph() if is_sqlite else store
     scopes = graph.get("scopes", {}) if isinstance(graph, dict) else {}
-    return [f for cid in (scopes if isinstance(scopes, dict) else {}) if (f := get_concept_frame(store if is_sqlite else graph, str(cid))) is not None]
+    return [
+        f for cid in (scopes if isinstance(scopes, dict) else {})
+        if (f := get_concept_frame(store if is_sqlite else graph, str(cid))) is not None
+    ]
 
 
-def link_concepts(store: SQLiteGraphStore | dict[str, Any], source_id: str, target_id: str, *, bidirectional: bool = True, turn: int = 1) -> dict[str, Any]:
+def link_concepts(
+    store: SQLiteGraphStore | dict[str, Any],
+    source_id: str, target_id: str, *,
+    bidirectional: bool = True, turn: int = 1
+) -> dict[str, Any]:
     """Links `source_id` and `target_id` in `SQLiteGraphStore` (or graph dict) for associative spreading activation."""
     if not isinstance(source_id, str) or not source_id.strip() or not isinstance(target_id, str) or not target_id.strip():
         raise ValueError("source_id and target_id must be non-empty strings")
@@ -376,7 +476,10 @@ def _scan_container_paths(c: dict[str, Any], local_hashes: dict[str, str], out: 
             out.append((p, local_hashes.get(norm_file_path(p))))
     if isinstance(c.get("external_links"), list):
         for lk in c["external_links"]:
-            u = lk if isinstance(lk, str) else (str(lk.get("target_uri") or lk.get("uri") or "") if isinstance(lk, dict) else "")
+            u = lk if isinstance(lk, str) else (
+                str(lk.get("target_uri") or lk.get("uri") or "")
+                if isinstance(lk, dict) else ""
+            )
             if u and (p := split_uri_parts(u)[1]):
                 out.append((p, local_hashes.get(norm_file_path(p))))
 
@@ -450,6 +553,11 @@ def parse_line_anchor(anchor: str) -> tuple[int, int] | None:
     return (int(single), int(single)) if single.isdigit() else None
 
 
-for _m, _f in (("upsert_concept_frame", upsert_concept_frame), ("get_concept_frame", get_concept_frame), ("list_concept_frames", list_concept_frames), ("link_concepts", link_concepts)):
+for _m, _f in (
+    ("upsert_concept_frame", upsert_concept_frame),
+    ("get_concept_frame", get_concept_frame),
+    ("list_concept_frames", list_concept_frames),
+    ("link_concepts", link_concepts)
+):
     if not hasattr(SQLiteGraphStore, _m):
         setattr(SQLiteGraphStore, _m, _f)

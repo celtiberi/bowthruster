@@ -148,13 +148,13 @@ Pass canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`
    # .git/hooks/pre-commit (chmod +x .git/hooks/pre-commit)
    #!/usr/bin/env bash
    set -euo pipefail
-   LATTICE_PROJECT_ROOT="$(git rev-parse --show-toplevel)" \
+   BOWTHRUSTER_PROJECT_ROOT="$(git rev-parse --show-toplevel)" \
      python3 -m bowthruster.cli --board <BOARD_NAME> git-sync --pre-commit
 
    # .git/hooks/post-commit (chmod +x .git/hooks/post-commit)
    #!/usr/bin/env bash
    set -euo pipefail
-   LATTICE_PROJECT_ROOT="$(git rev-parse --show-toplevel)" \
+   BOWTHRUSTER_PROJECT_ROOT="$(git rev-parse --show-toplevel)" \
      python3 -m bowthruster.cli --board <BOARD_NAME> git-sync --post-commit
    ```
 
@@ -183,7 +183,7 @@ flowchart LR
 ### 1. The 4-Layer Verification Stack
 Behavioral unit tests alone leave internal program structure underdetermined ([*Skeleton Coding*, `arXiv:2610.38214`](https://arxiv.org/abs/2610.38214)): an LLM can pass a unit test with a hardcoded workaround while ignoring your architecture. BowThruster verifies both the architecture graph and the implementation across four layers:
 1. **Graph Completeness & Interval Satisfiability (`whiteboard/frustration.py`):** A board only reaches `PROVEN_COMPLETE` when every `@ COMPONENT` has an owner, file path or typed `$ INTERFACE` / `# SCHEMA` contract, and connected `> FLOW` edge, with `0` open structural gaps and `0` contradictory `BOUND`/`PROHIBITION` intervals.
-2. **Boolean Law Truth-Table & Bend 2 Proofs (`LATTICE_PROOF.bend` & `LAWS.bend`):** Both the board-level completeness theorem (`lattice_proof_proven_iff_complete_and_conflict_free` in `LATTICE_PROOF.bend`) and optional component `% LAW` invariants (`Args`, `LHS`, `RHS`) are compiled into formal equality theorems (`LHS == RHS` proven via inductive case analysis), verified exhaustively via truth-table evaluation (`truth_table_checked: true`) and checked by the **Bend 2 proof checker (`bend`)** when installed (`bend_binary_checked: true`).
+2. **Boolean Law Truth-Table & Bend 2 Proofs (`LATTICE_PROOF.bend` & `LAWS.bend`):** Both the board-level completeness theorem (`lattice_proof_proven_iff_complete_and_conflict_free` in `LATTICE_PROOF.bend`) and optional component `% LAW` invariants (`Args`, `LHS`, `RHS`, plus dependent-type algebraic state-machine proofs in `laws/bend_*/PROOF.bend`) are verified exhaustively via truth-table evaluation (`truth_table_checked: true`) and checked by the **Bend 2 proof checker (`bend`)** (`bend_proofs_ok: true`, or `"not_checked"` when the `bend` binary is not installed).
 3. **AST Signature, Call-Graph & Delta Test Gate (`the_executive/gate.py`, `call_graph.py` & `git_manifest.py`):** Before every commit (`git_sync(mode="pre")`), BowThruster parses staged Python files to verify that every declared `# SCHEMA` class and `$ INTERFACE` function exists with its required fields/parameters, every `$ INTERFACE` invokes any declared `% LAW` helper in the static call graph with non-constant, non-duplicate arguments whose result is read, every staged Python `% LAW` helper satisfies `LHS == RHS`, no `VERIFIED` file was modified without marking its component `STALE`, and discovered delta `pytest` suites pass before transitioning `STALE` components to `VERIFIED`.
 4. **Finite-State Algebraic & Mutation Parity (`bend_gate.py`):** For multi-datatype state machines in `laws/*/main.bend`, compiles Bend 2 theorems to `.mjs`, exhaustively evaluates truth-table parity against Python, and runs incremental law-mutation checks (`--only-law`).
 

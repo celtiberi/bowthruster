@@ -8,7 +8,23 @@ from typing import Any
 
 from bowthruster.graph_core import SQLiteGraphStore
 
-from .schema import LOD_0, LOD_1, LOD_2, LOD_3, MAX_LINKS_PER_NODE, ExternalLinkPointer, get_concept_frame, infer_cross_repo_renames, norm_file_path, normalize_external_link, parse_line_anchor, paths_match, replace_renamed_path, split_uri_parts, upsert_concept_frame
+from .schema import (
+    LOD_0,
+    LOD_1,
+    LOD_2,
+    LOD_3,
+    MAX_LINKS_PER_NODE,
+    ExternalLinkPointer,
+    get_concept_frame,
+    infer_cross_repo_renames,
+    norm_file_path,
+    normalize_external_link,
+    parse_line_anchor,
+    paths_match,
+    replace_renamed_path,
+    split_uri_parts,
+    upsert_concept_frame,
+)
 
 
 class LinkCountBucket(str, Enum):
@@ -69,7 +85,11 @@ def verify_uri_resolver_entry(entry: dict[str, Any], *, max_links_per_node: int 
     if "external_links" in entry and isinstance(entry["external_links"], list):
         if len(entry["external_links"]) > cap:
             raise ValueError(f"uri_resolver bound violated: {len(entry['external_links'])} links > {cap}")
-        uris = [str(lk.get("target_uri") or lk.get("uri")) for lk in entry["external_links"] if isinstance(lk, dict) and (lk.get("target_uri") or lk.get("uri"))]
+        uris = [
+            str(lk.get("target_uri") or lk.get("uri"))
+            for lk in entry["external_links"] if isinstance(lk, dict)
+            and (lk.get("target_uri") or lk.get("uri"))
+        ]
         if ("source_links" in entry and list(entry["source_links"]) != uris) or ("external_uris" in entry and list(entry["external_uris"]) != uris):
             raise ValueError("uri_resolver obligation violated: source_links/external_uris mismatch")
     return True
@@ -77,12 +97,18 @@ def verify_uri_resolver_entry(entry: dict[str, Any], *, max_links_per_node: int 
 
 def _read_links_for_concept(store_or_frame: Any, concept_id: str) -> list[ExternalLinkPointer]:
     if isinstance(store_or_frame, SQLiteGraphStore):
-        raw_links = store_or_frame.get_external_links(concept_id) or (frame.external_links if (frame := get_concept_frame(store_or_frame, concept_id)) is not None else [])
+        raw_links = (
+            store_or_frame.get_external_links(concept_id)
+            or (frame.external_links if (frame := get_concept_frame(store_or_frame, concept_id)) is not None else [])
+        )
     elif isinstance(store_or_frame, dict):
         verify_uri_resolver_entry(store_or_frame)
         if store_or_frame.get("concept_id") == concept_id and isinstance(store_or_frame.get("external_links"), list):
             raw_links = store_or_frame["external_links"]
-        elif isinstance(store_or_frame.get("external_links"), dict) and isinstance(store_or_frame["external_links"].get(concept_id), list):
+        elif isinstance(store_or_frame.get("external_links"), dict) and isinstance(
+            store_or_frame["external_links"].get(concept_id),
+            list
+        ):
             raw_links = store_or_frame["external_links"][concept_id]
         elif "scopes" in store_or_frame:
             raw_links = frame.external_links if (frame := get_concept_frame(store_or_frame, concept_id)) is not None else []
@@ -114,7 +140,10 @@ def _write_links_for_concept(store_or_frame: Any, concept_id: str, links: list[E
     if not isinstance(store_or_frame, dict):
         raise ValueError(f"Unsupported store_or_frame type: {type(store_or_frame).__name__}")
     uris = [p.target_uri for p in links]
-    if "concept_id" in store_or_frame and (store_or_frame.get("concept_id") == concept_id or not store_or_frame.get("concept_id")):
+    if "concept_id" in store_or_frame and (
+        store_or_frame.get("concept_id") == concept_id
+        or not store_or_frame.get("concept_id")
+    ):
         store_or_frame["concept_id"], store_or_frame["external_links"] = concept_id, list(links)
         for k in ("source_links", "external_uris"):
             if k in store_or_frame:
@@ -144,7 +173,10 @@ def register_external_link(
     if not isinstance(max_links_per_node, int) or isinstance(max_links_per_node, bool) or max_links_per_node <= 0:
         raise ValueError(f"max_links_per_node must be a positive int, got {max_links_per_node!r}")
     cid, uri_clean, effective_cap = concept_id.strip(), target_uri.strip(), min(max_links_per_node, MAX_LINKS_PER_NODE)
-    new_ptr = normalize_external_link(ExternalLinkPointer(link_id, uri_clean, artifact_kind, lod_tier, concept_id=cid), concept_id=cid)
+    new_ptr = normalize_external_link(
+        ExternalLinkPointer(link_id, uri_clean, artifact_kind, lod_tier, concept_id=cid),
+        concept_id=cid
+    )
     existing_links = _read_links_for_concept(store_or_frame, cid)
     existing_match = next((lk for lk in existing_links if lk.target_uri == uri_clean), None)
     cur_bucket = bucket_for_link_count(len(existing_links), effective_cap)
@@ -175,7 +207,13 @@ def resolve_external_links(
     if (effective_cap := min(max_links_per_node, MAX_LINKS_PER_NODE)) == 0:
         return []
     if isinstance(concept_id, (list, tuple)):
-        return [lk for item in concept_id if isinstance(item, str) and item.strip() for lk in resolve_external_links(store_or_frame, item.strip(), lod_tier, max_links_per_node=effective_cap)]
+        return [
+            lk for item in concept_id if isinstance(item, str)
+            and item.strip() for lk in resolve_external_links(
+                store_or_frame, item.strip(), lod_tier,
+                max_links_per_node=effective_cap
+            )
+        ]
     if isinstance(store_or_frame, dict) and "concept_id" in store_or_frame:
         frame_cid = str(store_or_frame.get("concept_id") or "").strip()
         if concept_id is None:
@@ -211,7 +249,10 @@ def _parse_ast_symbols(raw_ast: Any) -> dict[str, tuple[int, int]]:
     if isinstance(raw_ast, list):
         for item in (x for x in raw_ast if isinstance(x, dict)):
             name = str(item.get("name") or item.get("symbol") or item.get("id") or item.get("function") or "").strip()
-            s_val = item.get("start_line") if item.get("start_line") is not None else (item.get("start") if item.get("start") is not None else item.get("lineno"))
+            s_val = (
+                item.get("start_line") if item.get("start_line") is not None
+                else (item.get("start") if item.get("start") is not None else item.get("lineno"))
+            )
             e_val = item.get("end_line") if item.get("end_line") is not None else (item.get("end") if item.get("end") is not None else s_val)
             if name and isinstance(s_val, int) and not isinstance(s_val, bool) and isinstance(e_val, int) and not isinstance(e_val, bool):
                 out[name] = (int(s_val), int(e_val))
@@ -233,7 +274,12 @@ def _parse_ast_symbols(raw_ast: Any) -> dict[str, tuple[int, int]]:
 
 def _parse_git_diff_manifest(
     manifest: dict[str, Any] | list[dict[str, Any]],
-) -> tuple[str | None, list[tuple[str, str, dict[str, tuple[int, int]]]], list[tuple[str, dict[str, tuple[int, int]]]], list[str], dict[str, tuple[str | None, dict[str, tuple[int, int]]]], dict[str, str], bool]:
+) -> tuple[
+    str | None, list[tuple[str, str, dict[str, tuple[int, int]]]],
+    list[tuple[str, dict[str, tuple[int, int]]]],
+    list[str], dict[str, tuple[str | None, dict[str, tuple[int, int]]]],
+    dict[str, str], bool
+]:
     commit_sha, raw_entries = None, []
     if isinstance(manifest, list):
         raw_entries.extend(x for x in manifest if isinstance(x, dict))
@@ -244,36 +290,90 @@ def _parse_git_diff_manifest(
             if isinstance(val := manifest.get(list_key), list):
                 raw_entries.extend(x for x in val if isinstance(x, dict))
             elif isinstance(val, dict):
-                raw_entries.extend({"path": p, **(spec if isinstance(spec, dict) else {"status": str(spec)})} for p, spec in val.items())
+                raw_entries.extend(
+                    {"path": p, **(spec if isinstance(spec, dict) else {"status": str(spec)})}
+                    for p, spec in val.items()
+                )
         if isinstance(manifest.get("file_hashes"), dict):
-            raw_entries.extend({"status": "A", "path": p, **(v if isinstance(v, dict) else {"file_hash": str(v)})} for p, v in manifest["file_hashes"].items())
+            raw_entries.extend(
+                {"status": "A", "path": p, **(v if isinstance(v, dict) else {"file_hash": str(v)})}
+                for p, v in manifest["file_hashes"].items()
+            )
         for ren_k in ("renames", "renamed_files"):
             if isinstance(manifest.get(ren_k), dict):
-                raw_entries.extend({"status": "R", "old_path": op, **(np if isinstance(np, dict) else {"new_path": np})} for op, np in manifest[ren_k].items())
+                raw_entries.extend(
+                    {"status": "R", "old_path": op, **(np if isinstance(np, dict) else {"new_path": np})}
+                    for op, np in manifest[ren_k].items()
+                )
             elif isinstance(manifest.get(ren_k), list):
-                raw_entries.extend({"status": "R", **item} if isinstance(item, dict) else ({"status": "R", "old_path": item[0], "new_path": item[1]} if isinstance(item, (tuple, list)) and len(item) >= 2 else {}) for item in manifest[ren_k])
+                raw_entries.extend(
+                    {"status": "R", **item} if isinstance(item, dict) else (
+                        {"status": "R", "old_path": item[0], "new_path": item[1]}
+                        if isinstance(item, (tuple, list))
+                        and len(item) >= 2 else {}
+                    )
+                    for item in manifest[ren_k]
+                )
         for del_key in ("deletes", "deleted", "removed"):
             if isinstance(manifest.get(del_key), (list, tuple, set)):
-                raw_entries.extend({"status": "D", **item} if isinstance(item, dict) else {"status": "D", "old_path": str(item), "path": str(item)} for item in manifest[del_key])
+                raw_entries.extend(
+                    {"status": "D", **item} if isinstance(item, dict) else {
+                        "status": "D", "old_path": str(item),
+                        "path": str(item)
+                    }
+                    for item in manifest[del_key]
+                )
         for mod_key in ("modified", "added"):
             if isinstance(manifest.get(mod_key), dict):
-                raw_entries.extend({"status": "M", "path": p, **(s if isinstance(s, dict) and "ast_symbols" in s else {"ast_symbols": s})} for p, s in manifest[mod_key].items())
+                raw_entries.extend(
+                    {"status": "M", "path": p, **(s if isinstance(s, dict) and "ast_symbols" in s else {"ast_symbols": s})}
+                    for p, s in manifest[mod_key].items()
+                )
             elif isinstance(manifest.get(mod_key), list):
-                raw_entries.extend({"status": "M", **item} if isinstance(item, dict) else {"status": "M", "path": str(item)} for item in manifest[mod_key])
+                raw_entries.extend(
+                    {"status": "M", **item} if isinstance(item, dict) else {"status": "M", "path": str(item)}
+                    for item in manifest[mod_key]
+                )
         if isinstance(manifest.get("ast_symbols_by_file"), dict):
-            raw_entries.extend({"status": "M", "path": p, "ast_symbols": s} for p, s in manifest["ast_symbols_by_file"].items() if s)
+            raw_entries.extend(
+                {"status": "M", "path": p, "ast_symbols": s}
+                for p, s in manifest["ast_symbols_by_file"].items()
+                if s
+            )
         if any(k in manifest for k in ("status", "old_path", "from_path", "new_path", "to_path", "path")):
             raw_entries.append(manifest)
     else:
         raise ValueError(f"git_diff_manifest must be a dict or list, got {type(manifest).__name__}")
     renames, ast_updates, deletes, candidates, manifest_hashes, all_renames_well_formed = [], [], [], {}, {}, True
-    line_shifts = {str(k): int(v) for k, v in ((manifest.get("line_shifts") or manifest.get("line_deltas") or {}) if isinstance(manifest, dict) else {}).items() if isinstance(v, int)}
+    line_shifts = {
+        str(k): int(v) for k, v in (
+            (manifest.get("line_shifts") or manifest.get("line_deltas") or {})
+            if isinstance(manifest, dict) else {}
+        ).items()
+        if isinstance(v, int)
+    }
     for entry in (e for e in raw_entries if e):
         st_raw = str(entry.get("status") or entry.get("change_type") or entry.get("action") or "").strip().upper()
-        old_p = str(entry.get("old_path") or entry.get("from_path") or entry.get("source_path") or entry.get("old_file") or entry.get("old_uri") or "").strip()
-        new_p = str(entry.get("new_path") or entry.get("to_path") or entry.get("target_path") or entry.get("new_file") or entry.get("new_uri") or entry.get("path") or entry.get("file") or "").strip()
-        if isinstance(sh := entry.get("line_shift", entry.get("line_delta")), int) and (tp := (new_p or old_p)): line_shifts[tp] = int(sh)
-        f_hash = str(entry.get("file_hash") or entry.get("sha256") or entry.get("hash") or entry.get("content_hash") or "").strip() or None
+        old_p = str(
+            entry.get("old_path") or entry.get("from_path")
+            or entry.get("source_path") or entry.get("old_file")
+            or entry.get("old_uri") or ""
+        ).strip()
+        new_p = str(
+            entry.get("new_path") or entry.get("to_path")
+            or entry.get("target_path") or entry.get("new_file")
+            or entry.get("new_uri") or entry.get("path")
+            or entry.get("file") or ""
+        ).strip()
+        if isinstance(
+            sh := entry.get("line_shift", entry.get("line_delta")),
+            int
+        ) and (tp := (new_p or old_p)): line_shifts[tp] = int(sh)
+        f_hash = str(
+            entry.get("file_hash") or entry.get("sha256")
+            or entry.get("hash") or entry.get("content_hash")
+            or ""
+        ).strip() or None
         syms = _parse_ast_symbols(entry.get("ast_symbols") or entry.get("symbols") or entry.get("line_ranges"))
         st_raw = st_raw or ("R" if (old_p and new_p and old_p != new_p) else ("D" if entry.get("deleted") else "M"))
         if st_raw.startswith("R"):
@@ -295,14 +395,23 @@ def _parse_git_diff_manifest(
     return commit_sha, renames, ast_updates, deletes, candidates, manifest_hashes, line_shifts, all_renames_well_formed
 
 
-def _resolve_ast_line_range(anchor: str, concept_id: str, hint_symbol: str, sym_map: dict[str, tuple[int, int]]) -> tuple[int, int] | None:
+def _resolve_ast_line_range(
+    anchor: str, concept_id: str, hint_symbol: str,
+    sym_map: dict[str, tuple[int, int]]
+) -> tuple[int, int] | None:
     if not sym_map: return None
     anchor_sym = anchor.split(":", 1)[0].strip() if ":" in anchor else anchor.strip()
     for cand in (anchor_sym, hint_symbol.strip(), concept_id.strip(), concept_id.strip().rsplit(".", 1)[-1]):
         if cand and cand in sym_map: return sym_map[cand]
     for sym_name, rng in sym_map.items():
-        if sym_name and (sym_name == anchor_sym or sym_name in (concept_id, hint_symbol) or (concept_id and concept_id in sym_name)): return rng
-    return next(iter(sym_map.values())) if (not hint_symbol and len(sym_map) == 1 and parse_line_anchor(anchor) is not None) else None
+        if sym_name and (
+            sym_name == anchor_sym or sym_name in (concept_id, hint_symbol)
+            or (concept_id and concept_id in sym_name)
+        ): return rng
+    return next(iter(sym_map.values())) if (
+        not hint_symbol and len(sym_map) == 1
+        and parse_line_anchor(anchor) is not None
+    ) else None
 
 
 @dataclass
@@ -348,16 +457,22 @@ class _UriSyncState:
                 combined_syms.update(m_syms)
         if combined_syms and (anchor or allow_bare_anchor):
             if (new_rng := _resolve_ast_line_range(anchor, cid, hint_symbol, combined_syms)) is not None:
-                if (new_anchor := f"L{new_rng[0]}-L{new_rng[1]}") != anchor and is_symbol_uri_anchored(True, bool(new_anchor)):
+                if (new_anchor := f"L{new_rng[0]}-L{new_rng[1]}") != anchor and is_symbol_uri_anchored(bool(new_rng), bool(new_anchor)):
                     anchor, was_line = new_anchor, True
         if not was_line and anchor and (delta := next((d for kp, d in self.line_shifts.items() if paths_match(path, kp) or paths_match(orig_path, kp)), 0)):
-            new_a = "-".join(f"{t[:1] if t[:1] in ('L', 'l') else ''}{max(1, int(t.lstrip('Ll')) + delta)}" if t.lstrip("Ll").isdigit() else t for t in anchor.split("-"))
+            new_a = "-".join(
+                f"{t[:1] if t[:1] in ('L', 'l') else ''}{max(1, int(t.lstrip('Ll')) + delta)}"
+                if t.lstrip("Ll").isdigit() else t
+                for t in anchor.split("-")
+            )
             if new_a != anchor: anchor, was_line = new_a, True
         healed = f"{scheme}{path}#{anchor}" if anchor else f"{scheme}{path}"
         if healed != raw_uri:
             rec = {"old_uri": raw_uri, "new_uri": healed, "concept_id": cid}
-            if was_ren and rec not in self.renamed_uris: self.renamed_uris.append(rec); self.mark_scope(cid)
-            if was_line and rec not in self.updated_line_uris: self.updated_line_uris.append(rec); self.mark_scope(cid)
+            if was_ren and rec not in self.renamed_uris: self.renamed_uris.append(rec)
+            self.mark_scope(cid)
+            if was_line and rec not in self.updated_line_uris: self.updated_line_uris.append(rec)
+            self.mark_scope(cid)
         if any(paths_match(p, del_p) for p in (orig_path, path) if p for del_p in self.deletes):
             if healed not in self.dangling_deleted_uris: self.dangling_deleted_uris.append(healed)
             self.mark_scope(cid)
@@ -395,13 +510,22 @@ class _UriSyncState:
                     healed_list.append(lk)
         return healed_list[: self.cap], changed
 
-    def heal_container(self, container: dict[str, Any], cid: str, *, is_rule: bool = False, hint_symbol: str = "") -> None:
+    def heal_container(
+        self, container: dict[str, Any], cid: str,
+        *, is_rule: bool = False, hint_symbol: str = ""
+    ) -> None:
         for fkey in ("files", "_table_files", "source_links", "external_uris"):
             if isinstance(container.get(fkey), list):
                 container[fkey] = [self.heal_uri(x, cid) if isinstance(x, str) else x for x in container[fkey]]
             elif isinstance(container.get(fkey), str) and container[fkey]:
-                container[fkey] = ", ".join(self.heal_uri(p.strip(), cid) for p in container[fkey].split(",") if p.strip())
-        if isinstance(fh := container.get("file_hashes"), dict) or (not is_rule and isinstance(container.get("files"), list) and self.manifest_hashes):
+                container[fkey] = ", ".join(
+                    self.heal_uri(p.strip(), cid) for p in container[fkey].split(",")
+                    if p.strip()
+                )
+        if isinstance(fh := container.get("file_hashes"), dict) or (
+            not is_rule and isinstance(container.get("files"), list)
+            and self.manifest_hashes
+        ):
             new_fh: dict[str, Any] = {}
             for old_k, old_v in list((fh if isinstance(fh, dict) else {}).items()):
                 new_k = self.heal_uri(str(old_k), cid)
@@ -412,16 +536,24 @@ class _UriSyncState:
             if isinstance(container.get("files"), list):
                 for f_item in container["files"]:
                     if isinstance(f_item, str) and (mh := self.manifest_hashes.get(norm_file_path(f_item))) and new_fh.get(f_item) != mh:
-                        new_fh[f_item] = mh; self.mark_scope(cid)
+                        new_fh[f_item] = mh
+                        self.mark_scope(cid)
             if new_fh or "file_hashes" in container: container["file_hashes"] = new_fh
         for ukey in ("file", "target_uri", "uri"):
             if isinstance(container.get(ukey), str) and container[ukey].strip():
-                container[ukey] = self.heal_uri(container[ukey], cid, hint_symbol=hint_symbol, allow_bare_anchor=bool(hint_symbol))
+                container[ukey] = self.heal_uri(
+                    container[ukey], cid, hint_symbol=hint_symbol,
+                    allow_bare_anchor=bool(hint_symbol)
+                )
         if isinstance(container.get("external_links"), list):
             container["external_links"], l_changed = self.heal_link_list(container["external_links"], cid)
             if l_changed:
                 if is_rule: container["updated_turn"] = int(self.current_turn)
-                uris = [str(x.get("target_uri") or x.get("uri")) if isinstance(x, dict) else str(x) for x in container["external_links"]]
+                uris = [
+                    str(x.get("target_uri") or x.get("uri"))
+                    if isinstance(x, dict) else str(x)
+                    for x in container["external_links"]
+                ]
                 for skey in ("source_links", "external_uris"):
                     if skey in container: container[skey] = list(uris)
 
@@ -433,13 +565,21 @@ def sync_git_diff_uris(
     """Stage 26 `uri_git_healer` — Auto-heals renamed file URIs, refreshes AST symbol line ranges,
     detects dangling deleted-file URIs across `store_or_graph`, and enforces Bend 2 Law 4 (`git_uri_integrity_law`)."""
     commit_sha, renames, ast_updates, deletes, candidates, manifest_hashes, line_shifts, all_renames_well_formed = _parse_git_diff_manifest(git_diff_manifest)
-    calls_by_file = (git_diff_manifest.get("ast_calls_by_file") if isinstance(git_diff_manifest, dict) and isinstance(git_diff_manifest.get("ast_calls_by_file"), dict) else {})
+    calls_by_file = (
+        git_diff_manifest.get("ast_calls_by_file")
+        if isinstance(git_diff_manifest, dict)
+        and isinstance(git_diff_manifest.get("ast_calls_by_file"), dict) else {}
+    )
     is_sqlite = isinstance(store_or_graph, SQLiteGraphStore)
     graph = store_or_graph.load_graph() if is_sqlite else store_or_graph
     if not isinstance(graph, dict):
         raise ValueError(f"store_or_graph must be a SQLiteGraphStore or dict, got {type(store_or_graph).__name__}")
     infer_cross_repo_renames(graph, candidates, renames, ast_updates)
-    state = _UriSyncState(renames, ast_updates, deletes, int(current_turn), min(max(1, int(max_links_per_node)), MAX_LINKS_PER_NODE), manifest_hashes, line_shifts)
+    state = _UriSyncState(
+        renames, ast_updates, deletes, int(current_turn),
+        min(max(1, int(max_links_per_node)), MAX_LINKS_PER_NODE),
+        manifest_hashes, line_shifts
+    )
     if isinstance(scopes := graph.get("scopes"), dict):
         for sid, scope in scopes.items():
             if not isinstance(scope, dict): continue
@@ -461,17 +601,34 @@ def sync_git_diff_uris(
     art_items = raw_arts.items() if isinstance(raw_arts, dict) else enumerate(raw_arts if isinstance(raw_arts, list) else [])
     for ak, art in art_items:
         if isinstance(art, dict):
-            acid = str(art.get("concept_id") or art.get("scope_id") or art.get("scope") or art.get("name") or art.get("id") or ak)
+            acid = str(
+                art.get("concept_id") or art.get("scope_id")
+                or art.get("scope") or art.get("name")
+                or art.get("id") or ak
+            )
             asym = str(art.get("name") or art.get("id") or "")
             state.heal_container(art, acid, hint_symbol=asym)
             if isinstance(art.get("dimensions"), dict): state.heal_container(art["dimensions"], acid, hint_symbol=asym)
-            if calls_by_file and (af_clean := norm_file_path(str(art.get("file") or ""))) and (f_calls := next((v for k, v in calls_by_file.items() if paths_match(af_clean, k) and isinstance(v, dict)), None)):
+            if calls_by_file and (af_clean := norm_file_path(str(art.get("file") or ""))) and (f_calls := next(
+                (v for k, v in calls_by_file.items() if paths_match(af_clean, k) and isinstance(v, dict)),
+                None
+            )):
                 if asym in f_calls and f_calls[asym]: art["calls"] = list(f_calls[asym])
             if (af := str(art.get("file") or "").strip()) and "#" in af and acid and acid != "global_defaults":
                 if not isinstance(graph.get("external_links"), dict): graph["external_links"] = {}
                 full_u, base_u = (af if af.startswith("uri://") else f"uri://file/{af.lstrip('./')}"), (af if af.startswith("uri://") else f"uri://file/{af.lstrip('./')}").split("#", 1)[0]
-                ext_list = [x for x in graph.setdefault("external_links", {}).setdefault(acid, []) if not (isinstance(x, dict) and str(x.get("symbol") or "") == asym and str(x.get("target_uri") or x.get("uri") or "").split("#", 1)[0] == base_u and str(x.get("target_uri") or x.get("uri") or "") != full_u)]
-                if len(ext_list) < state.cap and not any((isinstance(x, dict) and str(x.get("target_uri") or x.get("uri") or "") == full_u) or x == full_u for x in ext_list):
+                ext_list = [
+                    x for x in graph.setdefault("external_links", {}).setdefault(acid, [])
+                    if not (
+                        isinstance(x, dict) and str(x.get("symbol") or "") == asym
+                        and str(x.get("target_uri") or x.get("uri") or "").split("#", 1)[0] == base_u
+                        and str(x.get("target_uri") or x.get("uri") or "") != full_u
+                    )
+                ]
+                if len(ext_list) < state.cap and not any(
+                    (isinstance(x, dict) and str(x.get("target_uri") or x.get("uri") or "") == full_u)
+                    or x == full_u for x in ext_list
+                ):
                     ext_list.append(ExternalLinkPointer({"target_uri": full_u, "uri": full_u, "symbol": asym, "lod_tier": LOD_2}, concept_id=acid))
                 graph["external_links"][acid] = ext_list
     if is_sqlite:
@@ -479,8 +636,9 @@ def sync_git_diff_uris(
         store_or_graph.save_graph(graph)
     rename_pointers_updated = bool(all_renames_well_formed and all(state.rename_status.values()))
     has_dangling_deleted_uri = bool(state.dangling_deleted_uris)
-    is_valid = is_commit_uri_state_valid(has_dangling_deleted_uri, rename_pointers_updated) and is_symbol_uri_anchored(bool(ast_updates), True)
     upd_u = list(dict.fromkeys(str(r.get("new_uri")) for r in (*state.renamed_uris, *state.updated_line_uris) if isinstance(r, dict) and r.get("new_uri")))
+    anchors_ok = all("#" in str(r.get("new_uri") or "") for r in state.updated_line_uris if isinstance(r, dict))
+    is_valid = is_commit_uri_state_valid(has_dangling_deleted_uri, rename_pointers_updated) and is_symbol_uri_anchored(bool(state.updated_line_uris), anchors_ok)
     return {
         "is_valid": is_valid, "has_dangling_deleted_uri": has_dangling_deleted_uri,
         "rename_pointers_updated": rename_pointers_updated, "updated_uris": upd_u,
@@ -490,6 +648,10 @@ def sync_git_diff_uris(
     }
 
 
-for _m, _f in (("register_external_link", register_external_link), ("resolve_external_links", resolve_external_links), ("sync_git_diff_uris", sync_git_diff_uris)):
+for _m, _f in (
+    ("register_external_link", register_external_link),
+    ("resolve_external_links", resolve_external_links),
+    ("sync_git_diff_uris", sync_git_diff_uris)
+):
     if not hasattr(SQLiteGraphStore, _m):
         setattr(SQLiteGraphStore, _m, _f)

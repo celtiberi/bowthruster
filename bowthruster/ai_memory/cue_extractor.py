@@ -45,7 +45,10 @@ def extract_concept_cues(
         raw_parts = query_text.replace(",", " ").replace(";", " ").split()
     elif isinstance(query_text, (list, tuple, set, frozenset)):
         items = sorted(query_text) if isinstance(query_text, (set, frozenset)) else list(query_text)
-        raw_parts = [w for item in items if isinstance(item, str) for w in item.replace(",", " ").replace(";", " ").split()]
+        raw_parts = [
+            w for item in items if isinstance(item, str)
+            for w in item.replace(",", " ").replace(";", " ").split()
+        ]
     else:
         raise ValueError(f"query_text must be a str or iterable of str, got {type(query_text).__name__}")
 

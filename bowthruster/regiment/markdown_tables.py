@@ -101,7 +101,10 @@ def _clean_cell_val(raw_val: Any) -> str:
 
 def _split_list_cell(val: Any) -> list[str]:
     if isinstance(val, list):
-        return [_clean_cell_val(x) for x in val if _clean_cell_val(x) and _clean_cell_val(x).lower() not in ("none", "-", "—", "n/a", "null", "[]")]
+        return [
+            _clean_cell_val(x) for x in val if _clean_cell_val(x)
+            and _clean_cell_val(x).lower() not in ("none", "-", "—", "n/a", "null", "[]")
+        ]
     raw = _clean_cell_val(val).strip("[]")
     if not raw or raw.lower() in ("none", "-", "—", "n/a", "null"):
         return []
@@ -268,16 +271,26 @@ def extract_structured_table_rows(doc_tables: list[dict[str, Any]] | str) -> lis
                     col_map[n_hdr] = _split_list_cell(raw_v) if n_hdr in ("depends_on", "dependencies", "children") else _clean_cell_val(raw_v)
             first_val = _clean_cell_val(raw_row.get(raw_headers[0], "")) if raw_headers else ""
             if t_kind == "COMPONENT":
-                scope = str(col_map.get("component") or col_map.get("scope") or col_map.get("subsystem") or first_val or "global_defaults")
+                scope = str(
+                    col_map.get("component") or col_map.get("scope")
+                    or col_map.get("subsystem") or first_val
+                    or "global_defaults"
+                )
             elif t_kind == "FLOW":
                 scope = str(col_map.get("source") or col_map.get("from") or first_val or "global_defaults")
             elif t_kind in ("INTERFACE", "LAW", "SCHEMA", "RULE"):
-                scope = str(col_map.get("component") or col_map.get("scope") or col_map.get("module") or "global_defaults")
+                scope = str(
+                    col_map.get("component") or col_map.get("scope")
+                    or col_map.get("module") or "global_defaults"
+                )
             elif t_kind == "CHARTER":
                 scope = "global_defaults"
             else:
                 scope = str(col_map.get("scope") or col_map.get("component") or first_val or "global_defaults")
-            row_entry: dict[str, Any] = {"table_kind": t_kind, **col_map, "scope": scope, **({"raw_scope": col_map["scope"]} if "scope" in col_map and col_map["scope"] != scope else {})}
+            row_entry: dict[str, Any] = {
+                "table_kind": t_kind, **col_map, "scope": scope,
+                **({"raw_scope": col_map["scope"]} if "scope" in col_map and col_map["scope"] != scope else {})
+            }
             if isinstance(hp, str) and hp.strip():
                 row_entry.setdefault("heading_path", hp.strip())
             structured_rows.append(row_entry)
@@ -302,7 +315,11 @@ def build_mcus_from_tables_and_flows(
             if not src or not tgt:
                 continue
             fnm = str(srow.get("flow") or srow.get("id") or srow.get("name") or "").strip() or None
-            pay = str(srow.get("payload") or srow.get("contract") or srow.get("schema") or srow.get("object") or srow.get("data") or "").strip() or None
+            pay = str(
+                srow.get("payload") or srow.get("contract")
+                or srow.get("schema") or srow.get("object")
+                or srow.get("data") or ""
+            ).strip() or None
             raw_c = str(srow.get("condition") or srow.get("when") or "").strip()
             cond = None if raw_c.lower() in ("", "none", "-", "—", "n/a", "null") else raw_c
             txt = f"The {src} component sends {pay or 'data'} to {tgt}."
@@ -315,12 +332,23 @@ def build_mcus_from_tables_and_flows(
                 "conditions": [cond] if cond else [], "is_exception": False, "superseded_literals": [],
                 "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
                 "lattice_kind": "FLOW",
-                "lattice_payload": {"source": src, "target": tgt, "payload": pay, "condition": cond, "summary": txt, **({"flow_name": fnm} if fnm and fnm != pay else {})},
+                "lattice_payload": {
+                    "source": src, "target": tgt, "payload": pay,
+                    "condition": cond, "summary": txt,
+                    **({"flow_name": fnm} if fnm and fnm != pay else {})
+                },
             })
             next_id += 1
         elif t_kind == "RULE":
-            raw_type = str(srow.get("type") or srow.get("facet") or ("BOUND" if (srow.get("op") or srow.get("bound_op") or srow.get("value") or srow.get("bound_val")) else "OBLIGATION")).strip().upper()
-            rtype = "FACT" if raw_type == "CONTEXT_FACTS" else (raw_type if raw_type in ("BOUND", "PROHIBITION", "OBLIGATION", "FACT", "POLICY", "GOAL", "PROPOSAL", "ACTION") else "BOUND")
+            raw_type = str(
+                srow.get("type") or srow.get("facet")
+                or ("BOUND" if (srow.get("op") or srow.get("bound_op") or srow.get("value") or srow.get("bound_val")) else "OBLIGATION")
+            ).strip().upper()
+            rtype = "FACT" if raw_type == "CONTEXT_FACTS" else (raw_type if raw_type in (
+                "BOUND", "PROHIBITION", "OBLIGATION",
+                "FACT", "POLICY", "GOAL",
+                "PROPOSAL", "ACTION"
+            ) else "BOUND")
             prop_raw = str(srow.get("property") or srow.get("target_prop") or srow.get("prop") or "").strip()
             op = str(srow.get("op") or srow.get("bound_op") or "").strip() or None
             val = _parse_scalar_val(srow.get("value", srow.get("bound_val")))
@@ -339,8 +367,14 @@ def build_mcus_from_tables_and_flows(
             cond = cond_list[0] if cond_list else None
             rid = str(srow.get("rule") or srow.get("id") or srow.get("name") or "").strip()
             spec_txt = str(srow.get("spec") or srow.get("text") or srow.get("description") or "").strip()
-            txt = spec_txt or (f"In `{scope}`, `{prop}` {op} {val}" + (f" when {', '.join(cond_list)}." if cond_list else ".") if prop and val is not None else f"Rule {rid or next_id} on `{scope}`.")
-            facet = "Numeric_Bounds" if rtype == "BOUND" else ("prohibitions" if rtype == "PROHIBITION" else ("context_facts" if rtype == "FACT" else "obligations"))
+            txt = spec_txt or (
+                f"In `{scope}`, `{prop}` {op} {val}" + (f" when {', '.join(cond_list)}." if cond_list else ".")
+                if prop and val is not None else f"Rule {rid or next_id} on `{scope}`."
+            )
+            facet = (
+                "Numeric_Bounds" if rtype == "BOUND"
+                else ("prohibitions" if rtype == "PROHIBITION" else ("context_facts" if rtype == "FACT" else "obligations"))
+            )
             is_exc = bool(cond and cond.lower().startswith(("unless", "except")))
             mcus.append({
                 "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
@@ -374,7 +408,10 @@ def build_mcus_from_tables_and_flows(
             raw_files_cell = srow.get("files") or srow.get("file") or srow.get("raw_scope")
             files = _split_list_cell(raw_files_cell)
             eff_owner = owner or "core"
-            role = str(srow.get("role") or srow.get("description") or srow.get("purpose") or f"Component {scope}").strip()
+            role = str(
+                srow.get("role") or srow.get("description")
+                or srow.get("purpose") or f"Component {scope}"
+            ).strip()
             why = str(srow.get("why") or srow.get("rationale") or "").strip() or None
             mcus.append({
                 "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
@@ -384,12 +421,19 @@ def build_mcus_from_tables_and_flows(
                 "conditions": [], "is_exception": False, "superseded_literals": [],
                 "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
                 "lattice_kind": "COMPONENT",
-                "lattice_payload": {"scope": scope, "role": role, "why": why, "depends_on": deps, "files": files, "owner": eff_owner, "stage": stage},
+                "lattice_payload": {
+                    "scope": scope, "role": role, "why": why,
+                    "depends_on": deps, "files": files,
+                    "owner": eff_owner, "stage": stage
+                },
             })
             next_id += 1
         elif t_kind in ("INTERFACE", "LAW", "SCHEMA"):
             name = str(srow.get(t_kind.lower()) or srow.get("name") or srow.get("id") or scope).strip()
-            spec_s = str(srow.get("spec") or srow.get("description") or srow.get("theorem") or f"{t_kind} {name} ({scope})").strip()
+            spec_s = str(
+                srow.get("spec") or srow.get("description")
+                or srow.get("theorem") or f"{t_kind} {name} ({scope})"
+            ).strip()
             ins = _split_list_cell(srow.get("inputs") or srow.get("fields") or srow.get("args"))
             outs = _split_list_cell(srow.get("outputs") or srow.get("output") or srow.get("returns"))
             mcus.append({
@@ -400,7 +444,12 @@ def build_mcus_from_tables_and_flows(
                 "conditions": [], "is_exception": False, "superseded_literals": [],
                 "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
                 "lattice_kind": t_kind,
-                "lattice_payload": {"id": name, "name": name, "scope": scope, "spec": spec_s, "inputs": ins, "outputs": outs, "owner": owner, "stage": stage, "file": str(srow.get("file") or "").strip() or None},
+                "lattice_payload": {
+                    "id": name, "name": name, "scope": scope,
+                    "spec": spec_s, "inputs": ins, "outputs": outs,
+                    "owner": owner, "stage": stage, "file": str(srow.get("file") or "").strip()
+                    or None
+                },
             })
             next_id += 1
 

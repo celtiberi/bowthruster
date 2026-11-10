@@ -135,7 +135,10 @@ def flow_payload_clashes(
     payload_in_target_inputs: bool,
 ) -> bool:
     """Evaluates signal-flow interface payload compatibility governed by Bend 2 Law 8 (`flow_interface_payload_compatibility`)."""
-    return bool((source_declares_outputs and not payload_in_source_outputs) or (target_declares_inputs and not payload_in_target_inputs))
+    return bool(
+        (source_declares_outputs and not payload_in_source_outputs)
+        or (target_declares_inputs and not payload_in_target_inputs)
+    )
 
 
 def classify_lattice_proof_status(
@@ -152,7 +155,10 @@ def classify_lattice_proof_status(
     return "INCOMPLETE_DRAFT"
 
 
-def _can_reach_edge(scopes: dict[str, Any], start_sid: str, target_sid: str, edge_key: str, max_hops: int = MAX_ANCESTOR_HOPS) -> bool:
+def _can_reach_edge(
+    scopes: dict[str, Any], start_sid: str,
+    target_sid: str, edge_key: str, max_hops: int = MAX_ANCESTOR_HOPS
+) -> bool:
     """Checks whether `target_sid` is reachable from `start_sid` via `edge_key` (`'depends_on'` or `'parent'`) within `max_hops`."""
     if start_sid == target_sid:
         return True
@@ -178,7 +184,10 @@ def _can_reach_edge(scopes: dict[str, Any], start_sid: str, target_sid: str, edg
     return False
 
 
-def _can_reach_depends_on(scopes: dict[str, Any], start_sid: str, target_sid: str, max_hops: int = MAX_ANCESTOR_HOPS) -> bool:
+def _can_reach_depends_on(
+    scopes: dict[str, Any], start_sid: str,
+    target_sid: str, max_hops: int = MAX_ANCESTOR_HOPS
+) -> bool:
     """Checks whether `target_sid` is reachable from `start_sid` via `depends_on` edges within `max_hops` (Spec 22B §2.2 item 3)."""
     return _can_reach_edge(scopes, start_sid, target_sid, "depends_on", max_hops)
 
@@ -311,7 +320,11 @@ def detect_frustration(
 
             ov_b = set(rb.get("overrides", []))
             ex_b = {ex.get("rule_id") for ex in rb.get("exceptions", []) if isinstance(ex, dict)}
-            is_shielded = (rid_b in ov_a) or (rid_a in ov_b) or (rid_b in ex_a) or (rid_a in ex_b) or (is_ancestor_pair and (bool(ra.get("is_exception")) or bool(rb.get("is_exception"))))
+            is_shielded = (
+                (rid_b in ov_a) or (rid_a in ov_b)
+                or (rid_b in ex_a) or (rid_a in ex_b)
+                or (is_ancestor_pair and (bool(ra.get("is_exception")) or bool(rb.get("is_exception"))))
+            )
 
             if _inherited_rules_clash(ra, rb, is_shielded):
                 pair_ids = sorted([rid_a, rid_b])
@@ -369,7 +382,10 @@ def detect_frustration(
             tgt = str(fl.get("target") or "").strip()
             payload = str(fl.get("payload") or "").strip()
             has_prohib, _ = (
-                _find_prohibition_on_target(scopes, ancestors_by_scope, src, tgt, filter_ids=filter_ids, allow_upward_imports=False)
+                _find_prohibition_on_target(
+                    scopes, ancestors_by_scope, src, tgt,
+                    filter_ids=filter_ids, allow_upward_imports=False
+                )
                 if (src and tgt)
                 else (False, None)
             )
@@ -437,7 +453,10 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
     raw_flows = graph.get("flows") if isinstance(graph.get("flows"), list) else []
     flows = [f for f in raw_flows if isinstance(f, dict)]
     raw_arts = graph.get("lattice_artifacts")
-    artifacts = [a for a in (raw_arts.values() if isinstance(raw_arts, dict) else (raw_arts if isinstance(raw_arts, list) else [])) if isinstance(a, dict)]
+    artifacts = [
+        a for a in (raw_arts.values() if isinstance(raw_arts, dict) else (raw_arts if isinstance(raw_arts, list) else []))
+        if isinstance(a, dict)
+    ]
     hard_violations = detect_frustration(graph)
 
     owned_components = [
@@ -454,21 +473,46 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
             k for k, v in scopes.items() if isinstance(v, dict) and str(v.get("parent") or "").strip() == sid
         }
         family_sids = {sid, *anc_sids, *child_sids}
-        owner = next((str(scopes.get(s, {}).get("owner") or "").strip().lower() for s in (sid, *anc_sids) if isinstance(scopes.get(s), dict) and str(scopes.get(s, {}).get("owner") or "").strip()), "")
+        owner = next(
+            (
+                str(scopes.get(s, {}).get("owner") or "").strip().lower()
+                for s in (sid, *anc_sids) if isinstance(scopes.get(s), dict)
+                and str(scopes.get(s, {}).get("owner") or "").strip()
+            ),
+            ""
+        )
         if not owner:
             open_gaps.append({"kind": "MISSING_OWNER", "scope": sid, "description": f"Component '{sid}' has no assigned division owner."})
 
         has_law = any(a.get("kind") in ("LAW", "INTERFACE", "SCHEMA") and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids for a in artifacts) or any(
-            bool(scopes.get(s, {}).get("laws") or scopes.get(s, {}).get("files") or scopes.get(s, {}).get("rules")) for s in family_sids if isinstance(scopes.get(s), dict)
+            bool(
+                scopes.get(s, {}).get("laws") or scopes.get(s, {}).get("files")
+                or scopes.get(s, {}).get("rules")
+            ) for s in family_sids if isinstance(scopes.get(s), dict)
         )
         if not has_law:
             open_gaps.append({"kind": "MISSING_LAW", "scope": sid, "description": f"Component '{sid}' has no Bend 2 formal law (% LAW)."})
 
-        is_qa = sid.startswith("test_") or owner == "bobo"
+        is_qa = sid.startswith(("test_", "tests/", "qa_")) or owner in ("qa", "q-division")
         has_contract = (
-            any(a.get("kind") in ("SCHEMA", "INTERFACE") and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids for a in artifacts)
-            or any(bool(scopes.get(s, {}).get("inputs") or scopes.get(s, {}).get("outputs") or scopes.get(s, {}).get("schemas") or scopes.get(s, {}).get("interfaces")) for s in family_sids if isinstance(scopes.get(s), dict))
-            or any((str(f.get("source") or "").strip() in family_sids or str(f.get("target") or "").strip() in family_sids) and bool(str(f.get("payload") or "").strip()) for f in flows)
+            any(
+                a.get("kind") in ("SCHEMA", "INTERFACE")
+                and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids
+                for a in artifacts
+            )
+            or any(
+                bool(
+                    scopes.get(s, {}).get("inputs") or scopes.get(s, {}).get("outputs")
+                    or scopes.get(s, {}).get("schemas")
+                    or scopes.get(s, {}).get("interfaces")
+                )
+                for s in family_sids if isinstance(scopes.get(s), dict)
+            )
+            or any(
+                (str(f.get("source") or "").strip() in family_sids or str(f.get("target") or "").strip() in family_sids)
+                and bool(str(f.get("payload") or "").strip())
+                for f in flows
+            )
             or (is_qa and any(bool(scopes.get(s, {}).get("rules") or scopes.get(s, {}).get("tasks")) for s in family_sids if isinstance(scopes.get(s), dict)))
         )
         if not has_contract:
@@ -476,12 +520,22 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
 
         if not is_qa:
             flow_sids = family_sids
-            if not any(str(f.get("source") or "").strip() in flow_sids or str(f.get("target") or "").strip() in flow_sids for f in flows):
+            if not any(
+                str(f.get("source") or "").strip() in flow_sids
+                or str(f.get("target") or "").strip() in flow_sids
+                for f in flows
+            ):
                 open_gaps.append({"kind": "UNWIRED_COMPONENT", "scope": sid, "description": f"Component '{sid}' is not connected to any > FLOW edge."})
 
-    all_components_complete = not any(g["kind"] in ("MISSING_OWNER", "MISSING_LAW", "MISSING_CONTRACT") for g in open_gaps)
+    all_components_complete = not any(
+        g["kind"] in ("MISSING_OWNER", "MISSING_LAW", "MISSING_CONTRACT")
+        for g in open_gaps
+    )
     all_flows_connected = not any(g["kind"] == "UNWIRED_COMPONENT" for g in open_gaps)
-    status = classify_lattice_proof_status(bool(hard_violations), bool(owned_components), all_components_complete, all_flows_connected)
+    status = classify_lattice_proof_status(
+        bool(hard_violations), bool(owned_components),
+        all_components_complete, all_flows_connected
+    )
     return {
         "status": status,
         "is_proven": status == "PROVEN_COMPLETE",
@@ -491,5 +545,8 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
         "contract_count": sum(1 for a in artifacts if a.get("kind") in ("SCHEMA", "INTERFACE")),
         "hard_violations": hard_violations,
         "open_gaps": open_gaps,
-        "bend_proof_source": _render_board_bend_proof(bool(hard_violations), bool(owned_components), all_components_complete, all_flows_connected),
+        "bend_proof_source": _render_board_bend_proof(
+            bool(hard_violations), bool(owned_components),
+            all_components_complete, all_flows_connected
+        ),
     }

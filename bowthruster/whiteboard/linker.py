@@ -22,7 +22,7 @@ from .rewriter import (
     _extract_canonical_and_aliases, _filter_non_dep_tokens, _parse_list_cell, _parse_scalar_cell,
     _register_scope_aliases, _resolve_known_component_scope, _resolve_or_register_scope,
     _slugify_scope_id, create_empty_context_graph, fuse_table_attributes,
-    is_flow_or_rule_table_fused, is_table_schema_valid, resolve_mcu_scopes_and_refs,
+    resolve_mcu_scopes_and_refs,
 )
 
 
@@ -147,7 +147,11 @@ def classify_delta_transition(
     unclear_spans = list(parsed_mcu.get("unclear_spans", []))
     grounding = str(parsed_mcu.get("grounding_status") or "GROUNDED")
     target_prop, bound_op, bound_val = parsed_mcu.get("target_prop"), parsed_mcu.get("bound_op"), parsed_mcu.get("bound_val")
-    conditions = [restore_ascii_dots(str(c)).strip() for c in parsed_mcu.get("conditions", []) if str(c).strip() and restore_ascii_dots(str(c)).strip().lower() not in ("none", "-", "—", "n/a", "null")]
+    conditions = [
+        restore_ascii_dots(str(c)).strip()
+        for c in parsed_mcu.get("conditions", [])
+        if str(c).strip() and restore_ascii_dots(str(c)).strip().lower() not in ("none", "-", "—", "n/a", "null")
+    ]
     cond_set = set(conditions)
     is_exception = bool(parsed_mcu.get("is_exception", False))
     meta = copy.deepcopy(parsed_mcu.get("meta", {})) if isinstance(parsed_mcu.get("meta"), dict) else {}
@@ -175,11 +179,21 @@ def classify_delta_transition(
                     continue
                 rmeta = graph.get("scopes", {}).get(r_sid, {}).get("_meta", {}).get(r_prev.get("id", ""), {})
                 if isinstance(rmeta, dict):
-                    rat_str = " ".join(str(rmeta.get(k, "")) for k in ("rationale", "transition_rationale") if rmeta.get(k))
+                    rat_str = " ".join(
+                        str(rmeta.get(k, "")) for k in ("rationale", "transition_rationale")
+                        if rmeta.get(k)
+                    )
                     if rat_str and inc_toks.issubset(set(tokenize_content_words(rat_str))):
-                        return DeltaTransition(operation=DeltaOperation.ATTACH_RATIONALE, matched_rule_scope=r_sid, matched_rule=r_prev, **base_kw)
+                        return DeltaTransition(
+                            operation=DeltaOperation.ATTACH_RATIONALE,
+                            matched_rule_scope=r_sid, matched_rule=r_prev,
+                            **base_kw
+                        )
 
-    prohibited = _is_prohibited_by_active_rule(existing_rules, target_prop, bound_op, bound_val, cond_set, node_type, is_exception)
+    prohibited = _is_prohibited_by_active_rule(
+        existing_rules, target_prop, bound_op,
+        bound_val, cond_set, node_type, is_exception
+    )
     incoming_is_prohib = node_type == "PROHIBITION" or bound_op == "!="
     if target_prop is not None and not prohibited:
         same_prop_cond_match = next(
@@ -202,7 +216,11 @@ def classify_delta_transition(
                 and not _intervals_satisfiable(r_old.get("bound_op"), float(r_old_val), bound_op, float(bound_val))
             )
             if not same_turn_disjoint_bounds:
-                return DeltaTransition(operation=DeltaOperation.MARKOVIAN_OVERWRITE, matched_rule_scope=r_sid, matched_rule=r_old, **base_kw)
+                return DeltaTransition(
+                    operation=DeltaOperation.MARKOVIAN_OVERWRITE,
+                    matched_rule_scope=r_sid, matched_rule=r_old,
+                    **base_kw
+                )
 
     broader_rules: list[dict[str, Any]] = []
     if conditions or is_exception:
@@ -259,7 +277,11 @@ def classify_and_apply_delta(
     scope_id, ref_scopes = resolve_mcu_scopes_and_refs(graph, parsed_mcu)
 
     lpayload = parsed_mcu.get("lattice_payload") if isinstance(parsed_mcu.get("lattice_payload"), dict) else {}
-    lkind = str(parsed_mcu.get("lattice_kind") or lpayload.get("kind") or str(lpayload.get("op") or "").removeprefix("UPSERT_") or "").strip().upper()
+    lkind = str(
+        parsed_mcu.get("lattice_kind") or lpayload.get("kind")
+        or str(lpayload.get("op") or "").removeprefix("UPSERT_")
+        or ""
+    ).strip().upper()
     unclear_spans = list(parsed_mcu.get("unclear_spans", []))
     grounding = str(parsed_mcu.get("grounding_status") or "GROUNDED")
     mcu_id = parsed_mcu.get("mcu_id", 1)
@@ -288,7 +310,10 @@ def classify_and_apply_delta(
             dep_sids = [_resolve_or_register_scope(graph, str(d), create=True) for d in clean_deps if str(d).strip()]
         else:
             dep_sids = None
-        role_val = sc_attrs["_table_role"] if ("_table_role" in sc_attrs and from_table_this_turn) else (lpayload.get("role") if "role" in lpayload else parsed_mcu.get("role"))
+        role_val = (
+            sc_attrs["_table_role"] if ("_table_role" in sc_attrs and from_table_this_turn)
+            else (lpayload.get("role") if "role" in lpayload else parsed_mcu.get("role"))
+        )
         raw_files = lpayload.get("files") if "files" in lpayload else parsed_mcu.get("files")
         comp_scope = upsert_component_spec(
             graph, comp_sid, role=role_val,
@@ -311,7 +336,10 @@ def classify_and_apply_delta(
 
     if lop == "UPSERT_FLOW":
         raw_src = str(lpayload.get("source") or parsed_mcu.get("source") or scope_id).strip()
-        raw_tgt = str(lpayload.get("target") or parsed_mcu.get("target") or (ref_scopes[0] if ref_scopes else scope_id)).strip()
+        raw_tgt = str(
+            lpayload.get("target") or parsed_mcu.get("target")
+            or (ref_scopes[0] if ref_scopes else scope_id)
+        ).strip()
         src_sid = _resolve_or_register_scope(graph, raw_src, create=True)
         tgt_sid = _resolve_or_register_scope(graph, raw_tgt, create=True)
         conds = [restore_ascii_dots(str(c)).strip() for c in parsed_mcu.get("conditions", []) if str(c).strip()]
@@ -330,18 +358,32 @@ def classify_and_apply_delta(
         )
         annotate_active_tasks(graph)
         sync_to_sqlite(graph)
-        return {"operation": lop, "flow_id": flow_entry["id"], "source": src_sid, "target": tgt_sid, "scope": src_sid, "mcu_id": mcu_id}
+        return {
+            "operation": lop, "flow_id": flow_entry["id"],
+            "source": src_sid, "target": tgt_sid,
+            "scope": src_sid, "mcu_id": mcu_id
+        }
 
     if lop in ("UPSERT_SCHEMA", "UPSERT_INTERFACE", "UPSERT_LAW"):
         raw_ids = lpayload.get("ids") if isinstance(lpayload.get("ids"), list) else (parsed_mcu.get("ids") if isinstance(parsed_mcu.get("ids"), list) else [])
-        fallback_id = str(lpayload.get("id") or lpayload.get("name") or parsed_mcu.get("id") or parsed_mcu.get("name") or parsed_mcu.get("target_prop") or scope_id).strip()
+        fallback_id = str(
+            lpayload.get("id") or lpayload.get("name")
+            or parsed_mcu.get("id") or parsed_mcu.get("name")
+            or parsed_mcu.get("target_prop") or scope_id
+        ).strip()
         art_ids = [str(x).strip() for x in raw_ids if str(x).strip()] or [fallback_id]
         art_sid_raw = lpayload.get("scope_id") or lpayload.get("scope")
-        art_sid = _resolve_known_component_scope(graph, str(art_sid_raw), text_clean, parsed_mcu) if (art_sid_raw and str(art_sid_raw).strip() != "global_defaults") else scope_id
+        art_sid = _resolve_known_component_scope(
+            graph, str(art_sid_raw), text_clean,
+            parsed_mcu
+        ) if (art_sid_raw and str(art_sid_raw).strip() != "global_defaults") else scope_id
         if art_sid == "global_defaults" and scope_id != "global_defaults":
             art_sid = scope_id
         raw_ins = lpayload.get("inputs") if "inputs" in lpayload else parsed_mcu.get("inputs")
-        raw_outs = lpayload.get("outputs") if "outputs" in lpayload else (lpayload.get("output") if "output" in lpayload else (parsed_mcu.get("outputs") if "outputs" in parsed_mcu else parsed_mcu.get("output")))
+        raw_outs = (
+            lpayload.get("outputs") if "outputs" in lpayload
+            else (lpayload.get("output") if "output" in lpayload else (parsed_mcu.get("outputs") if "outputs" in parsed_mcu else parsed_mcu.get("output")))
+        )
         ins_list = _parse_list_cell(raw_ins) if isinstance(raw_ins, str) else raw_ins
         outs_list = _parse_list_cell(raw_outs) if isinstance(raw_outs, str) else raw_outs
         extra_art_fields = {
@@ -355,7 +397,15 @@ def classify_and_apply_delta(
         for art_name in art_ids:
             eff_sid = art_sid
             if eff_sid == "global_defaults":
-                existing_art = next((a for a in graph.get("lattice_artifacts", []) if isinstance(a, dict) and a.get("kind") == lkind and str(a.get("name", "")).lower() == art_name.lower() and a.get("scope") not in (None, "", "global_defaults")), None)
+                existing_art = next(
+                    (
+                        a for a in graph.get("lattice_artifacts", [])
+                        if isinstance(a, dict) and a.get("kind") == lkind
+                        and str(a.get("name", "")).lower() == art_name.lower()
+                        and a.get("scope") not in (None, "", "global_defaults")
+                    ),
+                    None
+                )
                 if existing_art is not None:
                     eff_sid = str(existing_art["scope"])
             entry = upsert_lattice_artifact(
@@ -377,12 +427,21 @@ def classify_and_apply_delta(
         }
 
     existing_rules = _collect_root_scope_rules(graph, scope_id)
-    tr = classify_delta_transition(graph, parsed_mcu, scope_id=scope_id, ref_scopes=ref_scopes, existing_rules=existing_rules, turn_index=t_turn)
+    tr = classify_delta_transition(
+        graph, parsed_mcu, scope_id=scope_id,
+        ref_scopes=ref_scopes, existing_rules=existing_rules,
+        turn_index=t_turn
+    )
     op = tr.operation
 
     if op == DeltaOperation.BLOCKER_CLARIFICATION:
         blocker_id = f"clarify_t{t_turn}_m{tr.mcu_id}"
-        blocker = {"id": blocker_id, "type": "CLARIFICATION", "scope": scope_id, "mcu_id": tr.mcu_id, "text": "; ".join(tr.unclear_spans) if tr.unclear_spans else tr.text, "rule_ids": []}
+        blocker = {
+            "id": blocker_id, "type": "CLARIFICATION",
+            "scope": scope_id, "mcu_id": tr.mcu_id,
+            "text": "; ".join(tr.unclear_spans)
+            if tr.unclear_spans else tr.text, "rule_ids": []
+        }
         blockers = graph.setdefault("open_blockers", [])
         if not any(b.get("id") == blocker_id for b in blockers if isinstance(b, dict)):
             blockers.append(blocker)
@@ -392,7 +451,11 @@ def classify_and_apply_delta(
 
     if op == DeltaOperation.BLOCKER_QUESTION:
         blocker_id = f"question_t{t_turn}_m{tr.mcu_id}"
-        blocker = {"id": blocker_id, "type": "QUESTION", "scope": scope_id, "mcu_id": tr.mcu_id, "text": tr.text, "rule_ids": []}
+        blocker = {
+            "id": blocker_id, "type": "QUESTION",
+            "scope": scope_id, "mcu_id": tr.mcu_id,
+            "text": tr.text, "rule_ids": []
+        }
         blockers = graph.setdefault("open_blockers", [])
         if not any(b.get("id") == blocker_id for b in blockers if isinstance(b, dict)):
             blockers.append(blocker)
@@ -401,7 +464,10 @@ def classify_and_apply_delta(
         return {"operation": op.value, "blocker_id": blocker_id, "scope": scope_id, "mcu_id": tr.mcu_id}
 
     if op == DeltaOperation.COMMIT_NOTE:
-        note = upsert_ambient_note(graph, {"id": f"commit_t{t_turn}_m{tr.mcu_id}", "text": tr.text, "turn": t_turn}, current_turn=t_turn)
+        note = upsert_ambient_note(
+            graph, {"id": f"commit_t{t_turn}_m{tr.mcu_id}", "text": tr.text, "turn": t_turn},
+            current_turn=t_turn
+        )
         return {"operation": op.value, "note_id": note["id"], "scope": scope_id, "mcu_id": tr.mcu_id}
 
     if op in (DeltaOperation.UPSERT_TASK, DeltaOperation.GRADUATE_TASK_TO_FACT):
@@ -412,7 +478,11 @@ def classify_and_apply_delta(
                 fact_r = graduate_task_to_fact(graph, explicit_tid, current_turn=t_turn)
                 annotate_active_tasks(graph)
                 sync_to_sqlite(graph)
-                return {"operation": DeltaOperation.GRADUATE_TASK_TO_FACT.value, "rule_id": fact_r["id"], "scope": scope_id, "mcu_id": tr.mcu_id}
+                return {
+                    "operation": DeltaOperation.GRADUATE_TASK_TO_FACT.value,
+                    "rule_id": fact_r["id"], "scope": scope_id,
+                    "mcu_id": tr.mcu_id
+                }
         task_id = str(parsed_mcu.get("task_id") or parsed_mcu.get("id") or f"task_t{t_turn}_m{tr.mcu_id}")
         raw_deps = parsed_mcu.get("depends_on") if parsed_mcu.get("depends_on") is not None else lpayload.get("depends_on")
         deps_list = [str(d) for d in raw_deps if d] if isinstance(raw_deps, list) else list(ref_scopes)
@@ -444,7 +514,10 @@ def classify_and_apply_delta(
         return {"operation": op.value, "task_id": task_id, "scope": scope_id, "mcu_id": tr.mcu_id}
 
     if op == DeltaOperation.ATTACH_RATIONALE and tr.matched_rule is not None and tr.matched_rule_scope is not None:
-        return {"operation": op.value, "rule_id": str(tr.matched_rule["id"]), "scope": tr.matched_rule_scope, "mcu_id": tr.mcu_id}
+        return {
+            "operation": op.value, "rule_id": str(tr.matched_rule["id"]),
+            "scope": tr.matched_rule_scope, "mcu_id": tr.mcu_id
+        }
 
     rule_payload: dict[str, Any] = {
         "type": tr.node_type, "facet": tr.facet, "text": tr.text, "target_prop": tr.target_prop,
@@ -455,7 +528,11 @@ def classify_and_apply_delta(
         updated = markovian_overwrite_rule(graph, tr.matched_rule_scope, str(tr.matched_rule["id"]), rule_payload)
         annotate_active_tasks(graph)
         sync_to_sqlite(graph)
-        return {"operation": op.value, "rule_id": updated["id"], "scope": tr.matched_rule_scope, "target_prop": tr.target_prop, "mcu_id": tr.mcu_id}
+        return {
+            "operation": op.value, "rule_id": updated["id"],
+            "scope": tr.matched_rule_scope, "target_prop": tr.target_prop,
+            "mcu_id": tr.mcu_id
+        }
 
     existing_rids = {
         str(r["id"])
@@ -489,4 +566,8 @@ def classify_and_apply_delta(
 
     annotate_active_tasks(graph)
     sync_to_sqlite(graph)
-    return {"operation": op.value, "rule_id": new_rule["id"], "scope": scope_id, "target_prop": tr.target_prop, "mcu_id": tr.mcu_id}
+    return {
+        "operation": op.value, "rule_id": new_rule["id"],
+        "scope": scope_id, "target_prop": tr.target_prop,
+        "mcu_id": tr.mcu_id
+    }

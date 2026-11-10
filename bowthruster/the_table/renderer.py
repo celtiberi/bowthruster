@@ -101,8 +101,8 @@ def step_slot_lod_escalation(
     budget_ok: bool = True,
 ) -> TableLOD:
     """Pure monotonic LOD escalation transition governed by Bend 2 Law 1 (`lod_escalation_monotonicity_law`):
-    - When `request_upgrade` is `False`, preserves `cur_lod` unchanged;
-    - Never demotes `cur_lod`;
+    - When `request_upgrade` is `False`, preserves `cur_lod` unchanged
+    - Never demotes `cur_lod`
     - Only escalates `TLOD0 -> TLOD1` (and `TLOD1 -> TLOD2`) when `request_upgrade and words_within_50 and budget_ok`."""
     lod = _norm_lod(cur_lod)
     if not bool(request_upgrade) or not bool(words_within_50) or not bool(budget_ok):
@@ -265,7 +265,10 @@ class TableView(dict[str, Any]):
             extra_fields = {k: v for k, v in src.items() if k not in ("slots", "total_tokens", "compact_view")} | extra
         else:
             raw_slots = list(slots) if isinstance(slots, list) else []
-            raw_tokens = int(total_tokens) if total_tokens else sum(int(s.get("token_cost", 0)) for s in raw_slots if isinstance(s, dict))
+            raw_tokens = int(total_tokens) if total_tokens else sum(
+                int(s.get("token_cost", 0)) for s in raw_slots
+                if isinstance(s, dict)
+            )
             raw_view = str(compact_view or "")
             extra_fields = dict(extra)
 
@@ -293,7 +296,10 @@ class TableView(dict[str, Any]):
 def format_table_slot_line(slot: dict[str, Any], *, max_summary_words: int = MAX_SLOT_SUMMARY_WORDS) -> str:
     """Formats a single `TableSlot` into its canonical SBF `@ TABLE_SLOT` compact view line."""
     norm = slot if isinstance(slot, TableSlot) else TableSlot(slot, max_summary_words=max_summary_words)
-    summary = _clamp_summary_words(norm.get("summary") or norm.get("lod1_synopsis") or norm.get("concept_id"), max_summary_words)
+    summary = _clamp_summary_words(
+        norm.get("summary") or norm.get("lod1_synopsis")
+        or norm.get("concept_id"), max_summary_words
+    )
     norm["summary"] = summary
     norm["lod1_synopsis"] = summary
     return (
@@ -416,7 +422,10 @@ def upgrade_slot_lod(
     raw_cand_summary = (
         str(summary).strip()
         if summary is not None
-        else str(raw_slot.get("lod1_synopsis") or raw_slot.get("summary") or raw_slot.get("concept_id") or sid_clean).strip()
+        else str(
+            raw_slot.get("lod1_synopsis") or raw_slot.get("summary")
+            or raw_slot.get("concept_id") or sid_clean
+        ).strip()
     )
     words_within_50 = (
         len(raw_cand_summary.split()) <= max_summary_words
@@ -430,7 +439,10 @@ def upgrade_slot_lod(
         else max(1, token_cost(clamped_summary or str(raw_slot.get("concept_id") or sid_clean)))
     )
 
-    eff_token_cap = min(int(table_state.get("max_table_tokens", max_table_tokens) or max_table_tokens), MAX_TABLE_TOKENS)
+    eff_token_cap = min(
+        int(table_state.get("max_table_tokens", max_table_tokens) or max_table_tokens),
+        MAX_TABLE_TOKENS
+    )
     other_tokens = sum(int(s.get("token_cost", 0)) for i, s in enumerate(raw_list) if i != target_idx)
     budget_ok = (other_tokens + cand_cost) <= eff_token_cap
 

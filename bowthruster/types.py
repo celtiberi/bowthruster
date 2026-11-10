@@ -249,7 +249,8 @@ REFUSED_CONTEXT_OVERFLOW, REFUSED_PAYLOAD_TOO_LARGE = "context_overflow", "paylo
 @dataclass
 class InputSizes:
     """Spec 11 §7.2 (Director, 2026-10-29): every model input's actual size in bytes, per node, logged in every run
-    (with or without limits) so its shrinking can be tracked. `nodes` counts inputs that were sent; `refused` lists,
+    (with or without limits) so its shrinking can be tracked. `nodes` counts inputs that were sent
+    `refused` lists,
     separately, each input a size check stopped, with its node, size and reason (QA N1 ruling)."""
 
     nodes: dict[str, dict[str, int]] = field(default_factory=dict)

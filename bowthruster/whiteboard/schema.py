@@ -26,7 +26,10 @@ _SCOPE_SBF_DEFAULTS: tuple[tuple[str, Any], ...] = (
 )
 
 
-def _apply_entry_defaults(target: dict[str, Any], defaults: tuple[tuple[str, Any], ...], *, with_turns: bool = True) -> None:
+def _apply_entry_defaults(
+    target: dict[str, Any], defaults: tuple[tuple[str, Any], ...],
+    *, with_turns: bool = True
+) -> None:
     for k, v in defaults:
         target.setdefault(k, copy.deepcopy(v))
     if with_turns:
@@ -163,7 +166,11 @@ def _ensure_scope_node_nosync(graph: dict[str, Any], scope_id: str, *, parent: s
 class ContextGraph(dict[str, Any]):
     """Persistent Bounded Whiteboard / nD Lattice Graph container with optional `SQLiteGraphStore` binding (Spec 22A §2.1)."""
 
-    def __init__(self, data: dict[str, Any] | None = None, *, store: SQLiteGraphStore | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, data: dict[str, Any] | None = None,
+        *, store: SQLiteGraphStore | None = None,
+        **kwargs: Any
+    ) -> None:
         inherited_store = store if store is not None else getattr(data, "_sqlite_store", None)
         super().__init__(data or {}, **kwargs)
         self._sqlite_store: SQLiteGraphStore | None = inherited_store
@@ -286,7 +293,10 @@ def _partition_rules_for_mitosis(rules: list[dict[str, Any]], k_cap: int = DEFAU
     sub_groups: dict[str, list[dict[str, Any]]] = {}
     for r in rules:
         tp = str(r.get("target_prop") or "").strip().lower()
-        prefix = (tp.split("/")[0].strip() or "general") if "/" in tp else ((tp.split("_")[0].strip() or "general") if "_" in tp else (tp or "general"))
+        prefix = (tp.split("/")[0].strip() or "general") if "/" in tp else (
+            (tp.split("_")[0].strip() or "general")
+            if "_" in tp else (tp or "general")
+        )
         sub_groups.setdefault(prefix, []).append(r)
     if len(sub_groups) >= 2 and max(len(g) for g in sub_groups.values()) < len(rules):
         return sub_groups
@@ -406,7 +416,10 @@ def validate_context_graph(
         for ov_id in r.get("overrides", []):
             if ov_id not in all_rules:
                 errors.append(f"rule {rid!r} overrides nonexistent rule {ov_id!r}")
-            elif not any(isinstance(ex, dict) and ex.get("rule_id") == rid for ex in all_rules[ov_id][1].get("exceptions", [])):
+            elif not any(
+                isinstance(ex, dict) and ex.get("rule_id") == rid
+                for ex in all_rules[ov_id][1].get("exceptions", [])
+            ):
                 errors.append(f"rule {rid!r} overrides {ov_id!r}, but {ov_id!r}.exceptions lacks rule_id={rid!r}")
         for ex in r.get("exceptions", []):
             if isinstance(ex, dict):
@@ -463,7 +476,10 @@ def validate_context_graph(
         for idx, note in enumerate(ambient):
             if not isinstance(note, dict):
                 errors.append(f"ambient_notes[{idx}] must be a dict")
-            elif not isinstance(aturns := note.get("access_turns"), list) or not aturns or not all(isinstance(t, int) and not isinstance(t, bool) for t in aturns):
+            elif not isinstance(aturns := note.get("access_turns"), list) or not aturns or not all(
+                isinstance(t, int) and not isinstance(t, bool)
+                for t in aturns
+            ):
                 errors.append(f"ambient_notes[{idx}] must contain non-empty access_turns: list[int]")
 
     return errors

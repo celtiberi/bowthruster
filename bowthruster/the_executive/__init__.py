@@ -51,7 +51,7 @@ from bowthruster.the_executive.preflight import (
     is_preflight_clean,
     normalize_intake_packet,
 )
-from .orchestrator import (
+from bowthruster.the_executive.orchestrator import (
     ExecutiveTurnResult,
     PostCommitSyncResult,
     WorkingTreeDriftReport,
@@ -60,7 +60,7 @@ from .orchestrator import (
     should_mark_dependent_stale_on_commit,
     sync_post_commit_to_lattice,
 )
-from .voice import (
+from bowthruster.the_executive.voice import (
     EXECUTIVE_MAX_TOKENS,
     EXECUTIVE_PROMPT_KEY,
     ExecutiveVoiceError,
