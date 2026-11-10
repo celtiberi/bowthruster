@@ -5,7 +5,9 @@
     "mcp_protocol_verifier": "mcp_protocol_verifier",
     "mcp_server": "mcp_server",
     "mcp_tool_call": "mcp_tool_call",
-    "tests/test_git_lattice_sync.py": "mcp_server"
+    "tests/test_git_lattice_sync.py": "mcp_server",
+    "tests/test_git_lattice_sync.py, tests/test_hook_untested_and_bootstrap.py": "mcp_server",
+    "tests/test_git_lattice_sync.py_tests/test_hook_untested_and_bootstrap.py": "mcp_server"
   },
   "ambient_notes": [
     {
@@ -111,29 +113,22 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
+  "last_commit_sha": "f2783448dd382877aaca51a70cb6accaa21af44f",
   "lattice_artifacts": [
     {
       "calls": [
-        "_format_tool_result#L107-L115",
-        "_hot_reload_if_changed#L397-L430",
-        "_resolve_project_root#L90-L104",
-        "_tool_atlas#L144-L166",
-        "_tool_git_sync_or_status#L273-L314",
-        "_tool_packets_or_turn#L222-L270",
-        "_tool_readme_or_logs#L118-L141",
-        "_tool_slice#L169-L219"
+        "_tool_git_sync_or_status#L76-L144"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L317-L386",
+        "file": "bowthruster/mcp_server.py#L147-L224",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L317-L386",
+      "file": "bowthruster/mcp_server.py#L147-L224",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -154,20 +149,17 @@
       "updated_turn": 16
     },
     {
-      "calls": [
-        "_hot_reload_if_changed#L397-L430",
-        "_read_doc_resource#L59-L87"
-      ],
+      "calls": [],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "bowthruster/mcp_server.py#L433-L475",
+        "file": "bowthruster/mcp_server.py#L227-L278",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "bowthruster/mcp_server.py#L433-L475",
+      "file": "bowthruster/mcp_server.py#L227-L278",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -248,10 +240,10 @@
       "dimensions": {
         "description": "JSON-RPC 2.0 MCP request envelope",
         "fields": "jsonrpc, id, method, params",
-        "file": "bowthruster/mcp_server.py#L31-L35",
+        "file": "bowthruster/mcp_server.py#L48-L52",
         "schema": "McpJsonRpcRequest"
       },
-      "file": "bowthruster/mcp_server.py#L31-L35",
+      "file": "bowthruster/mcp_server.py#L48-L52",
       "id": "schema_mcp_server_mcpjsonrpcrequest",
       "inputs": [],
       "kind": "SCHEMA",
@@ -377,7 +369,8 @@
       ],
       "stage": null,
       "status": "DRAFT",
-      "tests": []
+      "tests": [],
+      "verified_untested": false
     },
     "mcp_protocol_verifier": {
       "_meta": {},
@@ -429,7 +422,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
+      "last_commit_sha": "f2783448dd382877aaca51a70cb6accaa21af44f",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -449,45 +442,63 @@
       "_role_missing": false,
       "_why_missing": false,
       "aliases": [
-        "tests/test_git_lattice_sync.py"
+        "tests/test_git_lattice_sync.py",
+        "tests/test_git_lattice_sync.py, tests/test_hook_untested_and_bootstrap.py"
       ],
       "attributes": {
         "_table_depends_on": [],
         "_table_files": [
           "bowthruster/mcp_server.py",
+          "bowthruster/mcp_transport.py",
           "bowthruster/mcp_schemas.py",
           "bowthruster/cli.py",
+          "bowthruster/cli_parser.py",
+          "bowthruster/cli_session.py",
           "bowthruster/cli_commands.py",
-          "bowthruster/bootstrap.py"
+          "bowthruster/flight_recorder.py",
+          "bowthruster/bootstrap.py",
+          "bowthruster/bootstrap_ast.py"
         ],
         "_table_role": "Stdio JSON-RPC 2.0 MCP Server & Tool Dispatcher",
-        "depends_on": "",
+        "depends_on": "none",
         "description": "MCP tool call result payload",
         "fields": "content, isError, structuredContent",
         "file": "bowthruster/mcp_server.py",
         "file_hashes": {
-          "bowthruster/bootstrap.py": "f0ab81745c1d0073",
-          "bowthruster/cli.py": "86f30ff4601e1fed",
-          "bowthruster/cli_commands.py": "fe817013d00cb419",
+          "bowthruster/bootstrap.py": "079f6e138f6c6f4f",
+          "bowthruster/bootstrap_ast.py": "b860c20b937f28af",
+          "bowthruster/cli.py": "f5db5b7ed9d22727",
+          "bowthruster/cli_commands.py": "39df58fbabb7e4f1",
+          "bowthruster/cli_parser.py": "a5b6cfb38d61f3ad",
+          "bowthruster/cli_session.py": "9d796624b7cb8395",
+          "bowthruster/flight_recorder.py": "9723d7d6293d7d57",
           "bowthruster/mcp_schemas.py": "8c8fffe79a8b0012",
-          "bowthruster/mcp_server.py": "680ddb423f026798"
+          "bowthruster/mcp_server.py": "7f1e80354fe454a4",
+          "bowthruster/mcp_transport.py": "050448f70e5ac10b"
         },
         "files": [
           "bowthruster/mcp_server.py",
+          "bowthruster/mcp_transport.py",
           "bowthruster/mcp_schemas.py",
           "bowthruster/cli.py",
+          "bowthruster/cli_parser.py",
+          "bowthruster/cli_session.py",
           "bowthruster/cli_commands.py",
-          "bowthruster/bootstrap.py"
+          "bowthruster/flight_recorder.py",
+          "bowthruster/bootstrap.py",
+          "bowthruster/bootstrap_ast.py"
         ],
         "lod1_synopsis": "The mcp_server component must route skills sections according to Spec 28.",
         "owner": "core",
         "role": "Stdio JSON-RPC 2.0 MCP Server & Tool Dispatcher",
         "schema": "McpToolCallResult",
         "stage": 28,
+        "status": "VERIFIED",
         "tests": [
-          "tests/test_git_lattice_sync.py"
+          "tests/test_git_lattice_sync.py",
+          "tests/test_hook_untested_and_bootstrap.py"
         ],
-        "updated_turn": 16,
+        "updated_turn": 18,
         "why": "Expose BowThruster tools and resources over Model Context Protocol stdio transport"
       },
       "build_status": "VERIFIED",
@@ -500,18 +511,28 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/bootstrap.py": "f0ab81745c1d0073",
-        "bowthruster/cli.py": "86f30ff4601e1fed",
-        "bowthruster/cli_commands.py": "fe817013d00cb419",
+        "bowthruster/bootstrap.py": "079f6e138f6c6f4f",
+        "bowthruster/bootstrap_ast.py": "b860c20b937f28af",
+        "bowthruster/cli.py": "f5db5b7ed9d22727",
+        "bowthruster/cli_commands.py": "39df58fbabb7e4f1",
+        "bowthruster/cli_parser.py": "a5b6cfb38d61f3ad",
+        "bowthruster/cli_session.py": "9d796624b7cb8395",
+        "bowthruster/flight_recorder.py": "9723d7d6293d7d57",
         "bowthruster/mcp_schemas.py": "8c8fffe79a8b0012",
-        "bowthruster/mcp_server.py": "680ddb423f026798"
+        "bowthruster/mcp_server.py": "7f1e80354fe454a4",
+        "bowthruster/mcp_transport.py": "050448f70e5ac10b"
       },
       "files": [
         "bowthruster/mcp_server.py",
+        "bowthruster/mcp_transport.py",
         "bowthruster/mcp_schemas.py",
         "bowthruster/cli.py",
+        "bowthruster/cli_parser.py",
+        "bowthruster/cli_session.py",
         "bowthruster/cli_commands.py",
-        "bowthruster/bootstrap.py"
+        "bowthruster/flight_recorder.py",
+        "bowthruster/bootstrap.py",
+        "bowthruster/bootstrap_ast.py"
       ],
       "id": "mcp_server",
       "in_edges": [
@@ -519,7 +540,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
+      "last_commit_sha": "f2783448dd382877aaca51a70cb6accaa21af44f",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -527,7 +548,7 @@
       "rules": [
         {
           "access_turns": [
-            16
+            18
           ],
           "bound_op": "<=",
           "bound_val": 28,
@@ -552,14 +573,15 @@
       "stage": "28",
       "status": "VERIFIED",
       "tests": [
-        "tests/test_git_lattice_sync.py"
+        "tests/test_git_lattice_sync.py",
+        "tests/test_hook_untested_and_bootstrap.py"
       ],
       "updated_turn": 1,
       "verified_untested": false,
       "why": "Expose BowThruster tools and resources over Model Context Protocol stdio transport"
     }
   },
-  "turn": 16,
-  "turn_index": 16,
+  "turn": 18,
+  "turn_index": 18,
   "version": 1
 }

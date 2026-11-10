@@ -90,35 +90,43 @@ def _attempts(meta: Any, failure: BaseException | None) -> dict[str, Any]:
     }
 
 
-def run_phase0(raw_text: str, gen: object = None, limits: object = None, **kwargs: object) -> dict[str, object]:
+def run_phase0(
+    raw_text: str,
+    gen: object = None,
+    limits: object = None,
+) -> dict[str, object]:
     """Deterministic compatibility wrapper returning `raw_text` and extracted Markdown tables."""
-    _ = gen, limits, kwargs
+    _ = gen, limits
     return {"raw_text": raw_text, "doc_tables": extract_markdown_tables(raw_text)}
 
 
 def run_phase1(
-    p0_res: dict[str, object], jev: object = None,
-    limits: object = None, **kwargs: object
+    p0_res: dict[str, object],
+    jev: object = None,
+    limits: object = None,
 ) -> dict[str, object]:
     """Deterministic pass-through compatibility wrapper."""
-    _ = jev, limits, kwargs
+    _ = jev, limits
     return dict(p0_res)
 
 
 def run_phase2(
-    p1_res: dict[str, object], jev: object = None,
-    limits: object = None, **kwargs: object
+    p1_res: dict[str, object],
+    jev: object = None,
+    limits: object = None,
 ) -> dict[str, object]:
     """Deterministic pass-through compatibility wrapper."""
-    _ = jev, limits, kwargs
+    _ = jev, limits
     return dict(p1_res)
 
 
 def run_phase3(
-    p2_res: dict[str, object] | str, gen: object = None, limits: object = None, **kwargs: object
+    p2_res: dict[str, object] | str,
+    gen: object = None,
+    limits: object = None,
 ) -> dict[str, object]:
-    """Deterministic Markdown-table compiler returning a `Phase3Result`-shaped dict with `intake_packet`."""
-    _ = gen, limits, kwargs
+    """Deterministic Markdown-table compiler returning a `Phase3Result`-shaped dict."""
+    _ = gen, limits
     raw_text = p2_res if isinstance(p2_res, str) else str(p2_res.get("raw_text") or "")
     pkt = compile_markdown_turn(raw_text)
     return {

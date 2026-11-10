@@ -262,15 +262,17 @@ def propagate_nodes(
     max_lines: int = 35,
     gamma: float = 0.75,
     max_hops: int = 4,
-    **options: Any,
+    *,
+    max_steps: int | None = None,
+    max_tokens: int | None = None,
+    conflict_detector: ConflictDetector | None = None,
 ) -> dict[str, Any]:
-    """Executes 5-family multi-hop relaxation parameterized by optional `conflict_detector` (Spec 21 §1.3)."""
-    max_steps = options.get("max_steps")
-    max_tokens = options.get("max_tokens")
-    conflict_detector: ConflictDetector | None = options.get("conflict_detector")
+    """Executes 5-family multi-hop relaxation parameterized by optional `conflict_detector`."""
     eff_budget = int(max_tokens if max_tokens is not None else token_budget)
     eff_hops = int(max_steps if max_steps is not None else min(3, max_hops))
-    sm = PropagationStateMachine.seed(graph, query, temperature=temperature, gamma=gamma, max_hops=eff_hops)
+    sm = PropagationStateMachine.seed(
+        graph, query, temperature=temperature, gamma=gamma, max_hops=eff_hops
+    )
     if sm.phase == PropagationPhase.NO_SEED_MATCH:
         return {
             "status": sm.status, "temperature": sm.temperature, "tau": sm.tau,

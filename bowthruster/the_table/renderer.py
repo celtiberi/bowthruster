@@ -435,9 +435,32 @@ def upgrade_slot_lod(
 def forage_table_context(
     table_state: dict[str, Any] | list[Any] | None = None,
     foraging_directives: list[Any] | dict[str, Any] | str | None = None,
-    **kwargs: Any,
+    *,
+    whiteboard_graph: dict[str, Any] | None = None,
+    store: Any = None,
+    current_turn: int = 1,
+    max_foraging_steps: int = 4,
+    max_table_slots: int = MAX_TABLE_SLOTS,
+    max_table_tokens: int = MAX_TABLE_TOKENS,
+    max_pinned_slots: int = MAX_PINNED_SLOTS,
+    max_summary_words: int = MAX_SLOT_SUMMARY_WORDS,
+    memory_index: Any = None,
+    concept_lookup: dict[str, Any] | None = None,
 ) -> TableView:
     """Stage 2 Active Prefrontal Foraging interface (`forage_table_context`)."""
     from .workspace_sync import forage_table_context as _forage_impl
 
-    return _forage_impl(table_state, foraging_directives, **kwargs)
+    return _forage_impl(
+        table_state,
+        foraging_directives,
+        whiteboard_graph=whiteboard_graph,
+        store=store,
+        current_turn=current_turn,
+        max_foraging_steps=max_foraging_steps,
+        max_table_slots=max_table_slots,
+        max_table_tokens=max_table_tokens,
+        max_pinned_slots=max_pinned_slots,
+        max_summary_words=max_summary_words,
+        memory_index=memory_index,
+        concept_lookup=concept_lookup,
+    )

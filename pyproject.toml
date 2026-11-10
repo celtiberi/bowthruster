@@ -1,7 +1,6 @@
 [build-system]
-requires = []
-build-backend = "bowthruster._pep517"
-backend-path = ["."]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "bowthruster"
@@ -15,6 +14,9 @@ dependencies = []
 [project.scripts]
 bowthruster = "bowthruster.cli:main"
 bowthruster-mcp = "bowthruster.mcp_server:main"
+
+[tool.setuptools.packages.find]
+include = ["bowthruster*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

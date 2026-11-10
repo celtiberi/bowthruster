@@ -179,10 +179,21 @@ def _sync_and_forage_post_gate(gate_result: dict[str, Any], cue_text: str, seed_
         table_view.setdefault("foraging_steps", 0)
     return table_view, foraging_actions
 
-def run_executive_turn(whiteboard_graph: dict[str, Any] | None = None, raw_text: str = "", *,
-    turn_index: int | None = None, phase3_result: dict[str, Any] | None = None,
-    intake_packet: dict[str, Any] | None = None, store: SQLiteGraphStore | None = None,
-    db_path: str | Path | None = None, **options: Any) -> ExecutiveTurnResult:
+def run_executive_turn(
+    whiteboard_graph: dict[str, Any] | None = None,
+    raw_text: str = "",
+    *,
+    turn_index: int | None = None,
+    phase3_result: dict[str, Any] | None = None,
+    intake_packet: dict[str, Any] | None = None,
+    store: SQLiteGraphStore | None = None,
+    db_path: str | Path | None = None,
+    table_state: dict[str, Any] | None = None,
+    flawed_idea_critiques: list[Any] | None = None,
+    foraging_directives: Any = None,
+    k_cap: int = DEFAULT_K_CAP,
+    max_ring: int = DEFAULT_MAX_RING,
+) -> ExecutiveTurnResult:
     """Executes a turn across `regiment` -> Hippocampal Ignition -> Pre-Flight -> Gate -> `the_table` -> Voice."""
     if whiteboard_graph is not None and not isinstance(whiteboard_graph, dict):
         raise ExecutivePreflightError("preflight_invalid_whiteboard",
@@ -205,7 +216,7 @@ def run_executive_turn(whiteboard_graph: dict[str, Any] | None = None, raw_text:
         else {"scopes": {}})
     recalled_concepts = recall_concepts(recall_src, seed_cues)
     sync_fn, _ = _resolve_table_fns()
-    active_table_state, table_view = options.get("table_state"), None
+    active_table_state, table_view = table_state, None
     if callable(sync_fn):
         pre_graph = clone_whiteboard_for_trial(whiteboard_graph) if isinstance(whiteboard_graph, dict) else None
         pre_view = (propagate_graph(pre_graph, cue_text) if cue_text.strip() else scan_graph(pre_graph,
@@ -215,15 +226,17 @@ def run_executive_turn(whiteboard_graph: dict[str, Any] | None = None, raw_text:
             active_table_state = table_view["table_state"]
     preflight_report = inspect_turn_preflight(
         intake_packet, whiteboard_graph, turn_index=turn_index,
-        flawed_idea_critiques=options.get("flawed_idea_critiques"),
+        flawed_idea_critiques=flawed_idea_critiques,
     )
-    gate_result = execute_gate_decision(preflight_report, whiteboard_graph,
-        k_cap=int(options.get("k_cap", DEFAULT_K_CAP)), max_ring=int(options.get("max_ring", DEFAULT_MAX_RING)),
-        store=store, db_path=db_path)
+    gate_result = execute_gate_decision(
+        preflight_report, whiteboard_graph,
+        k_cap=int(k_cap), max_ring=int(max_ring), store=store, db_path=db_path,
+    )
     wb_graph, cur_turn = gate_result["whiteboard_graph"], int(gate_result["turn_index"])
     table_view, foraging_actions = _sync_and_forage_post_gate(
         gate_result, cue_text, seed_cues, recalled_concepts, active_table_state,
-        table_view, options.get("foraging_directives"), store)
+        table_view, foraging_directives, store,
+    )
     voice_reply = synthesize_executive_voice(gate_result)
     raw_lp = gate_result.get("lattice_proof")
     lattice_proof = raw_lp if isinstance(raw_lp, dict) else _eval_lattice_proof(wb_graph)

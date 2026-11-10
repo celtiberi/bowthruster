@@ -1,136 +1,54 @@
-"""Subcommand handlers and argument parser for the BowThruster CLI (`bowthruster.cli_commands`)."""
+"""Subcommand execution handlers for the BowThruster CLI (`bowthruster.cli_commands`)."""
 
 from __future__ import annotations
 
 import argparse
-import copy
 from datetime import datetime, timezone
 import json
-from pathlib import Path
-import sys
 import time
 from typing import Any
 
-from bowthruster.whiteboard import (
-    annotate_active_tasks, claim_component_scope, expand_node, scan_graph, slice_lattice,
+from bowthruster.cli_parser import (
+    BUILD_STATUSES,
+    STANDING_TYPES,
+    _assemble_board_summary,
+    _build_cli_parser,
+    _read_input_text,
+    _remove_item_from_board,
 )
+from bowthruster.whiteboard import claim_component_scope, slice_lattice
 
-STANDING_TYPES = ("BOUND", "PROHIBITION", "OBLIGATION", "POLICY")
-BUILD_STATUSES = ("DRAFT", "BLOCKED_BY_DEP", "READY", "IN_PROGRESS", "IN_QA", "FAILED", "VERIFIED", "STALE")
-
-
-def _read_input_text(message: str | None, file_path: str | None) -> str:
-    if message is None and file_path is None:
-        raise ValueError("Provide either -m/--message or -F/--file")
-    if message is not None:
-        raw = message
-    elif file_path == "-":
-        raw = sys.stdin.read()
-    else:
-        raw = Path(file_path or "").read_text(encoding="utf-8")
-    return raw.strip()
-
-
-def _remove_item_from_board(graph: dict[str, Any], target_id: str) -> list[str]:
-    removed: list[str] = []
-    scopes = graph.get("scopes") or {}
-    if target_id.startswith("scope:") and (del_sid := target_id.removeprefix("scope:").strip()) in scopes:
-        scopes.pop(del_sid, None)
-        removed.append(f"scope:{del_sid}")
-        for snode in scopes.values():
-            if isinstance(snode.get("depends_on"), list):
-                snode["depends_on"] = [d for d in snode["depends_on"] if d != del_sid]
-    if graph.get("scopes"):
-        kept_arts = [a for a in graph["lattice_artifacts"] if str(a.get("id") or "") != target_id]
-        if len(kept_arts) < len(graph["lattice_artifacts"]):
-            removed.append(f"artifact:{target_id}")
-            graph["lattice_artifacts"] = kept_arts
-    has_rule_id = any(any(r.get("id") == target_id for r in (s.get("rules") or [])) for s in scopes.values())
-    is_attr_id = target_id.startswith("attr:") or ("." in target_id and not has_rule_id)
-    if is_attr_id and "." in target_id.removeprefix("attr:"):
-        sid, prop = target_id.removeprefix("attr:").split(".", 1)
-        snode = scopes.get(sid) or {}
-        if prop in (snode.get("attributes") or {}):
-            removed.append(f"attr:{sid}.{prop}={snode['attributes'].pop(prop)!r}")
-    for sid, snode in scopes.items():
-        kept = []
-        for r in (snode.get("rules") or []):
-            if r.get("id") == target_id:
-                removed.append(f"{r.get('type', 'RULE')}:{target_id}@{sid} ({r.get('text', '')})")
-                (snode.get("_meta") or {}).pop(target_id, None)
-            else:
-                kept.append(r)
-        snode["rules"] = kept
-    if removed:
-        for snode in scopes.values():
-            if target_id in (snode.get("in_edges") or []):
-                snode["in_edges"].remove(target_id)
-            for r in (snode.get("rules") or []):
-                if target_id in (r.get("overrides") or []):
-                    r["overrides"].remove(target_id)
-                r["exceptions"] = [ex for ex in (r.get("exceptions") or []) if ex.get("rule_id") != target_id]
-        graph["open_blockers"] = [
-            b for b in (graph.get("open_blockers") or [])
-            if b.get("id") != target_id and target_id not in (b.get("rule_ids") or [])
-        ]
-    return removed
-
-
-def _assemble_board_summary(
-    graph: dict[str, Any], scope_filter: str | None = None, eval_fn: Any = None
-) -> dict[str, Any]:
-    annotate_active_tasks(graph)
-    scopes_out, standing, facts, goals, actions = {}, [], [], [], []
-    scope_keys = (
-        "parent", "role", "owner", "stage", "status", "claimed_by",
-        "build_tag", "core_tag", "failure_diagnostic", "active_ticket_id",
-    )
-    for sid, snode in sorted((graph.get("scopes") or {}).items()):
-        if scope_filter and sid != scope_filter and not sid.startswith(f"{scope_filter}::"):
-            continue
-        attrs = {k: v for k, v in (snode.get("attributes") or {}).items() if k not in ("updated_turn", "heading_path")}
-        rules = [dict(r) for r in (snode.get("rules") or [])]
-        scopes_out[sid] = {
-            **{k: snode.get(k) for k in scope_keys},
-            "children": list(snode.get("children") or []),
-            "attributes": attrs,
-            "rules": rules,
-        }
-        for r in rules:
-            rtype = str(r.get("type", "OBLIGATION"))
-            if rtype in STANDING_TYPES:
-                standing.append(r)
-            elif rtype == "FACT":
-                facts.append(r)
-            elif rtype == "GOAL":
-                goals.append(r)
-            else:
-                actions.append(r)
-    raw_arts = graph.get("lattice_artifacts") or []
-    ctx_pack = expand_node(copy.deepcopy(graph), scope_filter) if scope_filter else scan_graph(copy.deepcopy(graph))
-    return {
-        "turn": graph.get("turn", 0), "scopes": scopes_out, "standing_rules": standing,
-        "facts": facts, "goals": goals, "actions": actions, "flows": list(graph.get("flows") or []),
-        "lattice_artifacts": list(raw_arts.values()) if isinstance(raw_arts, dict) else list(raw_arts),
-        "active_tasks": list(graph.get("active_tasks") or []),
-        "open_blockers": list(graph.get("open_blockers") or []),
-        "lattice_proof": eval_fn(graph) if eval_fn else graph.get("lattice_proof"),
-        "assemble_context_pack": ctx_pack,
-    }
+__all__ = [
+    "BUILD_STATUSES",
+    "STANDING_TYPES",
+    "_assemble_board_summary",
+    "_build_cli_parser",
+    "_cmd_bootstrap",
+    "_cmd_packets_or_show",
+    "_cmd_prove_or_history",
+    "_cmd_status",
+    "_dispatch_read_cmd",
+    "_read_input_text",
+    "_remove_item_from_board",
+    "compile_and_claim_packets",
+]
 
 
 def compile_and_claim_packets(
-    graph: dict[str, Any], opts: dict[str, Any],
+    graph: dict[str, Any], opts: dict[str, Any]
 ) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
     import bowthruster.cli as _cli
 
     force = bool(opts.get("force", False))
     status_f = str(opts["status"]).strip().upper() if opts.get("status") else None
-    wave_f, comp_f = opts.get("wave"), str(opts.get("component") or "").strip() or None
-    unclaimed, clean_claim = bool(opts.get("unclaimed_only", False)), str(opts.get("claim_by") or "").strip() or None
+    wave_f = opts.get("wave")
+    comp_f = str(opts.get("component") or "").strip() or None
+    unclaimed = bool(opts.get("unclaimed_only", False))
+    clean_claim = str(opts.get("claim_by") or "").strip() or None
     res = _cli._call_compile_packets(graph, force=force, status_filter=status_f)
     pkts = [
-        p for p in (res.get("packets") or [])
+        p
+        for p in (res.get("packets") or [])
         if (wave_f is None or p.get("wave") == int(wave_f))
         and (not comp_f or p.get("component") == comp_f)
         and (not status_f or str(p.get("build_status") or "").upper() == status_f)
@@ -143,7 +61,8 @@ def compile_and_claim_packets(
         scopes_map = graph.get("scopes") or {}
         targets = [p for p in pkts if p.get("wave") != 0 and str(p.get("component") or "") in scopes_map]
         for p in targets:
-            cid, sc_d = str(p["component"]), scopes_map.get(str(p["component"])) or {}
+            cid = str(p["component"])
+            sc_d = scopes_map.get(cid) or {}
             if str(sc_d.get("status") or "").upper() == "VERIFIED":
                 raise ValueError(f"Cannot claim VERIFIED component {cid!r}; mark it STALE first")
             if (cur_c := str(sc_d.get("claimed_by") or "").strip()) and cur_c != clean_claim:
@@ -157,88 +76,22 @@ def compile_and_claim_packets(
     return res, pkts, claimed_sids
 
 
-def _build_cli_parser() -> argparse.ArgumentParser:
-    common = argparse.ArgumentParser(add_help=False)
-    parser = argparse.ArgumentParser(description="Multi-Round Executive <-> Whiteboard Dogfooding CLI")
-    for flg in ("--board", "--profile", "--config"):
-        common.add_argument(flg, default=argparse.SUPPRESS)
-        parser.add_argument(flg, default=None)
-    sub = parser.add_subparsers(dest="cmd", required=True)
-    p_turn = sub.add_parser("turn", parents=[common])
-    p_rep = sub.add_parser("replace", parents=[common])
-    p_rev = sub.add_parser("revoke", parents=[common])
-    for p in (p_rep, p_rev):
-        p.add_argument("rule_id")
-    for p in (p_turn, p_rep, p_rev):
-        p.add_argument("--speaker", default="agent")
-        p.add_argument("-m", "--message", default="Explicitly revoked" if p is p_rev else None)
-        if p is not p_rev:
-            p.add_argument("--round", type=int, default=None, dest="round_num")
-            p.add_argument("-F", "--file", default=None)
-    p_show, p_slice = sub.add_parser("show", parents=[common]), sub.add_parser("slice", parents=[common])
-    p_show.add_argument("--scope", default=None)
-    for flag in ("--component", "--division", "--stage", "--schema", "--kind"):
-        p_slice.add_argument(flag, default=None)
-    p_slice.add_argument("-q", "--query", default="")
-    p_slice.add_argument("--code", "--include-code", action="store_true", dest="include_code")
-    p_slice.add_argument("--mark-stale", action="store_true", dest="mark_stale")
-    p_slice.add_argument("--claim", default=None, dest="claim_by")
-    p_pkts = sub.add_parser("packets", parents=[common])
-    p_stat = sub.add_parser("status", parents=[common])
-    p_atlas = sub.add_parser("atlas", parents=[common])
-    p_gsync = sub.add_parser("git-sync", parents=[common])
-    p_logs = sub.add_parser("logs", parents=[common])
-    p_pkts.add_argument("--wave", type=int, choices=(0, 1, 2), default=None)
-    p_pkts.add_argument("--component", default=None)
-    p_pkts.add_argument("--status", choices=BUILD_STATUSES, type=str.upper, default=None)
-    p_pkts.add_argument("--unclaimed", action="store_true", dest="unclaimed_only")
-    p_pkts.add_argument("--claim", default=None, dest="claim_by")
-    p_pkts.add_argument("--force", action="store_true")
-    p_stat.add_argument("component")
-    p_stat.add_argument("new_status", nargs="?", choices=BUILD_STATUSES, type=str.upper, default=None)
-    stat_opts = (
-        ("--build-tag", "build_tag"), ("--core-tag", "core_tag"), ("--reason", "reason"),
-        ("--for", "for_div"), ("--claim", "claimed_by"),
-    )
-    for flg, dst in stat_opts:
-        p_stat.add_argument(flg, default=None, dest=dst)
-    for flg, dst in (
-        ("--dispatch", "dispatch"), ("--no-ticket", "no_ticket"),
-        ("--release", "release_claim"), ("--force-claim", "force_claim"),
-    ):
-        p_stat.add_argument(flg, action="store_true", dest=dst)
-    p_atlas.add_argument("--boards", default=None)
-    for flg, dst in (("--all", "load_all"), ("--mermaid", "mermaid"), ("--spec", "spec")):
-        p_atlas.add_argument(flg, action="store_true", dest=dst)
-    gsync_flags = (
-        ("--pre-commit", "pre_commit"), ("--post-commit", "post_commit"), ("--baseline", "baseline"),
-        ("--drift", "drift"), ("--mark-verified", "mark_verified"), ("--install-hook", "install_hook"),
-    )
-    for flg, dst in gsync_flags:
-        p_gsync.add_argument(flg, action="store_true", dest=dst)
-    p_gsync.add_argument("--manifest", default=None)
-    p_logs.add_argument("--limit", type=int, default=20)
-    p_logs.add_argument("--status", default=None)
-    p_prove, p_hist = sub.add_parser("prove", parents=[common]), sub.add_parser("history", parents=[common])
-    p_boot, p_mig = sub.add_parser("bootstrap", parents=[common]), sub.add_parser("migrate", parents=[common])
-    p_boot.add_argument("--component", default=None)
-    p_mig.add_argument("--all", action="store_true", dest="migrate_all")
-    p_mig.add_argument("--dry-run", action="store_true", dest="dry_run")
-    for p in (p_show, p_slice, p_prove, p_pkts, p_stat, p_atlas, p_gsync, p_logs, p_hist, p_boot, p_mig):
-        p.add_argument("--json", action="store_true", dest="as_json")
-    sub.add_parser("reset", parents=[common])
-    return parser
-
-
 def _cmd_bootstrap(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
     import bowthruster.cli as _cli
 
     if args.cmd == "migrate":
         from bowthruster.whiteboard.migrations import format_migration_report, migrate_repo_boards
 
-        pay = migrate_repo_boards(_cli.REPO_ROOT, board=board, migrate_all=args.migrate_all, dry_run=args.dry_run)
+        pay = migrate_repo_boards(
+            _cli.REPO_ROOT, board=board, migrate_all=args.migrate_all, dry_run=args.dry_run
+        )
         _cli.record_flight_event(board, "migrate", (time.perf_counter() - t0_cmd) * 1000.0, "OK")
-        print(json.dumps(pay, indent=2, sort_keys=True, ensure_ascii=False) if args.as_json else format_migration_report(pay))
+        out_m = (
+            json.dumps(pay, indent=2, sort_keys=True, ensure_ascii=False)
+            if args.as_json
+            else format_migration_report(pay)
+        )
+        print(out_m)
         return 0
     from bowthruster.bootstrap import bootstrap_repository, format_bootstrap_report
 
@@ -250,7 +103,8 @@ def _cmd_bootstrap(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
     )
     out_str = (
         json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False)
-        if args.as_json else format_bootstrap_report(payload)
+        if args.as_json
+        else format_bootstrap_report(payload)
     )
     print(out_str)
     return 0
@@ -259,10 +113,11 @@ def _cmd_bootstrap(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
 def _cmd_status(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
     import bowthruster.cli as _cli
 
+    ver_info: dict[str, Any] = {}
     with _cli._board_lock(board):
         graph, wb_json, wb_sqlite, transcript_path = _cli._load_board(board)
         if args.new_status == "VERIFIED":
-            _cli._verify_component_files(graph, args.component)
+            ver_info = _cli._verify_component_files(graph, args.component) or {}
         prev_tid = (graph.get("scopes", {}).get(args.component) or {}).get("active_ticket_id")
         has_pkt_fn = bool(_cli._get_compile_work_packets())
         prev_ready = (
@@ -270,40 +125,70 @@ def _cmd_status(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
                 str(p.get("packet_id"))
                 for p in (_cli._call_compile_packets(graph, force=True, status_filter="READY").get("packets") or [])
             }
-            if has_pkt_fn else set()
+            if has_pkt_fn
+            else set()
         )
         snode = _cli.apply_status_and_claim(graph, args.component, args.new_status, opts=vars(args))
+        if str(snode.get("status") or "").upper() == "VERIFIED":
+            snode["verified_untested"] = bool(ver_info.get("verified_untested", False))
         if prev_tid and not snode.get("active_ticket_id"):
             snode["active_ticket_id"] = prev_tid
         all_pkts = (_cli._call_compile_packets(graph, force=True).get("packets") or []) if has_pkt_fn else []
         ready_pkts = [p for p in all_pkts if str(p.get("build_status") or "").upper() == "READY"]
         unlocked_pkts = [p for p in ready_pkts if str(p.get("packet_id")) not in prev_ready]
         _cli._save_board(graph, wb_json, wb_sqlite)
-    payload = {
-        "component": args.component, "status": snode.get("status"), "claimed_by": snode.get("claimed_by"),
-        "build_tag": snode.get("build_tag"), "core_tag": snode.get("core_tag"),
-        "failure_diagnostic": snode.get("failure_diagnostic"), "active_ticket_id": snode.get("active_ticket_id"),
+    raw_st = snode.get("status")
+    is_untested = bool(snode.get("verified_untested", False))
+    disp_st = "VERIFIED (untested)" if (raw_st == "VERIFIED" and is_untested) else raw_st
+    warnings = list(ver_info.get("warnings") or [])
+    undeclared_tests = list(ver_info.get("undeclared_matching_tests") or [])
+    payload: dict[str, Any] = {
+        "component": args.component,
+        "status": raw_st,
+        "display_status": disp_st,
+        "verified_untested": is_untested,
+        "claimed_by": snode.get("claimed_by"),
+        "build_tag": snode.get("build_tag"),
+        "core_tag": snode.get("core_tag"),
+        "failure_diagnostic": snode.get("failure_diagnostic"),
+        "active_ticket_id": snode.get("active_ticket_id"),
         "ticket_info": {"ticket_id": snode.get("active_ticket_id")},
         "ready_packets": [p.get("packet_id") for p in ready_pkts],
         "newly_unlocked_packets": [p.get("packet_id") for p in unlocked_pkts],
     }
+    if undeclared_tests:
+        payload["undeclared_matching_tests"] = undeclared_tests
+    if warnings:
+        payload["warnings"] = warnings
     _cli._append_transcript(
-        transcript_path, {"event": "status", "timestamp_utc": datetime.now(timezone.utc).isoformat(), **payload}
+        transcript_path,
+        {"event": "status", "timestamp_utc": datetime.now(timezone.utc).isoformat(), **payload},
     )
     dur_ms = (time.perf_counter() - t0_cmd) * 1000.0
     _cli.record_flight_event(
-        board, f"status:{args.component}", dur_ms, "OK", decision=snode.get("status"), modified_scopes=[args.component]
+        board,
+        f"status:{args.component}",
+        dur_ms,
+        "OK",
+        decision=raw_st,
+        modified_scopes=[args.component],
     )
     if args.as_json:
         print(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False))
         return 0
     unlocked_items = ", ".join(f"{p.get('packet_id')} (owner={p.get('owner')})" for p in unlocked_pkts)
-    unlocked_sfx = f"\n[NEWLY UNLOCKED READY PACKETS ({len(unlocked_pkts)})]: {unlocked_items}" if unlocked_pkts else ""
+    unlocked_sfx = (
+        f"\n[NEWLY UNLOCKED READY PACKETS ({len(unlocked_pkts)})]: {unlocked_items}"
+        if unlocked_pkts
+        else ""
+    )
+    warn_sfx = ("\n" + "\n".join(f"[WARNING]: {w}" for w in warnings)) if warnings else ""
     ready_ids = ", ".join(str(p.get("packet_id")) for p in ready_pkts) or "none"
     print(
-        f"[STATUS] {args.component} -> status={snode.get('status')} claimed_by={snode.get('claimed_by')} "
-        f"build_tag={snode.get('build_tag')} core_tag={snode.get('core_tag')} ticket={snode.get('active_ticket_id')} "
-        f"failure_diagnostic={snode.get('failure_diagnostic')!r}{unlocked_sfx}\n"
+        f"[STATUS] {args.component} -> status={disp_st} claimed_by={snode.get('claimed_by')} "
+        f"build_tag={snode.get('build_tag')} core_tag={snode.get('core_tag')} "
+        f"ticket={snode.get('active_ticket_id')} "
+        f"failure_diagnostic={snode.get('failure_diagnostic')!r}{warn_sfx}{unlocked_sfx}\n"
         f"[READY PACKETS ({len(ready_pkts)})]: {ready_ids}"
     )
     return 0
@@ -325,7 +210,8 @@ def _cmd_packets_or_show(args: argparse.Namespace, board: str, t0_cmd: float) ->
         )
         if args.as_json:
             has_f = any((args.wave is not None, args.component, args.status, args.unclaimed_only, claimed))
-            out_res = {**res, "packets": pkts, **({"claimed_scopes": claimed} if claimed else {})} if has_f else res
+            extra = {"claimed_scopes": claimed} if claimed else {}
+            out_res = {**res, "packets": pkts, **extra} if has_f else res
             print(json.dumps(out_res, indent=2, sort_keys=True, ensure_ascii=False))
             return 0
         if not res.get("ready_to_emit") and not args.force:
@@ -341,13 +227,15 @@ def _cmd_packets_or_show(args: argparse.Namespace, board: str, t0_cmd: float) ->
         )
         for p in pkts:
             print(
-                f"\n[{p.get('packet_id')}] wave={p.get('wave')} kind={p.get('kind')} component={p.get('component')} "
-                f"owner={p.get('owner')} stage={p.get('stage')} build_status={p.get('build_status')} "
-                f"claimed_by={p.get('claimed_by')} build_tag={p.get('build_tag')} core_tag={p.get('core_tag')} "
+                f"\n[{p.get('packet_id')}] wave={p.get('wave')} kind={p.get('kind')} "
+                f"component={p.get('component')} owner={p.get('owner')} stage={p.get('stage')} "
+                f"build_status={p.get('build_status')} claimed_by={p.get('claimed_by')} "
+                f"build_tag={p.get('build_tag')} core_tag={p.get('core_tag')} "
                 f"failure_diagnostic={p.get('failure_diagnostic')!r}\n{p.get('prompt_slice') or ''}"
             )
         return 0
-    summary = _assemble_board_summary(_cli._load_board(board)[0], args.scope, _cli._get_evaluate_lattice_proof())
+    eval_fn = _cli._get_evaluate_lattice_proof()
+    summary = _assemble_board_summary(_cli._load_board(board)[0], args.scope, eval_fn)
     _cli.record_flight_event(board, "show", (time.perf_counter() - t0_cmd) * 1000.0, "OK")
     if args.as_json:
         print(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False))
@@ -355,12 +243,15 @@ def _cmd_packets_or_show(args: argparse.Namespace, board: str, t0_cmd: float) ->
     print(f"=== WHITEBOARD '{board}' (Turn {summary['turn']}) ===")
     _cli._print_proof_radar(summary.get("lattice_proof"))
     for sid, sdata in summary["scopes"].items():
-        fail_sfx = f"\n  ! Failure Diagnostic: {sdata['failure_diagnostic']}" if sdata.get("failure_diagnostic") else ""
-        attr_sfx = f"\n  Attributes: {json.dumps(sdata['attributes'], sort_keys=True)}" if sdata["attributes"] else ""
+        diag = sdata.get("failure_diagnostic")
+        fail_sfx = f"\n  ! Failure Diagnostic: {diag}" if diag else ""
+        attrs = sdata["attributes"]
+        attr_sfx = f"\n  Attributes: {json.dumps(attrs, sort_keys=True)}" if attrs else ""
         print(
-            f"\n[Scope: {sid}] (parent={sdata['parent']}, children={sdata['children']}, owner={sdata.get('owner')}, "
-            f"stage={sdata.get('stage')}, status={sdata.get('status')}, ticket={sdata.get('active_ticket_id')}, "
-            f"build_tag={sdata.get('build_tag')}, core_tag={sdata.get('core_tag')}){fail_sfx}{attr_sfx}"
+            f"\n[Scope: {sid}] (parent={sdata['parent']}, children={sdata['children']}, "
+            f"owner={sdata.get('owner')}, stage={sdata.get('stage')}, status={sdata.get('status')}, "
+            f"ticket={sdata.get('active_ticket_id')}, build_tag={sdata.get('build_tag')}, "
+            f"core_tag={sdata.get('core_tag')}){fail_sfx}{attr_sfx}"
         )
         for r in sdata["rules"]:
             print(
@@ -386,8 +277,7 @@ def _cmd_packets_or_show(args: argparse.Namespace, board: str, t0_cmd: float) ->
         ]
         print("\n[Active Tasks]:\n" + "\n".join(lines))
     ctx_pack = summary["assemble_context_pack"]
-    pack_txt = ctx_pack.get("compact_view") or "[EMPTY_WHITEBOARD]"
-    print("\n[Read Engine Context Pack]:\n" + pack_txt)
+    print("\n[Read Engine Context Pack]:\n" + (ctx_pack.get("compact_view") or "[EMPTY_WHITEBOARD]"))
     return 0
 
 
@@ -411,8 +301,9 @@ def _cmd_prove_or_history(args: argparse.Namespace, board: str, t0_cmd: float) -
             print(
                 f"=== LATTICE PROOF '{board}' ===\n"
                 f"Status:            {proof.get('status')} (is_proven={proof.get('is_proven')})\n"
-                f"Counts:            components={proof.get('component_count', 0)}, flows={proof.get('flow_count', 0)}, "
-                f"laws={proof.get('law_count', 0)}, contracts={proof.get('contract_count', 0)}\n"
+                f"Counts:            components={proof.get('component_count', 0)}, "
+                f"flows={proof.get('flow_count', 0)}, laws={proof.get('law_count', 0)}, "
+                f"contracts={proof.get('contract_count', 0)}\n"
                 f"Bend 2 Check:      {'PASS' if b_ok else 'FAIL'} ({b_path})"
             )
             _cli._print_proof_radar(proof)
@@ -428,7 +319,8 @@ def _cmd_prove_or_history(args: argparse.Namespace, board: str, t0_cmd: float) -
             print(f"[{idx}] {ev} by {spk}: rule_id={rec.get('rule_id')} removed={rec.get('removed')}")
         elif rec.get("event") == "status":
             tid, btag, ctag = rec.get("active_ticket_id"), rec.get("build_tag"), rec.get("core_tag")
-            comp_s, st_s = rec.get("component"), rec.get("status")
+            comp_s = rec.get("component")
+            st_s = rec.get("display_status") or rec.get("status")
             print(f"[{idx}] STATUS {comp_s} -> {st_s} (ticket={tid}, build_tag={btag}, core_tag={ctag})")
         else:
             print(
@@ -439,7 +331,9 @@ def _cmd_prove_or_history(args: argparse.Namespace, board: str, t0_cmd: float) -
     return 0
 
 
-def _dispatch_read_cmd(args: argparse.Namespace, board: str, explicit_board: str | None, t0_cmd: float) -> int:
+def _dispatch_read_cmd(
+    args: argparse.Namespace, board: str, explicit_board: str | None, t0_cmd: float
+) -> int:
     import bowthruster.cli as _cli
 
     if args.cmd == "logs":
@@ -448,8 +342,9 @@ def _dispatch_read_cmd(args: argparse.Namespace, board: str, explicit_board: str
             print(json.dumps(entries, indent=2, ensure_ascii=False))
         else:
             lines = [
-                f"[{e.get('timestamp')}] board={e.get('board')} cmd={e.get('tool_or_cmd')} status={e.get('status')} "
-                f"decision={e.get('decision')} ({e.get('duration_ms')}ms, bytes={e.get('response_bytes', 0)}) "
+                f"[{e.get('timestamp')}] board={e.get('board')} cmd={e.get('tool_or_cmd')} "
+                f"status={e.get('status')} decision={e.get('decision')} "
+                f"({e.get('duration_ms')}ms, bytes={e.get('response_bytes', 0)}) "
                 f"violations={len(e.get('violations') or [])}"
                 + (f" error={e['error'].get('type')}: {e['error'].get('message')}" if e.get("error") else "")
                 for e in entries
@@ -458,7 +353,8 @@ def _dispatch_read_cmd(args: argparse.Namespace, board: str, explicit_board: str
         return 0
     if args.cmd == "atlas":
         boards_dict = _cli._load_atlas_boards(explicit_board, args.boards, args.load_all)
-        view = _cli._get_render_lattice_atlas()(boards_dict, has_local_seed_cues=False, explicit_atlas_request=True)
+        render_fn = _cli._get_render_lattice_atlas()
+        view = render_fn(boards_dict, has_local_seed_cues=False, explicit_atlas_request=True)
         atlas_keys = ("atlas_mounted", "atlas_schematic", "atlas_metrics", "atlas_mermaid", "atlas_spec")
         out_payload = {"boards": list(boards_dict.keys()), **{k: view.get(k) for k in atlas_keys}}
         _cli.record_flight_event(board, "atlas", (time.perf_counter() - t0_cmd) * 1000.0, "OK")
@@ -475,8 +371,13 @@ def _dispatch_read_cmd(args: argparse.Namespace, board: str, explicit_board: str
     with _cli._board_lock(board):
         graph, wb_json, wb_sqlite, _ = _cli._load_board(board)
         sl_kw = {
-            "query": args.query, "component": args.component, "division": args.division,
-            "stage": args.stage, "schema": args.schema, "kind": args.kind, "include_code": args.include_code,
+            "query": args.query,
+            "component": args.component,
+            "division": args.division,
+            "stage": args.stage,
+            "schema": args.schema,
+            "kind": args.kind,
+            "include_code": args.include_code,
         }
         view = dict(slice_lattice(graph, **sl_kw))
         view, stale_sids, claimed_sids = _cli.apply_slice_stale_and_claim(

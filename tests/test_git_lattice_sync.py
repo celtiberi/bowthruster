@@ -336,7 +336,7 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             {"id": "iface_ingest_pkt", "kind": "INTERFACE", "name": "ingest_intake_packet", "scope": "whiteboard", "file": "bowthruster/whiteboard/ingest.py", "calls": []},
         ])
         sl_code = WB.slice_lattice(wb_focus, component="whiteboard", query="_scan_ast_symbols_on_disk", include_code=True)
-        sl_rng = WB.slice_lattice(wb_focus, component="whiteboard", query="slice_lattice 400-490", include_code=True)
+        sl_rng = WB.slice_lattice(wb_focus, component="whiteboard", query="slice_lattice 260-340", include_code=True)
         ts_path = Path(tmp) / "polyglot_sample.ts"
         ts_path.write_text("function _normalizeToken(x: string): string {\n  return x.trim();\n}\nexport function parseHeader(raw: string): string {\n  return _normalizeToken(raw);\n}\n", encoding="utf-8")
         ts_syms, ts_calls = CLI._extract_py_ast_symbols(ts_path), CLI._extract_ast_local_calls(ts_path)
@@ -393,7 +393,7 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             and "@ AST_SYMBOL [_scan_ast_symbols_on_disk]" in sl_code["compact_view"]
             and "[CODE bowthruster/whiteboard/read_engine.py#L" in sl_code["compact_view"]
             and "# ... [LANDMARKS" not in sl_code["compact_view"]
-            and "[WINDOW #L400-L490]" in sl_rng["compact_view"] and callable(getattr(MCP_SRV, "slice_lattice", None))
+            and "[WINDOW #L260-L340]" in sl_rng["compact_view"] and callable(getattr(MCP_SRV, "slice_lattice", None))
             and [a.get("name") for a in sl_code["active_artifacts"]] == ["slice_lattice"]
             and ts_syms.get("_normalizeToken") == (1, 3) and ts_syms.get("parseHeader") == (4, 6)
             and ts_calls.get("parseHeader") == ["_normalizeToken#L1-L3"]
@@ -599,7 +599,7 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
             self.assertIn('--board "scratch_b"', hook_file.read_text(encoding="utf-8"))
             call_lattice_tool("git_sync", {"board": "lattice_core", "project_root": str(repo), "mode": "install_hook"})
             self.assertIn('--board "lattice_core"', hook_file.read_text(encoding="utf-8"))
-            proc = subprocess.run([str(hook_file)], cwd=str(repo), env={"PATH": os.environ.get("PATH", "")}, text=True, capture_output=True)
+            proc = subprocess.run([str(hook_file)], cwd=str(repo), env={"PATH": "/usr/bin:/bin"}, text=True, capture_output=True)
             self.assertEqual(proc.returncode, 0)
             self.assertIn("failing open", proc.stderr)
 

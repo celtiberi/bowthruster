@@ -380,22 +380,52 @@ def get_table_slot(store_or_state: SQLiteGraphStore | dict[str, Any], slot_id: s
     return next(
         (s for s in list_table_slots(store_or_state) if s["slot_id"] == target or s["concept_id"] == target), None)
 
-def upsert_table_slot(store_or_state: SQLiteGraphStore | dict[str, Any], slot_or_id: dict[str, Any] | TableSlot | str,
-    concept_id: str | None = None, **options: Any) -> TableSlot:
-    """Validates and persists a `TableSlot` into `SQLiteGraphStore` or `TableState` with capacity bounds."""
-    extra = dict(options)
-    lod_tier = extra.pop("lod_tier", LOD_1)
-    pinned = extra.pop("pinned", False)
-    token_cost = extra.pop("token_cost", None)
-    summary = extra.pop("summary", "")
-    external_links = extra.pop("external_links", None)
-    updated_turn = extra.pop("updated_turn", 1)
+def upsert_table_slot(
+    store_or_state: SQLiteGraphStore | dict[str, Any],
+    slot_or_id: dict[str, Any] | TableSlot | str,
+    concept_id: str | None = None,
+    *,
+    lod_tier: str | TableLOD | None = None,
+    pinned: bool | None = None,
+    token_cost: int | None = None,
+    summary: str | None = None,
+    external_links: list[Any] | None = None,
+    updated_turn: int | None = None,
+    priority: float | None = None,
+    activation: float | None = None,
+    source: str | None = None,
+) -> TableSlot:
+    """Validates and persists a `TableSlot` into `SQLiteGraphStore` or `TableState`."""
+    explicit_fields = {
+        k: v
+        for k, v in (
+            ("concept_id", concept_id),
+            ("lod_tier", lod_tier),
+            ("pinned", pinned),
+            ("token_cost", token_cost),
+            ("summary", summary),
+            ("external_links", external_links),
+            ("updated_turn", updated_turn),
+            ("priority", priority),
+            ("activation", activation),
+            ("source", source),
+        )
+        if v is not None
+    }
     if isinstance(slot_or_id, dict):
-        cand = dict(slot_or_id) | options
+        cand = {**dict(slot_or_id), **explicit_fields}
     else:
-        cand = {"slot_id": str(slot_or_id), "concept_id": str(concept_id or slot_or_id), "lod_tier": lod_tier,
-            "pinned": pinned, "token_cost": token_cost, "summary": summary,
-            "external_links": external_links, "updated_turn": updated_turn, **extra}
+        cand = {
+            "slot_id": str(slot_or_id),
+            "concept_id": str(concept_id or slot_or_id),
+            "lod_tier": LOD_1 if lod_tier is None else lod_tier,
+            "pinned": False if pinned is None else pinned,
+            "token_cost": token_cost,
+            "summary": "" if summary is None else summary,
+            "external_links": external_links,
+            "updated_turn": 1 if updated_turn is None else updated_turn,
+            **explicit_fields,
+        }
     ts = validate_table_slot(cand)
     if isinstance(store_or_state, SQLiteGraphStore):
         _ensure_table_slots_ddl(store_or_state)

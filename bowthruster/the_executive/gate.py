@@ -360,8 +360,13 @@ def _collect_unregistered_symbols_and_flow_schemas(wb: dict[str, Any], scopes: d
         and _first_str(a, "name", "id").lower() == _first_str(fl, "payload").lower() for a in artifacts)]
     return unreg_syms, flow_schemas
 
-def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_diff_report: dict[str, Any], *,
-    uri_sync_report: dict[str, Any] | None = None) -> GateDecisionResult:
+def evaluate_git_commit_gate(
+    whiteboard_graph: dict[str, Any] | None,
+    staged_diff_report: dict[str, Any],
+    *,
+    uri_sync_report: dict[str, Any] | None = None,
+    require_call_graph_laws: bool | None = None,
+) -> GateDecisionResult:
     """Evaluates a staged git commit against the active Whiteboard Lattice (`whiteboard_graph`) without mutating it."""
     wb, scopes, artifacts, staged_files = _unpack_lattice_and_files(whiteboard_graph, staged_diff_report)
     rep_uri_sync = staged_diff_report.get("uri_sync_report")
@@ -413,7 +418,11 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
     if not _evaluate_artifact_contracts(artifacts, scopes, staged_files, modified_scope_files, violations):
         contracts_ok = False
     has_direct_contract_err = not contracts_ok
-    cg_report = verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report)
+    cg_report = verify_ast_call_graph_skeleton(
+        whiteboard_graph,
+        staged_diff_report,
+        require_call_graph_laws=require_call_graph_laws,
+    )
     if not cg_report["is_valid"]:
         contracts_ok = False
         violations.extend(cg_report["violations"])
@@ -453,7 +462,10 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
         "truth_table_checked": bool(ast_law_rep.get("truth_table_checked", True)),
         "no_dangling_deletes": no_dangling_deletes, "failed_laws": failed_laws,
         "checked_laws": ast_law_rep["checked_laws"],
-        "call_graph_report": cg_report, "dangling_imports": cg_report["dangling_imports"],
+        "call_graph_report": cg_report,
+        "call_graph_skeleton_ok": bool(cg_report["is_valid"]),
+        "call_graph_laws_enforced": bool(cg_report["call_graph_laws_enforced"]),
+        "dangling_imports": cg_report["dangling_imports"],
         "disconnected_law_functions": cg_report["disconnected_law_functions"],
         "unregistered_public_symbols": unreg_syms, "flow_schema_checked": flow_schemas,
         "unverified_bound_violations": 0 if allowed else len(violations), "violations": violations})
