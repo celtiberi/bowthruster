@@ -19,7 +19,7 @@ When you use an AI coding agent on a growing project, three things start going w
 - **1-Shot Code Slicing Instead of Repo Grepping:** Instead of reading whole files, your agent queries BowThruster for a function or feature and gets back a `< 2 KB` contract/function slice (`7–10 KB` when inlining full multi-interface component source with `include_code=True`) containing the exact `#L<start>-L<end>` source code, the private helpers it calls, and its upstream/downstream contracts in a single call.
 - **Rules That Can't Be Silently Dropped:** Important invariants and module contracts are registered on the board instead of buried in chat history. Before a commit lands, BowThruster checks your code's AST and declared invariants—blocking the commit if an invariant was bypassed or an unrelated module was edited by mistake.
 - **Automatic Blast-Radius Tracking:** When your agent changes an upstream data structure or interface, BowThruster automatically marks the affected downstream modules **`STALE`** so the agent knows exactly what else needs updating and which tests to run.
-- **Works Across Languages & Repos:** Python gets full `ast` signature, call-graph, and boolean law checks, while built-in lexical symbol extractors provide `#L<start>-L<end>` line-range and helper call-tree extraction for TypeScript/JavaScript, Go, Rust, C/C++, Java, Kotlin, C#, Swift, and Ruby—and `bowthruster-mcp` automatically discovers the right board across multiple repositories from a single global MCP config.
+- **Python Verification, Multi-Repo Boards:** Verification (`ast` signatures, call-graph, boolean law checks, and delta tests) is **Python-only**. For TypeScript/JavaScript, Go, Rust, C/C++, Java, Kotlin, C#, Swift, and Ruby, lexical symbol extractors provide `#L<start>-L<end>` line ranges and helper call trees for `slice` only—nothing in those languages is checked by the gate. `bowthruster-mcp` discovers the right board across multiple repositories from a single global MCP config (`project_root`).
 
 | Without BowThruster | With BowThruster (`bowthruster-mcp`) |
 | :--- | :--- |
@@ -32,20 +32,17 @@ When you use an AI coding agent on a growing project, three things start going w
 
 ## Quick Start
 
-- **Requirements:** Python 3.11+ (zero pip dependencies). For formal Bend 2 proof checking (`~/.bend/bin/bend`), install Bend 2:
+- **Requirements:** Python 3.11+ (zero third-party runtime dependencies). Install `bowthruster` in editable mode so `bowthruster` and `bowthruster-mcp` are available from any directory, and install Bend 2 (`~/.bend/bin/bend`) for formal proof checking:
   ```bash
+  pip install -e /ABSOLUTE/PATH/TO/bowthruster
   curl -fsSL https://bend-lang.com/install.sh | sh
   ```
-- Standard MCP JSON Config
+- Standard MCP JSON Config:
   ```json
   {
     "mcpServers": {
       "bowthruster": {
-        "command": "python3",
-        "args": ["-m", "bowthruster.mcp_server"],
-        "env": {
-          "PYTHONPATH": "/ABSOLUTE/PATH/TO/bowthruster"
-        }
+        "command": "bowthruster-mcp"
       }
     }
   }
@@ -70,8 +67,8 @@ When you use an AI coding agent on a growing project, three things start going w
 | `slice` | **Step 1 (Slice + Code)** | Pull a `< 2 KB` contract/symbol slice (`7–10 KB` with full component `include_code=True`) + exact `#L<start>-L<end>` source code in one call (`board`, `component`, `query`, `include_code=True`, `mark_stale=True`, optional `project_root`). Supports windowed lookup (`query="fn_name 100-180"`), fuzzy symbol/component matching, and cross-board fallback. |
 | `turn` | **Step 2 (Mutate Board)** | Compile Markdown pipe tables into the Whiteboard and mark modified/downstream components `STALE` (`board`, `speaker`, `message`, optional `project_root`). |
 | `packets` | **Step 3 (Build Packet)** | Emit wave-ordered `WorkPacket`s (`laws_skeleton`, `python_skeleton`, `baseline_commit_sha`) (`board`, `component`, `status="STALE"`, optional `project_root`). |
-| `git_sync` | **Step 4 (Verify & Sync)** | Run pre-commit verification + delta `pytest` + auto-verify (`mode="pre"`, `mark_verified=True`), post-commit hash/line-anchor stamp (`mode="post"`), initial baseline (`mode="baseline"`), or drift check (`mode="drift"`). |
-| `status` | **Step 4 (Status)** | Transition a component's build status (`board`, `component`, `new_status="VERIFIED" \| "STALE" \| "FAILED"`). |
+| `git_sync` | **Step 4 (Verify & Sync)** | Run pre-commit verification + delta `pytest` + auto-verify (`mode="pre"`, `mark_verified=True`), post-commit hash/line-anchor stamp (`mode="post"`), initial baseline (`mode="baseline"`), drift check (`mode="drift"`), or (re)write the pre-commit hook for this board (`mode="install_hook"`). |
+| `status` | **Step 4 (Status)** | Transition a component's build status (`board`, `component`, `new_status="VERIFIED" \| "STALE" \| "FAILED"`). `VERIFIED` is refused unless the component's files exist, the pre-commit gate passes, and its delta tests do not fail—it is not a way around `git_sync`. |
 | `logs` | **Diagnose** | Read structured Flight Recorder telemetry (`board`, `status="ERROR" \| "REJECTED"`, `limit=20`). |
 
 ### Daily Agent Workflows
@@ -88,6 +85,7 @@ When fixing an internal bug, helper function, or threshold where no `# SCHEMA`, 
 3. **Pre-Commit Gate + Auto-Verify in One Shot:**
    - Call `git_sync(board="my_board", mode="pre", mark_verified=True)`.
    - Verifies AST signatures, `% LAW` call-graph reachability, `> FLOW` schemas, truth-table/Bend 2 proofs, and discovered delta `pytest` suites on the `STALE` components. When `allowed: true` and delta tests pass, it **automatically transitions `STALE` components back to `VERIFIED`** and refreshes file hashes and `#L<start>-L<end>` AST anchors.
+   - **Which tests run:** only the test files explicitly declared in the component's `Tests` column (see the `Component` table below; no filename guessing). Check `delta_tests_status` in the result: `PASSED`, `FAILED`, or `NOT_CHECKED`. When `delta_tests_status` is `NOT_CHECKED` (no declared test files), the component is recorded with `verified_untested: true` on the board and displayed as `status=VERIFIED (untested)` in `atlas`.
 
 #### Workflow B — Architectural / Contract Change (**4 Tool Calls**)
 When adding or modifying a `@ COMPONENT`, `> FLOW`, `$ INTERFACE`, `# SCHEMA`, `% LAW`, or `Rule`:
@@ -105,10 +103,10 @@ Pass canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`
 | :--- | :--- | :--- |
 | my_board | Edge API gateway and stateless JWT authentication service for client requests. | Stateless token validation; zero shared mutable state between gateway workers; explicit typed contracts on all internal flows. |
 
-| Component | Role | Why | Owner | Stage | Depends_On | Files |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| auth_service | JWT token validator | Isolates cryptographic signature and expiration checks so downstream handlers only receive verified AuthTokens. | backend | 1 | none | src/auth.py:L1-L120 |
-| api_gateway | HTTP request router | Terminates external HTTP requests and enforces auth_check before dispatching to internal services. | backend | 1 | auth_service | src/gateway.py:L1-L150 |
+| Component | Role | Why | Owner | Stage | Depends_On | Files | Tests |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| auth_service | JWT token validator | Isolates cryptographic signature and expiration checks so downstream handlers only receive verified AuthTokens. | backend | 1 | none | src/auth.py:L1-L120 | tests/test_auth.py |
+| api_gateway | HTTP request router | Terminates external HTTP requests and enforces auth_check before dispatching to internal services. | backend | 1 | auth_service | src/gateway.py:L1-L150 | tests/test_gateway.py |
 
 | Flow | Source | Target | Payload | Condition |
 | :--- | :--- | :--- | :--- | :--- |
@@ -143,20 +141,8 @@ Pass canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`
 
 1. **Compile & Verify the Baseline:** Submit the initial pipe tables via `turn`, mark existing files `VERIFIED` via `git_sync(board="my_board", mode="pre", mark_verified=True)`, and stamp the initial Git SHA via `git_sync(board="my_board", mode="post")`.
 2. **Install the Unified `bowthruster` Skill:** Call `readme(section="skills")` to retrieve [`docs/skills/bowthruster/SKILL.md`](docs/skills/bowthruster/SKILL.md) and write it to `.agents/skills/bowthruster/SKILL.md` (or `.claude/skills/bowthruster/SKILL.md`), replacing `<BOARD_NAME>` and `<TEST_CMD>`.
-3. **Optional Git Hooks (`.git/hooks/pre-commit` & `post-commit`):**
-   ```bash
-   # .git/hooks/pre-commit (chmod +x .git/hooks/pre-commit)
-   #!/usr/bin/env bash
-   set -euo pipefail
-   BOWTHRUSTER_PROJECT_ROOT="$(git rev-parse --show-toplevel)" \
-     python3 -m bowthruster.cli --board <BOARD_NAME> git-sync --pre-commit
-
-   # .git/hooks/post-commit (chmod +x .git/hooks/post-commit)
-   #!/usr/bin/env bash
-   set -euo pipefail
-   BOWTHRUSTER_PROJECT_ROOT="$(git rev-parse --show-toplevel)" \
-     python3 -m bowthruster.cli --board <BOARD_NAME> git-sync --post-commit
-   ```
+3. **Optional — Run `install_hook` if you want the gate on every commit:**
+   Run `git_sync(board="my_board", mode="install_hook")` (CLI: `bowthruster --board my_board git-sync --install-hook`) to write a portable `.git/hooks/pre-commit` script for that board (which fails open with a warning if `bowthruster` is not installed in the active environment). To stamp commit SHAs automatically after each commit, you can also add a `.git/hooks/post-commit` hook calling `bowthruster --board my_board git-sync --post-commit`.
 
 ---
 
@@ -209,8 +195,8 @@ All gate policies and working-memory budgets live in [`config.json`](config.json
 
 | Config Key | Default | What It Controls |
 | :--- | :---: | :--- |
-| `gate.max_file_lines` | `null` *(off)* | Optional maximum line count per file enforced by `git-sync --pre-commit` and `status ... VERIFIED` (can also be set per-component via a `Rule` table `BOUND` row). |
-| `gate.verify_files_exist_on_status` | `true` | Verifies that all declared component files exist on disk (and pass `max_file_lines` if set) before allowing `status(..., new_status="VERIFIED")`. |
+| `gate.max_file_lines` | `500` | Maximum line count per `.py` / `.bend` file enforced by `git-sync --pre-commit` and `status ... VERIFIED` (can also be overridden per-component via a `Rule` table `BOUND` row, or set to `null` to disable). |
+| `gate.verify_files_exist_on_status` | `true` | Before allowing `status(..., new_status="VERIFIED")`, verifies that all declared component files exist on disk (and pass `max_file_lines` if set), then runs the pre-commit gate and the component's delta tests. Setting it to `false` skips all of these checks. |
 | `gate.require_call_graph_laws` | `true` | Requires every `$ INTERFACE` function in a staged `.py` file to invoke its component's `% LAW` helper functions in the AST call graph. |
 | `lattice.k_cap` | `7` | Maximum rules per scope before automatic sub-scope mitosis (`comp::subscope`). |
 | `lattice.max_table_slots` / `max_table_tokens` | `16` / `1200` | Working-memory slot and token budget for `bowthruster.the_table`. |
@@ -222,6 +208,12 @@ All gate policies and working-memory budgets live in [`config.json`](config.json
    - However, static checks cannot prove that an algorithm computes the right intermediate values before passing booleans to a `% LAW` helper, or that SQL queries, I/O, or runtime state mutations behave correctly. Component-scoped unit and producer $\rightarrow$ consumer seam tests (`pytest` on `changed_scopes | stale_dependents`) remain essential.
 2. **Enforcement Is Bounded by What Is Declared on the Board:**
    - `evaluate_git_commit_gate` verifies schemas, interfaces, laws, bounds, and import prohibitions registered on the board (and flags `unregistered_public_symbols` on modified files). If an internal helper introduces an undeclared side effect not governed by a board rule, promote a new `Rule`, `# SCHEMA`, or `% LAW` onto the board via `turn`.
+3. **The Law-Wiring Check Is Structural, Not Semantic:**
+   - The call-graph check rejects a `% LAW` helper that is never called, called with constants or duplicate arguments, or whose result is discarded. It cannot tell whether the result actually decides anything (`if law(a, b): pass` passes). Only tests establish that.
+4. **Untested `VERIFIED` Components Are Flagged in `atlas`:**
+   - A component with no declared test files is marked with `verified_untested: true` on the board (`delta_tests_status: NOT_CHECKED`) and shown as `status=VERIFIED (untested)` in `atlas`. Likewise `bend_proofs_ok` is `"not_checked"` when the `bend` binary is absent.
+5. **Verification Is Python-Only:** other languages get lexical `slice` line anchors and nothing else.
+6. **Optional Pre-Commit Hook:** installed only via `mode="install_hook"`, prefers `.venv/bin/python`, and fails open with a warning if `bowthruster` is not importable.
 
 ---
 

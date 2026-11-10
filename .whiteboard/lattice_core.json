@@ -215,6 +215,18 @@
         "link_id": "link_graph_core_030694d76311",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/bowthruster/graph_core/sqlite_store.py#L105-L470"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_graph_core_18c4d70fe9ca",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/bowthruster/graph_core/sqlite_store.py#L79-L391"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_graph_core_015573078ae3",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/bowthruster/graph_core/propagation.py#L257-L331"
       }
     ],
     "regiment": [
@@ -428,7 +440,7 @@
         "artifact_kind": "doc",
         "link_id": "link_whiteboard_4e07791ebe4e",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L576-L576"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L382-L382"
       },
       {
         "artifact_kind": "doc",
@@ -456,15 +468,15 @@
       },
       {
         "artifact_kind": "doc",
-        "link_id": "link_whiteboard_bbb37f69b555",
+        "link_id": "link_whiteboard_845e9cd5e11b",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L377-L430"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L199-L261"
       },
       {
         "artifact_kind": "doc",
-        "link_id": "link_whiteboard_feb2b225d51e",
+        "link_id": "link_whiteboard_eb1d5cc8d351",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L481-L573"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L301-L380"
       }
     ]
   },
@@ -591,7 +603,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "7f6bea6a8cf62ffa2bddcb9f03068542450256c3",
+  "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
   "lattice_artifacts": [
     {
       "created_turn": 2,
@@ -646,17 +658,16 @@
     },
     {
       "calls": [
-        "_build_conflict_foraging_directives#L38-L54",
-        "_collect_and_index_turn_rules#L57-L95",
-        "_prepare_turn_intake#L109-L135",
-        "_resolve_table_fns#L18-L35"
+        "_prepare_turn_intake#L124-L147",
+        "_resolve_table_fns#L27-L49",
+        "_sync_and_forage_post_gate#L149-L180"
       ],
       "created_turn": 2,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/orchestrator.py#L138-L219"
+        "file": "bowthruster/the_executive/orchestrator.py#L182-L259"
       },
-      "file": "bowthruster/the_executive/orchestrator.py#L138-L219",
+      "file": "bowthruster/the_executive/orchestrator.py#L182-L259",
       "id": "interface_the_executive_run_executive_turn",
       "inputs": [
         "whiteboard_graph",
@@ -680,9 +691,9 @@
       "created_turn": 3,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/graph_core/sqlite_store.py#L105-L470"
+        "file": "bowthruster/graph_core/sqlite_store.py#L79-L391"
       },
-      "file": "bowthruster/graph_core/sqlite_store.py#L105-L470",
+      "file": "bowthruster/graph_core/sqlite_store.py#L79-L391",
       "id": "schema_graph_core_sqlitegraphstore",
       "inputs": [
         "db_path"
@@ -703,9 +714,9 @@
       "created_turn": 5,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/schema.py#L118-L183"
+        "file": "bowthruster/ai_memory/schema.py#L101-L150"
       },
-      "file": "bowthruster/ai_memory/schema.py#L118-L183",
+      "file": "bowthruster/ai_memory/schema.py#L101-L150",
       "id": "schema_ai_memory_conceptframe",
       "inputs": [
         "concept_id",
@@ -728,9 +739,9 @@
       "created_turn": 6,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/schema.py#L120-L196"
+        "file": "bowthruster/the_table/schema.py#L119-L185"
       },
-      "file": "bowthruster/the_table/schema.py#L120-L196",
+      "file": "bowthruster/the_table/schema.py#L119-L185",
       "id": "schema_the_table_tableslot",
       "inputs": [
         "slot_id",
@@ -786,25 +797,25 @@
     },
     {
       "calls": [
-        "_format_tool_result#L141-L159",
-        "_hot_reload_if_changed#L424-L486",
-        "_resolve_project_root#L120-L138",
-        "_tool_atlas#L191-L216",
-        "_tool_git_sync_or_status#L323-L364",
-        "_tool_packets_or_turn#L277-L320",
-        "_tool_readme_or_logs#L162-L188",
-        "_tool_slice#L219-L274"
+        "_format_tool_result#L105-L113",
+        "_hot_reload_if_changed#L388-L421",
+        "_resolve_project_root#L88-L102",
+        "_tool_atlas#L142-L164",
+        "_tool_git_sync_or_status#L279-L324",
+        "_tool_packets_or_turn#L223-L276",
+        "_tool_readme_or_logs#L116-L139",
+        "_tool_slice#L167-L220"
       ],
       "created_turn": 8,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L367-L415",
+        "file": "bowthruster/mcp_server.py#L327-L377",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L367-L415",
+      "file": "bowthruster/mcp_server.py#L327-L377",
       "id": "interface_runtime_foundation_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -825,19 +836,13 @@
       "updated_turn": 36
     },
     {
-      "calls": [
-        "_emit_interface_skeleton_lines#L329-L374",
-        "_extract_item_names#L301-L316",
-        "_extract_law_stub_spec#L260-L298",
-        "_fmt_spec_doc#L319-L326",
-        "_py_ident#L217-L225"
-      ],
+      "calls": [],
       "created_turn": 14,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L377-L430"
+        "file": "bowthruster/whiteboard/ingest.py#L199-L261"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L377-L430",
+      "file": "bowthruster/whiteboard/ingest.py#L199-L261",
       "id": "interface_whiteboard_compile_python_skeleton",
       "inputs": [
         "scope_id",
@@ -859,14 +864,14 @@
     },
     {
       "calls": [
-        "_build_slice_packet#L433-L478"
+        "_build_slice_packet#L267-L299"
       ],
       "created_turn": 14,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L481-L573"
+        "file": "bowthruster/whiteboard/ingest.py#L301-L380"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L481-L573",
+      "file": "bowthruster/whiteboard/ingest.py#L301-L380",
       "id": "interface_whiteboard_compile_work_packets",
       "inputs": [
         "graph",
@@ -889,20 +894,19 @@
     },
     {
       "calls": [
-        "_collect_dangling_imports#L420-L499",
-        "_collect_scope_call_graph_files#L513-L539",
-        "_extract_law_fn_name#L136-L147",
-        "_extract_scope_files#L67-L74",
-        "_parse_file_call_graph#L252-L283",
-        "_reachable_from_roots#L502-L510",
-        "_unpack_lattice_and_files#L119-L133"
+        "_collect_dangling_imports#L287-L365",
+        "_collect_scope_call_graph_files#L377-L395",
+        "_extract_law_fn_name#L74-L84",
+        "_parse_file_call_graph#L142-L172",
+        "_reachable_from_roots#L367-L375",
+        "_unpack_lattice_and_files#L58-L72"
       ],
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
         "file": "bowthruster/the_executive/gate.py#L281-L347"
       },
-      "file": "bowthruster/the_executive/call_graph.py#L542-L620",
+      "file": "bowthruster/the_executive/call_graph.py#L397-L468",
       "id": "interface_the_executive_verify_ast_call_graph_skeleton",
       "inputs": [
         "whiteboard_graph",
@@ -924,19 +928,19 @@
     },
     {
       "calls": [
-        "_check_file_bounds_and_prohibitions#L275-L328",
-        "_collect_unregistered_symbols_and_flow_schemas#L508-L536",
-        "_evaluate_artifact_contracts#L372-L442",
-        "_evaluate_dangling_deleted_uris#L445-L505",
-        "_evaluate_scope_dependencies#L331-L369",
-        "_extract_scope_rules_and_bounds#L242-L272"
+        "_check_file_bounds_and_prohibitions#L192-L232",
+        "_collect_unregistered_symbols_and_flow_schemas#L345-L361",
+        "_evaluate_artifact_contracts#L264-L306",
+        "_evaluate_dangling_deleted_uris#L308-L343",
+        "_evaluate_scope_dependencies#L234-L262",
+        "_extract_scope_rules_and_bounds#L159-L190"
       ],
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/gate.py#L539-L632"
+        "file": "bowthruster/the_executive/gate.py#L363-L459"
       },
-      "file": "bowthruster/the_executive/gate.py#L539-L632",
+      "file": "bowthruster/the_executive/gate.py#L363-L459",
       "id": "interface_the_executive_evaluate_git_commit_gate",
       "inputs": [
         "whiteboard_graph",
@@ -988,19 +992,17 @@
     },
     {
       "calls": [
-        "_fuse_artifact_or_law_rows#L341-L415",
-        "_fuse_component_rows#L418-L485",
-        "_fuse_flow_or_rule_rows#L290-L338",
-        "_get_table_cell#L241-L249",
-        "_slugify_scope_id#L63-L72",
-        "_validate_table_headers#L252-L287"
+        "_fuse_artifact_or_law_rows#L150-L210",
+        "_fuse_component_rows#L212-L282",
+        "_fuse_flow_or_rule_rows#L88-L140",
+        "_slugify_scope_id#L65-L75"
       ],
       "created_turn": 16,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/rewriter.py#L488-L526"
+        "file": "bowthruster/whiteboard/rewriter.py#L284-L324"
       },
-      "file": "bowthruster/whiteboard/rewriter.py#L488-L526",
+      "file": "bowthruster/whiteboard/rewriter.py#L284-L324",
       "id": "interface_whiteboard_fuse_table_attributes",
       "inputs": [
         "graph",
@@ -1024,9 +1026,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/renderer.py#L249-L293"
+        "file": "bowthruster/the_table/renderer.py#L229-L270"
       },
-      "file": "bowthruster/the_table/renderer.py#L249-L293",
+      "file": "bowthruster/the_table/renderer.py#L229-L270",
       "id": "schema_the_table_tableview",
       "inputs": [
         "slots",
@@ -1049,9 +1051,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/schema.py#L211-L211"
+        "file": "bowthruster/whiteboard/schema.py#L264-L264"
       },
-      "file": "bowthruster/whiteboard/schema.py#L211-L211",
+      "file": "bowthruster/whiteboard/schema.py#L264-L264",
       "id": "schema_whiteboard_whiteboardgraph",
       "inputs": [
         "data",
@@ -1073,9 +1075,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/gate.py#L82-L91"
+        "file": "bowthruster/the_executive/gate.py#L47-L54"
       },
-      "file": "bowthruster/the_executive/gate.py#L82-L91",
+      "file": "bowthruster/the_executive/gate.py#L47-L54",
       "id": "schema_the_executive_gatedecisionresult",
       "inputs": [
         "allowed",
@@ -1099,9 +1101,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/orchestrator.py#L98-L103"
+        "file": "bowthruster/the_executive/orchestrator.py#L113-L120"
       },
-      "file": "bowthruster/the_executive/orchestrator.py#L98-L103",
+      "file": "bowthruster/the_executive/orchestrator.py#L113-L120",
       "id": "schema_the_executive_executiveturnresult",
       "inputs": [
         "turn_index",
@@ -1125,9 +1127,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/mcp_server.py#L53-L57"
+        "file": "bowthruster/mcp_server.py#L30-L34"
       },
-      "file": "bowthruster/mcp_server.py#L53-L57",
+      "file": "bowthruster/mcp_server.py#L30-L34",
       "id": "schema_runtime_foundation_mcpjsonrpcrequest",
       "inputs": [
         "method",
@@ -1147,15 +1149,15 @@
     },
     {
       "calls": [
-        "_build_scope_headers#L135-L153",
-        "_collect_lattice_view_items#L256-L289"
+        "_build_scope_headers#L113-L128",
+        "_collect_lattice_view_items#L217-L254"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/graph_core/propagation.py#L292-L368"
+        "file": "bowthruster/graph_core/propagation.py#L257-L331"
       },
-      "file": "bowthruster/graph_core/propagation.py#L292-L368",
+      "file": "bowthruster/graph_core/propagation.py#L257-L331",
       "id": "interface_graph_core_propagate_nodes",
       "inputs": [
         "graph",
@@ -1179,15 +1181,15 @@
     },
     {
       "calls": [
-        "_build_scope_headers#L135-L153",
-        "_collect_lattice_view_items#L256-L289"
+        "_build_scope_headers#L113-L128",
+        "_collect_lattice_view_items#L217-L254"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/graph_core/propagation.py#L371-L426"
+        "file": "bowthruster/graph_core/propagation.py#L334-L385"
       },
-      "file": "bowthruster/graph_core/propagation.py#L371-L426",
+      "file": "bowthruster/graph_core/propagation.py#L334-L385",
       "id": "interface_graph_core_scan_nodes",
       "inputs": [
         "graph",
@@ -1210,14 +1212,14 @@
     },
     {
       "calls": [
-        "_normalize_cue_token#L18-L28"
+        "_normalize_cue_token#L45-L55"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/cue_extractor.py#L31-L65"
+        "file": "bowthruster/ai_memory/cue_extractor.py#L58-L92"
       },
-      "file": "bowthruster/ai_memory/cue_extractor.py#L31-L65",
+      "file": "bowthruster/ai_memory/cue_extractor.py#L58-L92",
       "id": "interface_ai_memory_extract_concept_cues",
       "inputs": [
         "query_text",
@@ -1239,17 +1241,17 @@
     },
     {
       "calls": [
-        "_build_concept_frame_record#L514-L527",
-        "_extract_scope_synopsis_and_links#L482-L512",
-        "_req_int#L47-L50",
-        "_resolve_store_and_graph#L144-L154"
+        "_build_concept_frame_record#L308-L313",
+        "_extract_scope_synopsis_and_links#L284-L306",
+        "_req_int#L40-L43",
+        "_resolve_store_and_graph#L122-L133"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/hippocampal_index.py#L529-L564"
+        "file": "bowthruster/ai_memory/hippocampal_index.py#L315-L341"
       },
-      "file": "bowthruster/ai_memory/hippocampal_index.py#L529-L564",
+      "file": "bowthruster/ai_memory/hippocampal_index.py#L315-L341",
       "id": "interface_ai_memory_recall_concepts",
       "inputs": [
         "store_or_graph",
@@ -1272,15 +1274,14 @@
     },
     {
       "calls": [
-        "_matches_lod_tier#L193-L197",
-        "_read_links_for_concept#L98-L129"
+        "_matches_lod_tier#L78-L82"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/uri_resolver.py#L200-L231"
+        "file": "bowthruster/ai_memory/uri_resolver.py#L84-L108"
       },
-      "file": "bowthruster/ai_memory/uri_resolver.py#L200-L231",
+      "file": "bowthruster/ai_memory/uri_resolver.py#L84-L108",
       "id": "interface_ai_memory_resolve_external_links",
       "inputs": [
         "store_or_frame",
@@ -1303,18 +1304,18 @@
     },
     {
       "calls": [
-        "_collect_atlas_topology#L329-L407",
-        "_ensure_table_state_dict#L20-L42",
-        "_extract_board_charter#L410-L421",
-        "_normalize_atlas_boards#L245-L273",
-        "_render_board_spec#L424-L485"
+        "_collect_atlas_topology#L268-L336",
+        "_ensure_table_state_dict#L16-L38",
+        "_extract_board_charter#L338-L344",
+        "_normalize_atlas_boards#L198-L213",
+        "_render_board_spec#L346-L417"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/surface.py#L488-L561"
+        "file": "bowthruster/the_table/surface.py#L419-L479"
       },
-      "file": "bowthruster/the_table/surface.py#L488-L561",
+      "file": "bowthruster/the_table/surface.py#L419-L479",
       "id": "interface_the_table_render_lattice_atlas",
       "inputs": [
         "whiteboard_boards",
@@ -1337,14 +1338,15 @@
     },
     {
       "calls": [
-        "_extract_raw_slots#L312-L328"
+        "_extract_raw_slots#L286-L301",
+        "_require_pos_bound#L304-L306"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/renderer.py#L331-L383"
+        "file": "bowthruster/the_table/renderer.py#L309-L349"
       },
-      "file": "bowthruster/the_table/renderer.py#L331-L383",
+      "file": "bowthruster/the_table/renderer.py#L309-L349",
       "id": "interface_the_table_render_table_view",
       "inputs": [
         "table_state",
@@ -1366,17 +1368,16 @@
     },
     {
       "calls": [
-        "_admit_or_merge_slots#L246-L303",
-        "_build_candidate_slot#L185-L216",
-        "_extract_context_view_candidates#L218-L244",
-        "_validate_caps#L53-L60"
+        "_admit_or_merge_slots#L195-L236",
+        "_build_candidate_slot#L151-L169",
+        "_extract_context_view_candidates#L171-L193"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/workspace_sync.py#L305-L357"
+        "file": "bowthruster/the_table/workspace_sync.py#L238-L276"
       },
-      "file": "bowthruster/the_table/workspace_sync.py#L305-L357",
+      "file": "bowthruster/the_table/workspace_sync.py#L238-L276",
       "id": "interface_the_table_sync_memory_to_table",
       "inputs": [
         "table_state",
@@ -1402,9 +1403,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L66-L159"
+        "file": "bowthruster/whiteboard/ingest.py#L61-L150"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L66-L159",
+      "file": "bowthruster/whiteboard/ingest.py#L61-L150",
       "id": "interface_whiteboard_ingest_intake_packet",
       "inputs": [
         "graph",
@@ -1426,17 +1427,16 @@
     },
     {
       "calls": [
-        "_enrich_view_compact_lines#L38-L97",
-        "_merge_matched_symbol_context#L592-L646",
-        "_node_matches_slice_dims#L352-L399",
-        "_scan_ast_symbols_on_disk#L491-L589"
+        "_merge_matched_symbol_context#L383-L420",
+        "_node_matches_slice_dims#L39-L93",
+        "_scan_ast_symbols_on_disk#L300-L381"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/read_engine.py#L649-L734"
+        "file": "bowthruster/whiteboard/read_engine.py#L422-L494"
       },
-      "file": "bowthruster/whiteboard/read_engine.py#L649-L734",
+      "file": "bowthruster/whiteboard/read_engine.py#L422-L494",
       "id": "interface_whiteboard_slice_lattice",
       "inputs": [
         "graph",
@@ -1458,15 +1458,13 @@
       "updated_turn": 36
     },
     {
-      "calls": [
-        "_parse_bend_law_args#L162-L178"
-      ],
+      "calls": [],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L181-L209"
+        "file": "bowthruster/whiteboard/ingest.py#L163-L193"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L181-L209",
+      "file": "bowthruster/whiteboard/ingest.py#L163-L193",
       "id": "interface_whiteboard_compile_laws_bend",
       "inputs": [
         "scope_id",
@@ -1491,9 +1489,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/mutations.py#L167-L200"
+        "file": "bowthruster/whiteboard/mutations.py#L147-L179"
       },
-      "file": "bowthruster/whiteboard/mutations.py#L167-L200",
+      "file": "bowthruster/whiteboard/mutations.py#L147-L179",
       "id": "interface_whiteboard_transition_component_build_status",
       "inputs": [
         "graph",
@@ -1516,17 +1514,18 @@
     },
     {
       "calls": [
-        "_classify_table_kind#L228-L245",
-        "_clean_cell_val#L95-L99",
-        "_norm_col_key#L89-L92",
-        "_split_list_cell#L102-L116"
+        "_classify_table_kind#L264-L287",
+        "_clean_cell_val#L125-L129",
+        "_norm_col_key#L119-L122",
+        "_pick#L44-L48",
+        "_split_list_cell#L132-L143"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/regiment/markdown_tables.py#L248-L297"
+        "file": "bowthruster/regiment/markdown_tables.py#L290-L336"
       },
-      "file": "bowthruster/regiment/markdown_tables.py#L248-L297",
+      "file": "bowthruster/regiment/markdown_tables.py#L290-L336",
       "id": "interface_regiment_extract_structured_table_rows",
       "inputs": [
         "doc_tables"
@@ -1547,19 +1546,15 @@
     },
     {
       "calls": [
-        "_apply_commit_file_updates#L332-L391",
-        "_collect_and_index_turn_rules#L57-L95",
-        "_parse_git_report_entries#L301-L329",
-        "_paths_match#L235-L238",
-        "_scope_direct_deps#L267-L274",
-        "_scope_file_refs#L241-L254"
+        "_apply_commit_file_updates#L276-L337",
+        "_collect_and_index_turn_rules#L73-L111"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/orchestrator.py#L394-L458"
+        "file": "bowthruster/the_executive/orchestrator.py#L339-L419"
       },
-      "file": "bowthruster/the_executive/orchestrator.py#L394-L458",
+      "file": "bowthruster/the_executive/orchestrator.py#L339-L419",
       "id": "interface_the_executive_sync_post_commit_to_lattice",
       "inputs": [
         "whiteboard_graph",
@@ -1611,15 +1606,16 @@
     },
     {
       "calls": [
-        "_UriSyncState#L378-L518",
-        "_parse_git_diff_manifest#L316-L355"
+        "_UriSyncState#L239-L367",
+        "_parse_git_diff_manifest#L188-L223",
+        "_sync_lattice_artifact#L369-L398"
       ],
       "created_turn": 19,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/ai_memory/uri_resolver.py#L521-L609"
+        "file": "bowthruster/ai_memory/uri_resolver.py#L400-L453"
       },
-      "file": "bowthruster/ai_memory/uri_resolver.py#L521-L609",
+      "file": "bowthruster/ai_memory/uri_resolver.py#L400-L453",
       "id": "interface_ai_memory_sync_git_diff_uris",
       "inputs": [
         "store_or_graph",
@@ -1641,16 +1637,16 @@
     },
     {
       "calls": [
-        "_expr#L288-L329",
-        "_stmts#L331-L347",
-        "_sub_ident#L266-L270"
+        "_expr#L206-L251",
+        "_stmts#L253-L272",
+        "_sub_ident#L187-L191"
       ],
       "created_turn": 31,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/nlp.py#L273-L349"
+        "file": "bowthruster/nlp.py#L194-L274"
       },
-      "file": "bowthruster/nlp.py#L273-L349",
+      "file": "bowthruster/nlp.py#L194-L274",
       "id": "interface_runtime_foundation_transpile_py_fn_to_bend_bool",
       "inputs": [
         "fn_node",
@@ -1673,20 +1669,16 @@
     },
     {
       "calls": [
-        "_check_bend_dir_proof#L433-L448",
-        "_check_synthesized_bend_proof#L417-L429",
-        "_eval_bend_bool#L352-L379",
-        "_find_bend_binary#L405-L413",
-        "_gen_bool_case_proof#L382-L393",
-        "_norm_bend_expr#L396-L402",
-        "_parse_staged_py_functions#L451-L474"
+        "_find_bend_binary#L321-L329",
+        "_parse_staged_py_functions#L364-L388",
+        "_verify_single_law#L391-L431"
       ],
       "created_turn": 31,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/nlp.py#L477-L556"
+        "file": "bowthruster/nlp.py#L434-L485"
       },
-      "file": "bowthruster/nlp.py#L477-L556",
+      "file": "bowthruster/nlp.py#L434-L485",
       "id": "interface_runtime_foundation_verify_python_ast_laws_with_bend",
       "inputs": [
         "artifacts",
@@ -1741,10 +1733,10 @@
         "depends_on": "graph_core",
         "file_hashes": {
           "bowthruster/ai_memory/__init__.py": "f7b966ac6fb65cac",
-          "bowthruster/ai_memory/cue_extractor.py": "5d2842cb22f8c799",
-          "bowthruster/ai_memory/hippocampal_index.py": "23706bcec777f510",
-          "bowthruster/ai_memory/schema.py": "8f9699735bc38020",
-          "bowthruster/ai_memory/uri_resolver.py": "ced44c129294667e"
+          "bowthruster/ai_memory/cue_extractor.py": "9c8e66c30bdfbf6d",
+          "bowthruster/ai_memory/hippocampal_index.py": "71d58f0f68bdd9c8",
+          "bowthruster/ai_memory/schema.py": "f7e474e303d2daba",
+          "bowthruster/ai_memory/uri_resolver.py": "72cd0c53a94108fc"
         },
         "files": [
           "bowthruster/ai_memory/__init__.py",
@@ -1773,10 +1765,10 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/ai_memory/__init__.py": "f7b966ac6fb65cac",
-        "bowthruster/ai_memory/cue_extractor.py": "5d2842cb22f8c799",
-        "bowthruster/ai_memory/hippocampal_index.py": "23706bcec777f510",
-        "bowthruster/ai_memory/schema.py": "8f9699735bc38020",
-        "bowthruster/ai_memory/uri_resolver.py": "ced44c129294667e"
+        "bowthruster/ai_memory/cue_extractor.py": "9c8e66c30bdfbf6d",
+        "bowthruster/ai_memory/hippocampal_index.py": "71d58f0f68bdd9c8",
+        "bowthruster/ai_memory/schema.py": "f7e474e303d2daba",
+        "bowthruster/ai_memory/uri_resolver.py": "72cd0c53a94108fc"
       },
       "files": [
         "bowthruster/ai_memory/__init__.py",
@@ -1792,7 +1784,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "7f6bea6a8cf62ffa2bddcb9f03068542450256c3",
+      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -1803,7 +1795,8 @@
       "tests": [
         "tests/test_ai_memory.py"
       ],
-      "updated_turn": 1,
+      "updated_turn": 36,
+      "verified_untested": false,
       "why": "Resolves and auto-heals file#Lstart-Lend AST symbol pointers across git mv renames and line shifts while preventing dangling deleted URIs."
     },
     "global_defaults": {
@@ -1823,6 +1816,7 @@
       "core_tag": null,
       "depends_on": [],
       "failure_diagnostic": null,
+      "files": [],
       "id": "global_defaults",
       "in_edges": [],
       "inputs": [],
@@ -1911,7 +1905,8 @@
         }
       ],
       "stage": null,
-      "status": "DRAFT"
+      "status": "DRAFT",
+      "tests": []
     },
     "graph_core": {
       "_meta": {},
@@ -1929,10 +1924,10 @@
         "depends_on": "",
         "file_hashes": {
           "bowthruster/graph_core/__init__.py": "1ab860b33a0a5646",
-          "bowthruster/graph_core/activation.py": "781e075945f76ac3",
-          "bowthruster/graph_core/formatting.py": "07b88dbd2a7ef6c7",
-          "bowthruster/graph_core/propagation.py": "6cc40ae7cbf800bf",
-          "bowthruster/graph_core/sqlite_store.py": "14ce8bf63942c9db"
+          "bowthruster/graph_core/activation.py": "af7e0a4c92c572a3",
+          "bowthruster/graph_core/formatting.py": "f1c1fcc549bf4e3f",
+          "bowthruster/graph_core/propagation.py": "72876c944beb4fe9",
+          "bowthruster/graph_core/sqlite_store.py": "d1cc0a22ab2880b5"
         },
         "files": [
           "bowthruster/graph_core/__init__.py",
@@ -1959,10 +1954,10 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/graph_core/__init__.py": "1ab860b33a0a5646",
-        "bowthruster/graph_core/activation.py": "781e075945f76ac3",
-        "bowthruster/graph_core/formatting.py": "07b88dbd2a7ef6c7",
-        "bowthruster/graph_core/propagation.py": "6cc40ae7cbf800bf",
-        "bowthruster/graph_core/sqlite_store.py": "14ce8bf63942c9db"
+        "bowthruster/graph_core/activation.py": "af7e0a4c92c572a3",
+        "bowthruster/graph_core/formatting.py": "f1c1fcc549bf4e3f",
+        "bowthruster/graph_core/propagation.py": "72876c944beb4fe9",
+        "bowthruster/graph_core/sqlite_store.py": "d1cc0a22ab2880b5"
       },
       "files": [
         "bowthruster/graph_core/__init__.py",
@@ -1981,7 +1976,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "7f6bea6a8cf62ffa2bddcb9f03068542450256c3",
+      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -1993,6 +1988,7 @@
         "tests/core/circuit/test_graph_core_s21.py"
       ],
       "updated_turn": 1,
+      "verified_untested": false,
       "why": "Provides ACID-persisted, WAL-backed graph storage and sub-millisecond spreading-activation retrieval shared across the Whiteboard, Memory, and Table."
     },
     "regiment": {
@@ -2012,8 +2008,8 @@
         "depends_on": "",
         "file_hashes": {
           "bowthruster/regiment/__init__.py": "0ecfcf900348cc9f",
-          "bowthruster/regiment/intake_packet.py": "24c4a14bee0a9987",
-          "bowthruster/regiment/markdown_tables.py": "6ed51cae9dfc260c"
+          "bowthruster/regiment/intake_packet.py": "554801f546530499",
+          "bowthruster/regiment/markdown_tables.py": "bf136cb86da848d8"
         },
         "files": [
           "bowthruster/regiment/__init__.py",
@@ -2039,8 +2035,8 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/regiment/__init__.py": "0ecfcf900348cc9f",
-        "bowthruster/regiment/intake_packet.py": "24c4a14bee0a9987",
-        "bowthruster/regiment/markdown_tables.py": "6ed51cae9dfc260c"
+        "bowthruster/regiment/intake_packet.py": "554801f546530499",
+        "bowthruster/regiment/markdown_tables.py": "bf136cb86da848d8"
       },
       "files": [
         "bowthruster/regiment/__init__.py",
@@ -2054,7 +2050,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "7f6bea6a8cf62ffa2bddcb9f03068542450256c3",
+      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2066,7 +2062,8 @@
         "tests/core/circuit/test_whiteboard_22a.py",
         "tests/core/circuit/test_executive_23a.py"
       ],
-      "updated_turn": 1,
+      "updated_turn": 36,
+      "verified_untested": false,
       "why": "Compiles structured Markdown pipe tables (Charter, Component, Flow, Interface, Law, Schema, Rule) into grounded MCUs in <5ms without LLM variance."
     },
     "runtime_foundation": {
@@ -2088,14 +2085,15 @@
         "_table_role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
         "depends_on": "",
         "file_hashes": {
-          "bowthruster/__init__.py": "94399be0bf49a49a",
-          "bowthruster/cli.py": "eb447c8f14f7bdb4",
-          "bowthruster/git_manifest.py": "612bb0a6d79991a3",
+          "bowthruster/__init__.py": "7562c6f2ae448868",
+          "bowthruster/cli.py": "f44503916d220054",
+          "bowthruster/cli_commands.py": "d8116a5fe4be6738",
+          "bowthruster/git_manifest.py": "2bb53452b0e9f3aa",
           "bowthruster/mcp_schemas.py": "417297c003bec099",
-          "bowthruster/mcp_server.py": "ca8991fb7ba0d337",
-          "bowthruster/mcp_verifier.py": "f26a549bab41d90f",
-          "bowthruster/nlp.py": "649131501f38bc21",
-          "bowthruster/types.py": "fecf50e47338bd94"
+          "bowthruster/mcp_server.py": "6766505f5c933b0b",
+          "bowthruster/mcp_verifier.py": "db0c05b9078bd0da",
+          "bowthruster/nlp.py": "ea0d6364592ce90d",
+          "bowthruster/types.py": "2af24d52165bfc92"
         },
         "files": [
           "bowthruster/__init__.py",
@@ -2125,14 +2123,15 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/__init__.py": "94399be0bf49a49a",
-        "bowthruster/cli.py": "eb447c8f14f7bdb4",
-        "bowthruster/git_manifest.py": "612bb0a6d79991a3",
+        "bowthruster/__init__.py": "7562c6f2ae448868",
+        "bowthruster/cli.py": "f44503916d220054",
+        "bowthruster/cli_commands.py": "d8116a5fe4be6738",
+        "bowthruster/git_manifest.py": "2bb53452b0e9f3aa",
         "bowthruster/mcp_schemas.py": "417297c003bec099",
-        "bowthruster/mcp_server.py": "ca8991fb7ba0d337",
-        "bowthruster/mcp_verifier.py": "f26a549bab41d90f",
-        "bowthruster/nlp.py": "649131501f38bc21",
-        "bowthruster/types.py": "fecf50e47338bd94"
+        "bowthruster/mcp_server.py": "6766505f5c933b0b",
+        "bowthruster/mcp_verifier.py": "db0c05b9078bd0da",
+        "bowthruster/nlp.py": "ea0d6364592ce90d",
+        "bowthruster/types.py": "2af24d52165bfc92"
       },
       "files": [
         "bowthruster/__init__.py",
@@ -2142,7 +2141,8 @@
         "bowthruster/mcp_server.py",
         "bowthruster/mcp_verifier.py",
         "bowthruster/git_manifest.py",
-        "bowthruster/mcp_schemas.py"
+        "bowthruster/mcp_schemas.py",
+        "bowthruster/cli_commands.py"
       ],
       "id": "runtime_foundation",
       "in_edges": [
@@ -2150,7 +2150,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "7f6bea6a8cf62ffa2bddcb9f03068542450256c3",
+      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
       "outputs": [],
       "owner": "architect",
       "parent": null,
@@ -2163,6 +2163,7 @@
         "tests/test_git_lattice_sync.py"
       ],
       "updated_turn": 1,
+      "verified_untested": false,
       "why": "Eliminates heavy NLP/ML dependencies so the CLI and MCP server start instantly using only the Python 3.11+ standard library."
     },
     "the_executive": {
@@ -2186,12 +2187,12 @@
         "_table_role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
-          "bowthruster/the_executive/__init__.py": "362d9eee4e1defe6",
-          "bowthruster/the_executive/call_graph.py": "242b982dba234a2c",
-          "bowthruster/the_executive/gate.py": "211cb0dd5f0db2ee",
-          "bowthruster/the_executive/orchestrator.py": "03a1827fd96b0548",
-          "bowthruster/the_executive/preflight.py": "2f6085b858771665",
-          "bowthruster/the_executive/voice.py": "0205b21dde9492be"
+          "bowthruster/the_executive/__init__.py": "cd8bed6be8fd72c8",
+          "bowthruster/the_executive/call_graph.py": "81525c8f693c0db3",
+          "bowthruster/the_executive/gate.py": "f1b100d2b05b7239",
+          "bowthruster/the_executive/orchestrator.py": "59ac988aff95bc15",
+          "bowthruster/the_executive/preflight.py": "98a157a546dea692",
+          "bowthruster/the_executive/voice.py": "505555d7e76f04a3"
         },
         "files": [
           "bowthruster/the_executive/__init__.py",
@@ -2225,12 +2226,12 @@
       ],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/the_executive/__init__.py": "362d9eee4e1defe6",
-        "bowthruster/the_executive/call_graph.py": "242b982dba234a2c",
-        "bowthruster/the_executive/gate.py": "211cb0dd5f0db2ee",
-        "bowthruster/the_executive/orchestrator.py": "03a1827fd96b0548",
-        "bowthruster/the_executive/preflight.py": "2f6085b858771665",
-        "bowthruster/the_executive/voice.py": "0205b21dde9492be"
+        "bowthruster/the_executive/__init__.py": "cd8bed6be8fd72c8",
+        "bowthruster/the_executive/call_graph.py": "81525c8f693c0db3",
+        "bowthruster/the_executive/gate.py": "f1b100d2b05b7239",
+        "bowthruster/the_executive/orchestrator.py": "59ac988aff95bc15",
+        "bowthruster/the_executive/preflight.py": "98a157a546dea692",
+        "bowthruster/the_executive/voice.py": "505555d7e76f04a3"
       },
       "files": [
         "bowthruster/the_executive/__init__.py",
@@ -2249,7 +2250,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "7f6bea6a8cf62ffa2bddcb9f03068542450256c3",
+      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2263,7 +2264,8 @@
         "tests/core/circuit/test_executive_23c.py",
         "tests/test_git_lattice_sync.py"
       ],
-      "updated_turn": 1,
+      "updated_turn": 36,
+      "verified_untested": false,
       "why": "Enforces verified-scope edit guards, AST contract/signature parity, call-graph % LAW wiring, and automatic post-commit STALE cascades across downstream dependents."
     },
     "the_table": {
@@ -2287,11 +2289,11 @@
         "_table_role": "Bounded Working Surface, LOD_0 Atlas & Living Spec Renderer",
         "depends_on": "graph_core, whiteboard, ai_memory",
         "file_hashes": {
-          "bowthruster/the_table/__init__.py": "f337efdea9f47eed",
-          "bowthruster/the_table/renderer.py": "d05a277b45f67d07",
-          "bowthruster/the_table/schema.py": "10348f3ebb883082",
-          "bowthruster/the_table/surface.py": "dfcaa103ee8ad377",
-          "bowthruster/the_table/workspace_sync.py": "88bd49906238e8ae"
+          "bowthruster/the_table/__init__.py": "d042c7a67743d5a6",
+          "bowthruster/the_table/renderer.py": "ecfd3d469f22dc81",
+          "bowthruster/the_table/schema.py": "2fcfaefa0e00a172",
+          "bowthruster/the_table/surface.py": "25beb9a44e8c4799",
+          "bowthruster/the_table/workspace_sync.py": "2def595b0242ddf6"
         },
         "files": [
           "bowthruster/the_table/__init__.py",
@@ -2321,11 +2323,11 @@
       ],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/the_table/__init__.py": "f337efdea9f47eed",
-        "bowthruster/the_table/renderer.py": "d05a277b45f67d07",
-        "bowthruster/the_table/schema.py": "10348f3ebb883082",
-        "bowthruster/the_table/surface.py": "dfcaa103ee8ad377",
-        "bowthruster/the_table/workspace_sync.py": "88bd49906238e8ae"
+        "bowthruster/the_table/__init__.py": "d042c7a67743d5a6",
+        "bowthruster/the_table/renderer.py": "ecfd3d469f22dc81",
+        "bowthruster/the_table/schema.py": "2fcfaefa0e00a172",
+        "bowthruster/the_table/surface.py": "25beb9a44e8c4799",
+        "bowthruster/the_table/workspace_sync.py": "2def595b0242ddf6"
       },
       "files": [
         "bowthruster/the_table/__init__.py",
@@ -2341,7 +2343,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "7f6bea6a8cf62ffa2bddcb9f03068542450256c3",
+      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2352,7 +2354,8 @@
       "tests": [
         "tests/test_the_table.py"
       ],
-      "updated_turn": 1,
+      "updated_turn": 36,
+      "verified_untested": false,
       "why": "Bounds active working memory to <=16 slots / <=1200 tokens with pinned-slot immunity and compiles boards into LOD_0 Atlases and full Markdown specifications."
     },
     "whiteboard": {
@@ -2377,14 +2380,15 @@
         "_table_role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
         "depends_on": "graph_core, regiment",
         "file_hashes": {
-          "bowthruster/whiteboard/__init__.py": "5034c6b2ba4827c0",
-          "bowthruster/whiteboard/frustration.py": "8f3489d1a71474ef",
-          "bowthruster/whiteboard/ingest.py": "9ddeaa3f7aa6168c",
-          "bowthruster/whiteboard/linker.py": "0c853aa353e4f767",
-          "bowthruster/whiteboard/mutations.py": "cd8e787a0a144c99",
-          "bowthruster/whiteboard/read_engine.py": "837a32ec1d969a1e",
-          "bowthruster/whiteboard/rewriter.py": "df52a2cc7440c68b",
-          "bowthruster/whiteboard/schema.py": "223579f7515567f3"
+          "bowthruster/whiteboard/__init__.py": "d7b185caa08144e2",
+          "bowthruster/whiteboard/frustration.py": "8d246a164d64fdd2",
+          "bowthruster/whiteboard/ingest.py": "d0acb18c57eb77f5",
+          "bowthruster/whiteboard/linker.py": "9a8c59a501bc2108",
+          "bowthruster/whiteboard/mutations.py": "4e26d642997878d3",
+          "bowthruster/whiteboard/read_engine.py": "ce96c33b1c88516b",
+          "bowthruster/whiteboard/rewriter.py": "e8a86668e859b4b9",
+          "bowthruster/whiteboard/schema.py": "e8900cea62a360c8",
+          "bowthruster/whiteboard/table_helpers.py": "bbab69ae89fddd63"
         },
         "files": [
           "bowthruster/whiteboard/__init__.py",
@@ -2418,14 +2422,15 @@
       ],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/whiteboard/__init__.py": "5034c6b2ba4827c0",
-        "bowthruster/whiteboard/frustration.py": "8f3489d1a71474ef",
-        "bowthruster/whiteboard/ingest.py": "9ddeaa3f7aa6168c",
-        "bowthruster/whiteboard/linker.py": "0c853aa353e4f767",
-        "bowthruster/whiteboard/mutations.py": "cd8e787a0a144c99",
-        "bowthruster/whiteboard/read_engine.py": "837a32ec1d969a1e",
-        "bowthruster/whiteboard/rewriter.py": "df52a2cc7440c68b",
-        "bowthruster/whiteboard/schema.py": "223579f7515567f3"
+        "bowthruster/whiteboard/__init__.py": "d7b185caa08144e2",
+        "bowthruster/whiteboard/frustration.py": "8d246a164d64fdd2",
+        "bowthruster/whiteboard/ingest.py": "d0acb18c57eb77f5",
+        "bowthruster/whiteboard/linker.py": "9a8c59a501bc2108",
+        "bowthruster/whiteboard/mutations.py": "4e26d642997878d3",
+        "bowthruster/whiteboard/read_engine.py": "ce96c33b1c88516b",
+        "bowthruster/whiteboard/rewriter.py": "e8a86668e859b4b9",
+        "bowthruster/whiteboard/schema.py": "e8900cea62a360c8",
+        "bowthruster/whiteboard/table_helpers.py": "bbab69ae89fddd63"
       },
       "files": [
         "bowthruster/whiteboard/__init__.py",
@@ -2435,7 +2440,8 @@
         "bowthruster/whiteboard/linker.py",
         "bowthruster/whiteboard/rewriter.py",
         "bowthruster/whiteboard/read_engine.py",
-        "bowthruster/whiteboard/frustration.py"
+        "bowthruster/whiteboard/frustration.py",
+        "bowthruster/whiteboard/table_helpers.py"
       ],
       "id": "whiteboard",
       "in_edges": [
@@ -2445,7 +2451,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "7f6bea6a8cf62ffa2bddcb9f03068542450256c3",
+      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2458,7 +2464,8 @@
         "tests/core/circuit/test_whiteboard_22b.py",
         "tests/core/circuit/test_whiteboard_22c.py"
       ],
-      "updated_turn": 1,
+      "updated_turn": 36,
+      "verified_untested": false,
       "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },

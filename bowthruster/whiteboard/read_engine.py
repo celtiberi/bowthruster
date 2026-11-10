@@ -2,107 +2,100 @@
 
 from __future__ import annotations
 
-import ast, copy, os
+import ast
+import copy
+import os
 from pathlib import Path
 from typing import Any
 
-from bowthruster.graph_core import (
-    _build_rule_index, expand_graph_node, format_compact_view, matches_nd_slice,
-    propagate_nodes, scan_nodes, token_cost, tokenize_content_words,
-)
-from bowthruster.whiteboard.frustration import detect_frustration
-
+from bowthruster.graph_core import (_build_rule_index, expand_graph_node, format_compact_view, matches_nd_slice,
+    propagate_nodes, scan_nodes, token_cost, tokenize_content_words)
+from bowthruster.whiteboard.frustration import _node_coord_overlap, _scope_chain_values, detect_frustration
+from bowthruster.whiteboard.schema import _clean_str_list, normalize_board_graph
 
 class ContextView(dict[str, Any]):
     """Sliced nD Lattice context view (`status`, `component_specs`, `active_flows`, `compact_view`)."""
 
-
-def _norm_files_list(raw_files: Any) -> list[str]:
-    if isinstance(raw_files, str): return [
-        x.strip() for x in raw_files.replace(";", ",").split(",")
-        if x.strip() and x.strip().lower() not in ("none", "-", "—", "n/a", "null")
-    ]
-    return [str(x).strip() for x in raw_files if str(x).strip()] if isinstance(raw_files, list) else []
+from .table_helpers import (
+    _enrich_view_compact_lines,
+    _norm_files_list,
+    _strip_file_uri,
+)
 
 
 def _insert_tag_into_line(ln: str, extra_tag: str) -> str:
-    if (b_end := ln.find("]")) < 0: return ln
+    if (b_end := ln.find("]")) < 0:
+        return ln
     if ln[b_end + 1 : b_end + 3] == " (":
         depth = 0
         for idx in range(b_end + 2, len(ln)):
-            depth += (1 if ln[idx] == "(" else (-1 if ln[idx] == ")" else 0))
-            if depth == 0: return f"{ln[:idx]}, {extra_tag}{ln[idx:]}"
+            depth += 1 if ln[idx] == "(" else (-1 if ln[idx] == ")" else 0)
+            if depth == 0:
+                return f"{ln[:idx]}, {extra_tag}{ln[idx:]}"
     return f"{ln[: b_end + 1]} ({extra_tag}){ln[b_end + 1 :]}"
 
 
-def _enrich_view_compact_lines(graph: dict[str, Any], view: dict[str, Any], *, eff_budget: int = 400) -> dict[str, Any]:
-    scopes = graph.get("scopes", {}) if isinstance(graph, dict) and isinstance(graph.get("scopes"), dict) else {}
-    comp_files: dict[str, list[str]] = {}
-    for comp in view.get("component_specs", []):
-        if isinstance(comp, dict):
-            cid = str(comp.get("id") or comp.get("scope_id") or comp.get("scope") or "")
-            sc = scopes.get(cid, {}) if isinstance(scopes.get(cid), dict) else {}
-            if flist := _norm_files_list(
-                comp.get("files") or sc.get("files")
-                or (sc.get("attributes") or {}).get("files")
-            ):
-                comp["files"] = comp_files[cid] = flist
-    iface_by_name, law_by_name = {}, {}
-    for art in list(
-        graph.get("lattice_artifacts", [])
-        if isinstance(graph, dict) else []
-    ) + list(view.get("active_artifacts", [])):
-        if isinstance(art, dict) and (aname := str(art.get("name") or art.get("id") or "").lower()):
-            akind = str(art.get("kind") or "").upper()
-            if akind in ("INTERFACE", "SCHEMA"): iface_by_name[aname] = art
-            elif akind == "LAW": law_by_name[aname] = art
-    raw_txt = str(view.get("compact_view") or view.get("text") or "")
-    if not raw_txt and not view.get("matched_symbols"): return view
-    out_lines: list[str] = []
-    for ln in raw_txt.splitlines():
-        cand_ln = ln
-        if ln.startswith("@ COMPONENT [") and "]" in ln:
-            cid = ln[len("@ COMPONENT [") : ln.find("]")]
-            if (flist := comp_files.get(cid) or _norm_files_list((scopes.get(cid) or {}).get("files"))) and "files=[" not in ln:
-                cand_ln = _insert_tag_into_line(ln, f"files=[{', '.join(flist)}]")
-        elif ln.startswith(("$ INTERFACE [", "# SCHEMA [")) and "]" in ln:
-            art = iface_by_name.get(ln[ln.find("[") + 1 : ln.find("]")].lower())
-            if (fval := str((art or {}).get("file") or ((art or {}).get("dimensions") or {}).get("file") or "").strip()) and "file=" not in ln:
-                cand_ln = _insert_tag_into_line(ln, f"file={fval}")
-            if isinstance(calls := (art or {}).get("calls"), list) and calls and "calls=[" not in cand_ln:
-                cand_ln = _insert_tag_into_line(cand_ln, f"calls=[{', '.join(str(x) for x in calls)}]")
-        elif ln.startswith("% LAW [") and "]" in ln and (art := law_by_name.get(ln[len("% LAW [") : ln.find("]")].lower())):
-            dims = art.get("dimensions") if isinstance(art.get("dimensions"), dict) else {}
-            if ltags := [
-                f"{k}={v}" for k in ("bend_dir", "args", "lhs", "rhs")
-                if (v := str(art.get(k) or dims.get(k) or "").strip())
-                and f"{k}=" not in ln
-            ]:
-                cand_ln = _insert_tag_into_line(ln, " ".join(ltags))
-        out_lines.append(cand_ln)
-    for m in (view.get("matched_symbols") or []):
-        if isinstance(m, dict) and m.get("symbol"):
-            sym_ln = f"@ AST_SYMBOL [{m['symbol']}] (scope={m.get('scope')}, file={m.get('file')})"
-            if sym_ln not in out_lines: out_lines.append(sym_ln)
-            if m.get("code"): out_lines.append(f"[CODE {m.get('file')}] ({m['symbol']})\n{m['code']}")
-    enriched_txt = "\n".join(out_lines)
-    if eff_budget >= 400 or token_cost(enriched_txt) <= eff_budget:
-        view.update({
-            "compact_view": enriched_txt,
-            "text": enriched_txt, "compact_lines": out_lines,
-            "token_count": token_cost(enriched_txt),
-            "line_count": len(out_lines)
-        })
-    else: view["compact_lines"] = raw_txt.splitlines()
-    return view
 
+def _node_matches_slice_dims(
+    node: dict[str, Any], node_kinds: set[str], sid: str | None, dims: dict[str, Any]
+) -> bool:
+    """Evaluates whether `node` satisfies all 5 nD coordinates via `matches_nd_slice` plus `query` overlap."""
+    scopes = dims["scopes"]
+    scope_obj = scopes.get(sid, {}) if (sid and isinstance(scopes.get(sid), dict)) else {}
+    comp_ov, div_ov, stg_ov, sch_ov = _node_coord_overlap(node, scope_obj, sid, dims)
+    component, division, stage, schema = dims["component"], dims["division"], dims["stage"], dims["schema"]
+    if not matches_nd_slice(not bool(component and str(component).strip()), comp_ov):
+        return False
+    if not matches_nd_slice(not bool(division and str(division).strip()), div_ov):
+        return False
+    if not matches_nd_slice(not bool(stage and str(stage).strip()), stg_ov):
+        return False
+    if not matches_nd_slice(not bool(schema and str(schema).strip()), sch_ov):
+        return False
+    kind = dims["kind"]
+    knd_unc = not bool(kind and str(kind).strip())
+    if not matches_nd_slice(knd_unc, (str(kind).strip().upper() in node_kinds) if not knd_unc else False):
+        return False
+    raw_query_low = dims["raw_query_low"]
+    if raw_query_low:
+        attrs = (node.get("attributes") or {})
+        blob = " ".join(
+            str(v)
+            for v in (
+                node.get("id"),
+                node.get("name"),
+                node.get("scope"),
+                node.get("scope_id"),
+                node.get("source"),
+                node.get("target"),
+                node.get("payload"),
+                node.get("role"),
+                node.get("why"),
+                attrs.get("why"),
+                node.get("spec"),
+                node.get("text"),
+                node.get("target_prop"),
+                node.get("owner"),
+                node.get("stage"),
+                node.get("files"),
+                node.get("file"),
+                node.get("bend_dir"),
+                node.get("args"),
+                node.get("lhs"),
+                node.get("rhs"),
+            )
+            if v is not None
+        )
+        node_toks = set(tokenize_content_words(blob))
+        q_tokens = dims["q_tokens"]
+        if not (raw_query_low in blob.lower() or (q_tokens and bool(q_tokens & node_toks))):
+            return False
+    return True
 
 def prohibition_blocks_task(
-    rule_has_prop: bool, task_has_prop: bool, props_match: bool, mentions_prohibited_val: bool,
-) -> bool:
+    rule_has_prop: bool, task_has_prop: bool, props_match: bool, mentions_prohibited_val: bool) -> bool:
     """Returns True iff a PROHIBITION rule blocks a task per Spec 22C §2.1 and Bend 2 Laws 9–10."""
     return True if not rule_has_prop else bool((task_has_prop and props_match) or mentions_prohibited_val)
-
 
 def classify_task_status(has_conflict: bool, has_prohibition: bool, has_unmet_dep: bool) -> str:
     """Classifies task readiness per Spec 22C §2.1 and Bend 2 Law 7 (`task_ready_iff_all_clear`)."""
@@ -112,7 +105,6 @@ def classify_task_status(has_conflict: bool, has_prohibition: bool, has_unmet_de
         return "BLOCKED_BY_RULE"
     return "WAITING_ON_DEPENDENCY" if has_unmet_dep else "READY"
 
-
 def _rule_prohibits_task(r: dict[str, Any], task: dict[str, Any]) -> bool:
     """Evaluates whether rule `r` blocks `task` via `prohibition_blocks_task` (Spec 22C §2.1)."""
     if r.get("type") != "PROHIBITION" or r.get("exceptions"):
@@ -121,312 +113,137 @@ def _rule_prohibits_task(r: dict[str, Any], task: dict[str, Any]) -> bool:
     rule_has_prop = r_prop is not None and str(r_prop).strip() != ""
     task_has_prop = t_prop is not None and str(t_prop).strip() != ""
     props_match = bool(rule_has_prop and task_has_prop and r_prop == t_prop)
-    r_val_raw = (
-        r.get("value") if isinstance(r.get("value"), str)
-        and r.get("value").strip() else (r.get("bound_val") if isinstance(r.get("bound_val"), str) else "")
-    )
+    r_val_raw = (r.get("value") if isinstance(r.get("value"), str) and r.get("value").strip()
+        else (r.get("bound_val") if isinstance(r.get("bound_val"), str) else ""))
     r_val = str(r_val_raw or "").strip().lower()
-    t_summary = str(task.get("summary") or task.get("text") or "").lower()
-    t_bval = str(task.get("bound_value") if task.get("bound_value") is not None else (task.get("bound_val") or "")).lower()
+    t_summary = str(next((_v for _v in (task.get("summary"), task.get("text")) if _v), None) or "").lower()
+    t_bval = str(task.get("bound_value") if task.get("bound_value") is not None else (task.get("bound_val") or "")
+        ).lower()
     return prohibition_blocks_task(
-        rule_has_prop, task_has_prop, props_match,
-        bool(r_val and (r_val in t_summary or r_val in t_bval))
-    )
+        rule_has_prop, task_has_prop, props_match, bool(r_val and (r_val in t_summary or r_val in t_bval)))
 
-
-def _evaluate_task_flags(
-    graph: dict[str, Any], task: dict[str, Any], conflicts: list[dict[str, Any]],
-) -> tuple[bool, bool, bool]:
+def _evaluate_task_flags(graph: dict[str, Any], task: dict[str, Any], conflicts: list[dict[str, Any]],
+    ) -> tuple[bool, bool, bool]:
     """Derives `(has_conflict, has_prohibition, has_unmet_dep)` for `task` against `graph` and `conflicts`."""
-    t_scope, gov_ids = str(task.get("scope") or "global_defaults"), {str(g) for g in task.get("governed_by", []) if g}
-    rule_idx, scopes = (_build_rule_index(graph) if isinstance(graph, dict) else {}), (graph.get("scopes", {}) if isinstance(graph, dict) else {})
+    t_scope = str(task.get("scope") or "global_defaults")
+    gov_ids = {str(g) for g in task.get("governed_by", []) if g}
+    rule_idx = _build_rule_index(graph) if isinstance(graph, dict) else {}
+    scopes = graph.get("scopes", {}) if isinstance(graph, dict) else {}
     active_tasks = graph.get("active_tasks", []) if isinstance(graph, dict) else []
-    open_blockers = [
-        b for b in (graph.get("open_blockers", []) if isinstance(graph, dict) else [])
-        if isinstance(b, dict) and b.get("status") != "RESOLVED"
-    ]
+    open_blockers = [b for b in ((graph or {}).get("open_blockers", []) or [])
+        if b.get("status") != "RESOLVED"]
     all_conflicts = list(conflicts) + [b for b in open_blockers if b.get("type") == "CONFLICT"]
     has_conflict = bool(task.get("has_conflict", False)) or any(
-        isinstance(c, dict) and (
-            c.get("scope") == t_scope or (
-                isinstance(c.get("scope"), str) and c["scope"]
-                and (t_scope.startswith(f"{c['scope']}::") or c["scope"].startswith(f"{t_scope}::"))
-            )
-            or bool(set(c.get("rule_ids", [])) & gov_ids)
-        )
-        for c in all_conflicts
-    )
-    scope_rules = scopes.get(t_scope, {}).get("rules", []) if isinstance(scopes.get(t_scope), dict) else []
-    cand_rules = [
-        rule_idx[rid][1] for rid in gov_ids
-        if rid in rule_idx
-    ] + [r for r in scope_rules if isinstance(r, dict)]
+        (c.get("scope") == t_scope or (isinstance(c.get("scope"), str) and c["scope"]
+        and (t_scope.startswith(f"{c['scope']}::") or c["scope"].startswith(f"{t_scope}::")))
+        or bool(set(c.get("rule_ids", [])) & gov_ids)) for c in all_conflicts)
+    scope_rules = scopes.get(t_scope, {}).get("rules", []) if scopes.get(t_scope) else []
+    cand_rules = [rule_idx[rid][1] for rid in gov_ids if rid in rule_idx] + [
+        r for r in scope_rules]
     has_prohibition = bool(task.get("has_prohibition", False)) or any(
-        isinstance(r, dict) and _rule_prohibits_task(r, task)
-        for r in cand_rules
-    )
+        _rule_prohibits_task(r, task) for r in cand_rules)
     has_unmet_dep = bool(task.get("has_unmet_dep", False)) or any(
-        b.get("type") in ("CLARIFICATION", "QUESTION")
-        and b.get("scope") == t_scope for b in open_blockers
-    )
+        b.get("type") in ("CLARIFICATION", "QUESTION") and b.get("scope") == t_scope for b in open_blockers)
     if not has_unmet_dep:
         for dep_id in (str(d).strip() for d in task.get("depends_on", []) if str(d).strip()):
-            if any(
-                isinstance(ot, dict) and ot.get("id") != task.get("id")
-                and (ot.get("id") == dep_id or ot.get("scope") == dep_id)
-                and not ot.get("completed", False)
-                for ot in active_tasks
-            ) or any(b.get("id") == dep_id or b.get("scope") == dep_id for b in open_blockers) or (
-                dep_id not in scopes and dep_id not in rule_idx
-                and f"fact_{dep_id}" not in rule_idx
-            ):
+            unmet_task = any(isinstance(ot, dict) and ot.get("id") != task.get("id")
+                and (ot.get("id") == dep_id or ot.get("scope") == dep_id) and not ot.get("completed", False)
+                for ot in active_tasks)
+            unmet_blocker = any(b.get("id") == dep_id or b.get("scope") == dep_id for b in open_blockers)
+            missing_dep = dep_id not in scopes and dep_id not in rule_idx and f"fact_{dep_id}" not in rule_idx
+            if unmet_task or unmet_blocker or missing_dep:
                 has_unmet_dep = True
                 break
-
     return has_conflict, has_prohibition, has_unmet_dep
 
-
-def annotate_active_tasks(
-    graph: dict[str, Any],
-    conflicts: list[dict[str, Any]] | None = None,
-    tasks: list[dict[str, Any]] | None = None,
-) -> list[dict[str, Any]]:
+def annotate_active_tasks(graph: dict[str, Any], conflicts: list[dict[str, Any]] | None = None,
+    tasks: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """Annotates each task in `tasks` (and `graph['active_tasks']`) with its `status` via `classify_task_status`."""
     if not isinstance(graph, dict):
         return []
     eff_conflicts = conflicts if conflicts is not None else detect_frustration(graph)
     for t in graph.get("active_tasks", []):
-        if isinstance(t, dict):
-            hc, hp, hd = _evaluate_task_flags(graph, t, eff_conflicts)
-            t["status"] = classify_task_status(hc, hp, hd)
+        if t:
+            t["status"] = classify_task_status(*_evaluate_task_flags(graph, t, eff_conflicts))
     if tasks is not None:
         for t in tasks:
-            if isinstance(t, dict):
-                hc, hp, hd = _evaluate_task_flags(graph, t, eff_conflicts)
-                t["status"] = classify_task_status(hc, hp, hd)
+            if t:
+                t["status"] = classify_task_status(*_evaluate_task_flags(graph, t, eff_conflicts))
         return tasks
     return list(graph.get("active_tasks", []))
 
-
 def _mark_file_scopes_as_components(graph: dict[str, Any]) -> None:
-    if isinstance(graph, dict) and isinstance(graph.get("scopes"), dict):
+    if isinstance(graph, dict):
         for sc in graph["scopes"].values():
-            if isinstance(sc, dict) and sc.get("files") and not sc.get("kind"):
+            if sc.get("files") and not sc.get("kind"):
                 sc["kind"] = "COMPONENT"
 
-
-def scan_graph(
-    graph: dict[str, Any], query: str = "", temperature: float | None = None,
-    token_budget: int = 400, max_lines: int = 35, *, max_tokens: int | None = None,
-) -> dict[str, Any]:
-    """Executes a 1-hop index scan over `graph` via `scan_nodes(..., conflict_detector=detect_frustration)`
-    and annotates `active_tasks` via `classify_task_status` (Spec 22C §2.1)."""
+def scan_graph(graph: dict[str, Any], query: str = "", temperature: float | None = None,
+    token_budget: int = 400, max_lines: int = 35, *, max_tokens: int | None = None) -> dict[str, Any]:
+    """Executes a 1-hop index scan over `graph` and annotates `active_tasks` (Spec 22C §2.1)."""
     _mark_file_scopes_as_components(graph)
     eff_budget = int(max_tokens if max_tokens is not None else token_budget)
-    view = scan_nodes(
-        graph, query, token_budget=token_budget, max_lines=max_lines,
-        max_tokens=max_tokens, temperature=temperature, conflict_detector=detect_frustration,
-    )
+    view = scan_nodes(graph, query, token_budget=token_budget, max_lines=max_lines,
+        max_tokens=max_tokens, temperature=temperature, conflict_detector=detect_frustration)
     annotate_active_tasks(graph, view.get("conflicts", []), view.get("active_tasks", []))
     return _enrich_view_compact_lines(graph, view, eff_budget=eff_budget)
 
-
-def propagate_graph(
-    graph: dict[str, Any], query: str, temperature: float | None = None,
-    token_budget: int = 400, max_lines: int = 35, gamma: float = 0.75, max_hops: int = 4,
-    *, max_steps: int | None = None, max_tokens: int | None = None,
-) -> dict[str, Any]:
-    """Executes 5-family multi-hop propagation via `propagate_nodes(..., conflict_detector=detect_frustration)`
-    and annotates `active_tasks` via `classify_task_status` (Spec 22C §2.1)."""
+def propagate_graph(graph: dict[str, Any], query: str, temperature: float | None = None, token_budget: int = 400,
+    max_lines: int = 35, gamma: float = 0.75, max_hops: int = 4, **options: Any) -> dict[str, Any]:
+    """Executes 5-family multi-hop propagation and annotates `active_tasks` (Spec 22C §2.1)."""
     _mark_file_scopes_as_components(graph)
+    max_steps = options.get("max_steps")
+    max_tokens = options.get("max_tokens")
     eff_budget = int(max_tokens if max_tokens is not None else token_budget)
-    view = propagate_nodes(
-        graph, query, temperature=temperature, token_budget=token_budget, max_lines=max_lines,
+    view = propagate_nodes(graph, query, temperature=temperature, token_budget=token_budget, max_lines=max_lines,
         gamma=gamma, max_hops=max_hops, max_steps=max_steps, max_tokens=max_tokens,
-        conflict_detector=detect_frustration,
-    )
+        conflict_detector=detect_frustration)
     annotate_active_tasks(graph, view.get("conflicts", []), view.get("active_tasks", []))
     return _enrich_view_compact_lines(graph, view, eff_budget=eff_budget)
 
-
-def expand_node(
-    graph: dict[str, Any], node_id: str, query: str = "", token_budget: int = 400, max_lines: int = 35,
-) -> dict[str, Any]:
-    """Expands a single scope or rule `node_id` via `expand_graph_node(..., conflict_detector=detect_frustration)`
-    and annotates `active_tasks` via `classify_task_status` (Spec 22C §2.1)."""
+def expand_node(graph: dict[str, Any], node_id: str, query: str = "", token_budget: int = 400, max_lines: int = 35,
+    ) -> dict[str, Any]:
+    """Expands a single scope or rule `node_id` and annotates `active_tasks` (Spec 22C §2.1)."""
     _mark_file_scopes_as_components(graph)
-    view = expand_graph_node(
-        graph, node_id, query=query, token_budget=token_budget,
-        max_lines=max_lines, conflict_detector=detect_frustration,
-    )
+    view = expand_graph_node(graph, node_id, query=query, token_budget=token_budget,
+        max_lines=max_lines, conflict_detector=detect_frustration)
     annotate_active_tasks(graph, view.get("conflicts", []), view.get("active_tasks", []))
     return _enrich_view_compact_lines(graph, view, eff_budget=token_budget)
-
-
-def _scope_chain_values(scopes: dict[str, Any], start_sid: str | None, field_name: str) -> list[str]:
-    """Collects lowercase values for `field_name` along `start_sid` and its ancestor scopes."""
-    out: list[str] = []
-    cur = str(start_sid or "").strip()
-    visited: set[str] = set()
-    for _ in range(8):
-        if not cur or cur in visited or not isinstance(scopes.get(cur), dict):
-            break
-        visited.add(cur)
-        sc = scopes[cur]
-        for cand in (
-            sc.get(field_name), (sc.get("attributes") or {}).get(field_name)
-            if isinstance(sc.get("attributes"), dict) else None
-        ):
-            if cand is not None and str(cand).strip():
-                out.append(str(cand).strip().lower())
-        cur = str(sc.get("parent") or "").strip()
-    return out
-
-
-def _node_coord_overlap(
-    node: dict[str, Any],
-    scope_obj: dict[str, Any],
-    scopes: dict[str, Any],
-    alias_idx: dict[str, str],
-    sid: str | None,
-    *,
-    component: str | None,
-    division: str | None,
-    stage: str | None,
-    schema: str | None,
-) -> tuple[bool, bool, bool, bool]:
-    comp_ov = False
-    if component and str(component).strip():
-        c_low = str(component).strip().lower()
-        c_res = str(alias_idx.get(c_low, c_low)).lower()
-        comp_cands = [str(node[k]).strip().lower() for k in ("scope", "scope_id", "id", "parent", "source", "target") if node.get(k)]
-        for list_k in ("depends_on", "children", "refs", "aliases"):
-            comp_cands.extend(str(item).strip().lower() for item in (node.get(list_k) or []) if str(item).strip())
-        if isinstance(scope_obj, dict) and scope_obj:
-            comp_cands.extend(str(scope_obj[k]).strip().lower() for k in ("id", "parent") if scope_obj.get(k))
-            comp_cands.extend(str(al).strip().lower() for al in (scope_obj.get("aliases") or []) if str(al).strip())
-        comp_ov = any(v in (c_low, c_res) or v.startswith(f"{c_low}::") or v.startswith(f"{c_res}::") for v in comp_cands)
-
-    div_ov = False
-    if division and str(division).strip():
-        d_low = str(division).strip().lower()
-        dims_d = node.get("dimensions") if isinstance(node.get("dimensions"), dict) else {}
-        attrs_d = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
-        div_cands = [
-            str(v).strip().lower()
-            for v in (node.get("owner"), node.get("division"), dims_d.get("owner"), dims_d.get("division"), attrs_d.get("owner"), attrs_d.get("division"))
-            if v is not None and str(v).strip()
-        ]
-        for chain_sid in (sid, node.get("source"), node.get("target")):
-            div_cands.extend(_scope_chain_values(scopes, chain_sid, "owner"))
-            div_cands.extend(_scope_chain_values(scopes, chain_sid, "division"))
-        div_ov = any(d_low == v or d_low in v for v in div_cands)
-
-    stg_ov = False
-    if stage and str(stage).strip():
-        s_low = str(stage).strip().lower()
-        dims_s = node.get("dimensions") if isinstance(node.get("dimensions"), dict) else {}
-        attrs_s = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
-        stg_cands = [
-            str(v).strip().lower()
-            for v in (node.get("stage"), dims_s.get("stage"), attrs_s.get("stage"))
-            if v is not None and str(v).strip()
-        ]
-        for chain_sid in (sid, node.get("source"), node.get("target")):
-            stg_cands.extend(_scope_chain_values(scopes, chain_sid, "stage"))
-        stg_ov = any(s_low == v or s_low in v for v in stg_cands)
-
-    sch_ov = False
-    if schema and str(schema).strip():
-        sch_low = str(schema).strip().lower()
-        sch_cands = [str(v).strip().lower() for v in (node.get("payload"), node.get("name"), node.get("target_prop")) if v is not None and str(v).strip()]
-        for list_k in ("inputs", "outputs"):
-            sch_cands.extend(str(item).strip().lower() for item in (node.get(list_k) or []) if str(item).strip())
-            if isinstance(scope_obj, dict):
-                sch_cands.extend(str(item).strip().lower() for item in (scope_obj.get(list_k) or []) if str(item).strip())
-        sch_ov = any(sch_low == v or sch_low in v for v in sch_cands)
-
-    return comp_ov, div_ov, stg_ov, sch_ov
-
-
-def _node_matches_slice_dims(
-    node: dict[str, Any],
-    node_kinds: set[str],
-    scopes: dict[str, Any],
-    alias_idx: dict[str, str],
-    *,
-    sid: str | None,
-    component: str | None,
-    division: str | None,
-    stage: str | None,
-    schema: str | None,
-    kind: str | None,
-    q_tokens: set[str],
-    raw_query_low: str,
-) -> bool:
-    """Evaluates whether `node` satisfies all 5 nD coordinates via `matches_nd_slice` plus `query` overlap (Spec 22C §2.1)."""
-    scope_obj = scopes.get(sid, {}) if (sid and isinstance(scopes.get(sid), dict)) else {}
-    comp_ov, div_ov, stg_ov, sch_ov = _node_coord_overlap(
-        node, scope_obj, scopes, alias_idx, sid,
-        component=component, division=division, stage=stage, schema=schema
-    )
-    if not matches_nd_slice(not bool(component and str(component).strip()), comp_ov):
-        return False
-    if not matches_nd_slice(not bool(division and str(division).strip()), div_ov):
-        return False
-    if not matches_nd_slice(not bool(stage and str(stage).strip()), stg_ov):
-        return False
-    if not matches_nd_slice(not bool(schema and str(schema).strip()), sch_ov):
-        return False
-    knd_unc = not bool(kind and str(kind).strip())
-    if not matches_nd_slice(knd_unc, (str(kind).strip().upper() in node_kinds) if not knd_unc else False):
-        return False
-    if raw_query_low:
-        blob = " ".join(
-            str(v)
-            for v in (
-                node.get("id"), node.get("name"), node.get("scope"), node.get("scope_id"),
-                node.get("source"), node.get("target"), node.get("payload"), node.get("role"), node.get("why"),
-                (node.get("attributes") if isinstance(node.get("attributes"), dict) else {}).get("why"),
-                node.get("spec"), node.get("text"), node.get("target_prop"), node.get("owner"), node.get("stage"),
-                node.get("files"), node.get("file"), node.get("bend_dir"), node.get("args"), node.get("lhs"), node.get("rhs"),
-            )
-            if v is not None
-        )
-        node_toks = set(tokenize_content_words(blob))
-        if not (raw_query_low in blob.lower() or (q_tokens and bool(q_tokens & node_toks))):
-            return False
-    return True
-
 
 def _format_code_window(src_lines: list[str], s: int, e: int, q_sub: list[str]) -> str:
     for tok in q_sub:
         if "-" in tok and all(p.lstrip("l").isdigit() for p in tok.split("-", 1)):
             ws, we = (max(1, min(len(src_lines), int(p.lstrip("l")))) for p in tok.split("-", 1))
             return f"[WINDOW #L{ws}-L{we}]\n" + "\n".join(src_lines[ws - 1 : we])
-    if q_sub and (hit := next((i + 1 for i in range(max(0, s - 1), min(len(src_lines), e)) if any(k in src_lines[i].lower() for k in q_sub)), None)):
-        ws, we = max(s, hit - 5), min(e, max(s, hit - 5) + 90)
-        return f"[WINDOW #L{ws}-L{we}]\n" + "\n".join(src_lines[ws - 1 : we])
+    if q_sub:
+        hit = next(
+            (i + 1 for i in range(max(0, s - 1), min(len(src_lines), e)) if any(k in src_lines[i].lower() for k
+                in q_sub)),
+            None)
+        if hit:
+            ws, we = max(s, hit - 5), min(e, max(s, hit - 5) + 90)
+            return f"[WINDOW #L{ws}-L{we}]\n" + "\n".join(src_lines[ws - 1 : we])
     full_blk = "\n".join(src_lines[max(0, s - 1) : e])
-    if len(full_blk) <= 15000: return full_blk
+    if len(full_blk) <= 15000:
+        return full_blk
     head = src_lines[max(0, s - 1) : min(e, s + 59)]
+    lm_prefixes = ("if ", "elif ", "else:", "for ", "while ", "try:", "except", "def ", "class ")
     lms = [
         f"#   L{i}: {st[:76]}" for i in range(s + 60, min(len(src_lines), e) + 1)
-        if (st := src_lines[i - 1].strip()).startswith(("if ", "elif ", "else:", "for ", "while ", "try:", "except", "def ", "class "))
+        if (st := src_lines[i - 1].strip()).startswith(lm_prefixes)
     ][:20]
-    return "\n".join([*head, f"# ... [LANDMARKS #L{s + 60}-L{e} — pass query='<symbol> <keyword>' or '<symbol> <start>-<end>' for exact window]:", *lms])
-
+    hdr = f"# ... [LANDMARKS #L{s + 60}-L{e} — pass query='<symbol> <keyword>' or '<symbol> <start>-<end>']:"
+    return "\n".join([*head, hdr, *lms])
 
 _AST_SPAN_CACHE: dict[str, tuple[int, list[tuple[str, int, int]], list[str], dict[str, list[str]]]] = {}
-
 
 def _resolve_slice_file(cp: str) -> Path:
     lat_home = Path(__file__).resolve().parents[2]
     env_root = os.environ.get("BOWTHRUSTER_PROJECT_ROOT")
-    root = Path(env_root).resolve() if env_root else (Path.cwd().resolve() if (Path.cwd() / ".whiteboard").is_dir() else lat_home)
-    cands = (root / cp, Path.cwd().resolve() / cp, lat_home / cp, lat_home.parent / cp)
+    cwd = Path.cwd().resolve()
+    root = Path(env_root).resolve() if env_root else (cwd if (cwd / ".whiteboard").is_dir() else lat_home)
+    cands = (root / cp, cwd / cp, lat_home / cp, lat_home.parent / cp)
     return next((c for c in cands if c.is_file()), root / cp)
-
 
 def _load_cached_file_ast(fp: Path, cp: str) -> tuple[list[tuple[str, int, int]], list[str], dict[str, list[str]]]:
     ckey = str(fp)
@@ -442,11 +259,9 @@ def _load_cached_file_ast(fp: Path, cp: str) -> tuple[list[tuple[str, int, int]]
         try:
             tree = ast.parse(src)
             nodes = list(ast.walk(tree))
-            sym_spans = [
-                (n.name, int(n.lineno), int(getattr(n, "end_lineno", None) or n.lineno))
-                for n in nodes
+            sym_spans = [(n.name, int(n.lineno), int(getattr(n, "end_lineno", None) or n.lineno)) for n in nodes
                 if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and getattr(n, "lineno", 0) > 0
-            ]
+                ]
             sym_dict = {nm: (s, e) for nm, s, e in sym_spans}
             for fn in nodes:
                 if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -460,39 +275,30 @@ def _load_cached_file_ast(fp: Path, cp: str) -> tuple[list[tuple[str, int, int]]
             pass
     else:
         from bowthruster.nlp import _extract_generic_source_symbols
-
         raw_syms, calls_map = _extract_generic_source_symbols(fp)
         sym_spans = [(nm, s, e) for nm, (s, e) in raw_syms.items()]
     _AST_SPAN_CACHE[ckey] = (mt, sym_spans, src_lines, calls_map)
     return sym_spans, src_lines, calls_map
 
-
 def _refresh_artifacts_from_disk(active_artifacts: list[dict[str, Any]]) -> None:
     for art in active_artifacts:
-        if not isinstance(art, dict):
+        if not isinstance(art, dict) or not (af := str(art.get("file") or "").strip()):
             continue
-        af = str(art.get("file") or "").strip()
-        if not af:
-            continue
-        cp = af.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
+        cp = _strip_file_uri(af)
         fp = _resolve_slice_file(cp)
         if not fp.is_file():
             continue
         sym_spans, _, calls_map = _load_cached_file_ast(fp, cp)
         sym_dict = {nm: (s, e) for nm, s, e in sym_spans}
-        asym = str(art.get("name") or art.get("id") or "").strip()
+        asym = str(next((_v for _v in (art.get("name"), art.get("id")) if _v), None) or "").strip()
         if asym in sym_dict:
             s, e = sym_dict[asym]
             art["file"] = f"{cp}#L{s}-L{e}"
         if asym in calls_map:
             art["calls"] = list(calls_map[asym])
 
-
-def _scan_ast_symbols_on_disk(
-    scopes: dict[str, Any], raw_query_low: str,
-    component: str | None, active_artifacts: list[dict[str, Any]],
-    include_code: bool
-) -> list[dict[str, Any]]:
+def _scan_ast_symbols_on_disk(scopes: dict[str, Any], raw_query_low: str,
+    component: str | None, active_artifacts: list[dict[str, Any]], include_code: bool) -> list[dict[str, Any]]:
     _refresh_artifacts_from_disk(active_artifacts)
     if not raw_query_low and not include_code:
         return []
@@ -501,33 +307,29 @@ def _scan_ast_symbols_on_disk(
     if raw_query_low:
         q_parts = [p for p in raw_query_low.replace("#l", " ").replace(":", " ").split() if p]
         q_clean, q_sub = (q_parts[0] if q_parts else raw_query_low.strip()), q_parts[1:]
-        for tok_filter in ([q_clean], ([t for t in q_clean.split("_") if len(t) >= 3] if "_" in q_clean else [])):
+        tok_filters = ([q_clean], ([t for t in q_clean.split("_") if len(t) >= 3] if "_" in q_clean else []))
+        for tok_filter in tok_filters:
             if not tok_filter or matched:
                 break
             for sid, sc in scopes.items():
                 if not isinstance(sc, dict) or (component and sid.lower() != str(component).strip().lower()):
                     continue
                 for f_raw in _norm_files_list(sc.get("files") or (sc.get("attributes") or {}).get("files")):
-                    cp = f_raw.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
+                    cp = _strip_file_uri(f_raw)
                     fp = _resolve_slice_file(cp)
                     if not fp.is_file():
                         continue
                     sym_spans, src_lines, _ = _load_cached_file_ast(fp, cp)
                     for sym_name, s, e in sym_spans:
                         nl = sym_name.lower()
-                        is_hit = (
-                            (nl == q_clean or (len(q_clean) >= 4 and q_clean in nl))
-                            if len(tok_filter) == 1
-                            else all(t in f"{cp.lower()} {nl}" for t in tok_filter)
-                        )
+                        is_hit = ((nl == q_clean or (len(q_clean) >= 4 and q_clean in nl))
+                            if len(tok_filter) == 1 else all(t in f"{cp.lower()} {nl}" for t in tok_filter))
                         if (cp, sym_name) not in seen and is_hit:
                             seen.add((cp, sym_name))
                             matched.append({
-                                "symbol": sym_name, "scope": sid,
-                                "file": f"{cp}#L{s}-L{e}",
-                                "start_line": s, "end_line": e,
-                                "exact": nl == q_clean or len(tok_filter) > 1,
-                                **({"code": _format_code_window(src_lines, s, e, q_sub)} if include_code else {})
+                                "symbol": sym_name, "scope": sid, "file": f"{cp}#L{s}-L{e}",
+                                "start_line": s, "end_line": e, "exact": nl == q_clean or len(tok_filter) > 1,
+                                **({"code": _format_code_window(src_lines, s, e, q_sub)} if include_code else {}),
                             })
                             if len(tok_filter) > 1:
                                 break
@@ -537,41 +339,35 @@ def _scan_ast_symbols_on_disk(
             matched = [m for m in matched if m.get("exact")]
     if include_code and not matched:
         for art in active_artifacts:
-            if not isinstance(art, dict):
+            if not isinstance(art, dict) or not (af := str(art.get("file") or "").strip()):
                 continue
-            af = str(art.get("file") or "").strip()
-            if not af:
-                continue
-            cp = af.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
+            cp = _strip_file_uri(af)
             fp = _resolve_slice_file(cp)
             if not fp.is_file():
                 continue
             sym_spans, src_lines, _ = _load_cached_file_ast(fp, cp)
             sym_dict = {nm: (s, e) for nm, s, e in sym_spans}
-            sym = str(art.get("name") or art.get("id") or "")
-            s, e = 1, len(src_lines)
-            if sym in sym_dict:
-                s, e = sym_dict[sym]
-            elif "#L" in af:
+            sym = str(next((_v for _v in (art.get("name"), art.get("id")) if _v), None) or "")
+            s, e = sym_dict.get(sym, (1, len(src_lines)))
+            if sym not in sym_dict and "#L" in af:
                 rng = af.split("#L", 1)[1]
                 if "-" in rng and all(p.lstrip("Ll").isdigit() for p in rng.split("-", 1)):
                     s, e = (int(p.lstrip("Ll")) for p in rng.split("-", 1))
             if (cp, sym) not in seen and src_lines:
                 seen.add((cp, sym))
                 matched.append({
-                    "symbol": sym or cp,
-                    "scope": str(art.get("scope_id") or art.get("scope") or ""),
-                    "file": f"{cp}#L{s}-L{e}",
-                    "start_line": s,
-                    "end_line": e,
+                    "symbol": sym or cp, "scope": str(art.get("scope_id") or ""),
+                    "file": f"{cp}#L{s}-L{e}", "start_line": s, "end_line": e,
                     "code": _format_code_window(src_lines, s, e, []),
                 })
         if not matched:
             for sid, sc in scopes.items():
-                if not isinstance(sc, dict) or sid == "global_defaults" or (component and sid.lower() != str(component).strip().lower()):
+                if not isinstance(sc, dict) or sid == "global_defaults":
+                    continue
+                if component and sid.lower() != str(component).strip().lower():
                     continue
                 for f_raw in _norm_files_list(sc.get("files") or (sc.get("attributes") or {}).get("files")):
-                    cp = f_raw.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
+                    cp = _strip_file_uri(f_raw)
                     fp = _resolve_slice_file(cp)
                     if fp.is_file():
                         sym_spans, src_lines, _ = _load_cached_file_ast(fp, cp)
@@ -579,156 +375,120 @@ def _scan_ast_symbols_on_disk(
                             if (cp, sym_name) not in seen and src_lines:
                                 seen.add((cp, sym_name))
                                 matched.append({
-                                    "symbol": sym_name,
-                                    "scope": sid,
-                                    "file": f"{cp}#L{s}-L{e}",
-                                    "start_line": s,
-                                    "end_line": e,
-                                    "code": _format_code_window(src_lines, s, e, []),
+                                    "symbol": sym_name, "scope": sid, "file": f"{cp}#L{s}-L{e}",
+                                    "start_line": s, "end_line": e, "code": _format_code_window(src_lines, s, e, []),
                                 })
     return matched
 
-
-def _merge_matched_symbol_context(
-    graph: dict[str, Any],
-    scopes: dict[str, Any],
+def _merge_matched_symbol_context(graph: dict[str, Any], scopes: dict[str, Any],
     matched_symbols: list[dict[str, Any]],
-    component_specs: list[dict[str, Any]],
-    active_flows: list[dict[str, Any]],
-    active_artifacts: list[dict[str, Any]],
-    active_rules: list[dict[str, Any]],
+    slice_lists: tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]],
     include_code: bool,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    component_specs, active_flows, active_artifacts, active_rules = slice_lists
     if any(m.get("exact") for m in matched_symbols):
         exact_sids = {str(m.get("scope") or "") for m in matched_symbols if m.get("exact")}
         exact_syms = {str(m.get("symbol") or "").lower() for m in matched_symbols if m.get("exact")}
         component_specs = [copy.deepcopy(scopes[s]) for s in exact_sids if s in scopes]
-        active_flows = [
-            copy.deepcopy(fl) for fl in graph.get("flows", [])
-            if isinstance(fl, dict) and (fl.get("source") in exact_sids or fl.get("target") in exact_sids)
-        ]
-        sc_arts = [
-            copy.deepcopy(a) for a in graph.get("lattice_artifacts", [])
-            if isinstance(a, dict) and str(a.get("scope_id") or a.get("scope") or "") in exact_sids
-        ]
+        active_flows = [copy.deepcopy(fl) for fl in graph.get("flows", [])
+            if (fl.get("source") in exact_sids or fl.get("target") in exact_sids)]
+        sc_arts = [copy.deepcopy(a) for a in graph.get("lattice_artifacts", [])
+            if str(a.get("scope_id") or "") in exact_sids]
         _refresh_artifacts_from_disk(sc_arts)
-        active_artifacts = (
-            [a for a in sc_arts if str(a.get("name") or a.get("id") or "").lower() in exact_syms]
-            or [a for a in sc_arts if any(any(es in str(c).lower() for es in exact_syms) for c in (a.get("calls") or []))]
-            or sc_arts
-        ) if include_code else sc_arts
+        active_artifacts = ([a for a in sc_arts if str(a.get("name") or "").lower() in exact_syms]
+            or [a for a in sc_arts
+            if any(any(es in str(c).lower() for es in exact_syms) for c in (a.get("calls") or []))] or sc_arts
+            ) if include_code else sc_arts
         active_rules = [
-            copy.deepcopy(r) for s in exact_sids
-            for r in (scopes.get(s, {}).get("rules") or [])
-            if isinstance(r, dict)
+            copy.deepcopy(r) for s in exact_sids for r in (scopes.get(s, {}).get("rules") or [])
         ]
     else:
-        comp_ids = {str(c.get("id") or "") for c in component_specs if isinstance(c, dict)}
+        comp_ids = {str(c.get("id") or "") for c in component_specs}
         for m in matched_symbols:
             if (msid := str(m.get("scope") or "")) in scopes and msid not in comp_ids:
                 comp_ids.add(msid)
                 component_specs.append(copy.deepcopy(scopes[msid]))
-                active_flows.extend(
-                    copy.deepcopy(fl) for fl in graph.get("flows", [])
-                    if isinstance(fl, dict) and msid in (fl.get("source"), fl.get("target"))
-                    and fl not in active_flows
-                )
-                active_artifacts.extend(
-                    copy.deepcopy(a) for a in graph.get("lattice_artifacts", [])
-                    if isinstance(a, dict) and str(a.get("scope_id") or a.get("scope") or "") == msid
-                    and a not in active_artifacts
-                )
-                active_rules.extend(
-                    copy.deepcopy(r) for r in (scopes[msid].get("rules") or [])
-                    if isinstance(r, dict) and r not in active_rules
-                )
+                active_flows.extend(copy.deepcopy(fl) for fl in graph.get("flows", [])
+                    if msid in (fl.get("source"), fl.get("target")) and fl not in active_flows
+                    )
+                active_artifacts.extend(copy.deepcopy(a) for a in graph.get("lattice_artifacts", [])
+                    if str(a.get("scope_id") or "") == msid
+                    and a not in active_artifacts)
+                active_rules.extend(copy.deepcopy(r) for r in (scopes[msid].get("rules") or [])
+                    if r not in active_rules)
         _refresh_artifacts_from_disk(active_artifacts)
     return component_specs, active_flows, active_artifacts, active_rules
 
-
-def slice_lattice(
-    graph: dict[str, Any], query: str = "", *, component: str | None = None, scope: str | None = None,
-    division: str | None = None, stage: str | None = None, schema: str | None = None,
-    kind: str | None = None, token_budget: int = 2400, max_lines: int = 120, include_code: bool = False,
-) -> dict[str, Any]:
+def slice_lattice(graph: dict[str, Any], query: str = "", *, component: str | None = None, scope: str | None = None,
+    division: str | None = None, stage: str | None = None, schema: str | None = None, **options: Any,
+    ) -> dict[str, Any]:
     """Computes an nD Hyperplane Slice over `graph` governed by Spec 21 Law 10 (`matches_nd_slice`, Spec 22C §2.1)."""
     if not isinstance(graph, dict):
         raise ValueError("graph must be a dict")
+    kind = options.get("kind")
+    token_budget = int(options.get("token_budget", 2400))
+    max_lines = int(options.get("max_lines", 120))
+    include_code = bool(options.get("include_code", False))
     if component is None and scope is not None:
         component = scope
-
+    normalize_board_graph(graph)
     conflicts = detect_frustration(graph)
     annotate_active_tasks(graph, conflicts)
-    scopes = graph.get("scopes", {}) if isinstance(graph.get("scopes"), dict) else {}
+    scopes = graph["scopes"]
     if component and component not in scopes:
-        component = next(
-            (s for s in scopes if s != "global_defaults" and (s.lower() in component.lower() or component.lower() in s.lower())),
-            None if query else component
-        )
-    alias_idx = graph.get("alias_index", {}) if isinstance(graph.get("alias_index"), dict) else {}
+        component = next((s for s in scopes if s != "global_defaults"
+            and (s.lower() in component.lower() or component.lower() in s.lower())), None if query else component)
+    alias_idx = (graph.get("alias_index") or {})
     raw_query_low = str(query or "").strip().lower()
     q_tokens = set(tokenize_content_words(query)) if raw_query_low else set()
-    dim_kw = {
-        "component": component, "division": division, "stage": stage,
-        "schema": schema, "kind": kind, "q_tokens": q_tokens, "raw_query_low": raw_query_low,
-    }
-
+    dims = {"scopes": scopes, "alias_idx": alias_idx, "component": component, "division": division,
+        "stage": stage, "schema": schema, "kind": kind, "q_tokens": q_tokens, "raw_query_low": raw_query_low}
+    sbf_keys = ("role", "owner", "stage", "depends_on", "children", "parent", "inputs", "outputs", "files")
     component_specs: list[dict[str, Any]] = []
     active_rules: list[dict[str, Any]] = []
     for sid, sc in scopes.items():
-        if not isinstance(sc, dict):
+        if not sc:
             continue
-        is_sbf_comp = sid != "global_defaults" and not str(sid).startswith("global_defaults::") and (
-            str(sc.get("kind") or "").strip().upper() == "COMPONENT"
-            or bool(sc.get("role") or sc.get("owner") or sc.get("stage") or sc.get("depends_on") or sc.get("children") or sc.get("parent") or sc.get("inputs") or sc.get("outputs") or sc.get("files"))
-        )
-        if (sid != "global_defaults" and not str(sid).startswith("global_defaults::")) or is_sbf_comp or len(scopes) == 1:
+        is_non_default = sid != "global_defaults" and not str(sid).startswith("global_defaults::")
+        is_sbf_comp = is_non_default and (
+            str(sc.get("kind") or "").strip().upper() == "COMPONENT" or any(sc.get(k) for k in sbf_keys))
+        if is_non_default or is_sbf_comp or len(scopes) == 1:
             sc_kinds = {"COMPONENT", "SCOPE"} if is_sbf_comp else {"SCOPE"}
             if sc.get("kind"):
                 sc_kinds.add(str(sc["kind"]).strip().upper())
-            if _node_matches_slice_dims(sc, sc_kinds, scopes, alias_idx, sid=sid, **dim_kw):
+            if _node_matches_slice_dims(sc, sc_kinds, sid, dims):
                 component_specs.append(copy.deepcopy(sc))
         for r in sc.get("rules", []):
-            if isinstance(r, dict):
+            if r:
                 rtype = str(r.get("type") or "OBLIGATION").strip().upper()
                 r_kinds = {rtype, "FACT"} if rtype in ("FACT", "GOAL", "PROPOSAL") else {rtype, "CONSTRAINT", "RULE"}
-                if _node_matches_slice_dims(r, r_kinds, scopes, alias_idx, sid=str(r.get("scope") or sid), **dim_kw):
+                if _node_matches_slice_dims(r, r_kinds, str(r.get("scope") or sid), dims):
                     active_rules.append(copy.deepcopy(r))
-
-    raw_flows = [
-        copy.deepcopy(fl) for fl in graph.get("flows", [])
-        if isinstance(fl, dict) and _node_matches_slice_dims(
-            fl, {"FLOW", str(fl.get("kind") or "FLOW").strip().upper()},
-            scopes, alias_idx, sid=str(fl.get("source") or ""), **dim_kw
-        )
-    ]
-    active_flows = list({(str(fl.get("source") or ""), str(fl.get("target") or ""), str(fl.get("payload") or fl.get("condition") or "")): fl for fl in raw_flows}.values())
-    active_artifacts = [
-        copy.deepcopy(art) for art in graph.get("lattice_artifacts", [])
-        if isinstance(art, dict) and _node_matches_slice_dims(
-            art, {str(art.get("kind") or "SCHEMA").strip().upper(), "ARTIFACT"},
-            scopes, alias_idx, sid=str(art.get("scope_id") or art.get("scope") or ""), **dim_kw
-        )
-    ]
-    active_tasks = [
-        copy.deepcopy(t) for t in graph.get("active_tasks", [])
-        if isinstance(t, dict) and _node_matches_slice_dims(t, {"TASK", "ACTION"}, scopes, alias_idx, sid=str(t.get("scope") or ""), **dim_kw)
-    ]
+    raw_flows = [copy.deepcopy(fl) for fl in graph["flows"] if _node_matches_slice_dims(
+        fl, {"FLOW", str(fl.get("kind") or "FLOW").strip().upper()}, str(fl.get("source") or ""), dims)]
+    active_flows = list({
+        (str(fl.get("source") or ""), str(fl.get("target") or ""), str(fl.get("payload", fl.get("condition"))
+            or "")): fl
+        for fl in raw_flows }.values())
+    active_artifacts = [copy.deepcopy(art) for art in graph["lattice_artifacts"]
+        if _node_matches_slice_dims(
+        art, {str(art.get("kind") or "SCHEMA").strip().upper(), "ARTIFACT"},
+        str(next((_v for _v in (art.get("scope_id"), art.get("scope")) if _v), None) or ""), dims)]
+    active_tasks = [copy.deepcopy(t) for t in graph.get("active_tasks", [])
+        if _node_matches_slice_dims(t, {"TASK", "ACTION"}, str(t.get("scope") or ""), dims)]
     matched_symbols = _scan_ast_symbols_on_disk(scopes, raw_query_low, component, active_artifacts, include_code)
     component_specs, active_flows, active_artifacts, active_rules = _merge_matched_symbol_context(
-        graph, scopes, matched_symbols, component_specs, active_flows, active_artifacts, active_rules, include_code
-    )
-    open_blockers = [copy.deepcopy(b) for b in graph.get("open_blockers", []) if isinstance(b, dict) and b.get("status") != "RESOLVED"]
+        graph, scopes, matched_symbols, (component_specs, active_flows, active_artifacts, active_rules), include_code)
+    open_blockers = [copy.deepcopy(b) for b in graph.get("open_blockers", [])
+        if b.get("status") != "RESOLVED"]
     all_blockers = list(conflicts) + [b for b in open_blockers if b.get("type") != "CONFLICT"]
-
     status = "CONFLICT" if conflicts else ("BLOCKED" if open_blockers else "OK")
-    view: dict[str, Any] = {
-        "status": status, "component_specs": component_specs,
-        "active_flows": active_flows, "active_artifacts": active_artifacts,
-        "active_rules": active_rules, "active_tasks": active_tasks,
-        "matched_symbols": matched_symbols,
-        "blockers": all_blockers, "conflicts": conflicts, "open_blockers": open_blockers
-    }
+    view: dict[str, Any] = {"status": status, "component_specs": component_specs, "active_flows": active_flows,
+        "active_artifacts": active_artifacts, "active_rules": active_rules, "active_tasks": active_tasks,
+        "matched_symbols": matched_symbols, "blockers": all_blockers,
+        "conflicts": conflicts, "open_blockers": open_blockers}
     compact_str = format_compact_view(view, max_lines=max_lines, token_budget=token_budget)
-    view.update({"compact_view": compact_str, "text": compact_str, "token_count": token_cost(compact_str), "line_count": len(compact_str.splitlines()) if compact_str else 0})
-    return _enrich_view_compact_lines(graph, view, eff_budget=max(token_budget, 2400) if (include_code or matched_symbols) else token_budget)
+    view.update({"compact_view": compact_str, "text": compact_str, "token_count": token_cost(compact_str),
+        "line_count": len(compact_str.splitlines()) if compact_str else 0})
+    eff_b = max(token_budget, 2400) if (include_code or matched_symbols) else token_budget
+    return _enrich_view_compact_lines(graph, view, eff_budget=eff_b)

@@ -83,6 +83,7 @@ from bowthruster.whiteboard.schema import (
     classify_lattice_store,
     create_empty_graph,
     create_empty_lattice,
+    normalize_board_graph,
     resolve_packet_lifecycle_status,
     should_register_as_scope,
     step_component_lifecycle_on_edit,
@@ -90,6 +91,196 @@ from bowthruster.whiteboard.schema import (
     validate_context_graph,
     verify_graph_invariants,
 )
+import keyword
+from typing import Any
+
+_EMPTY_TOKENS = frozenset({"none", "-", "—", "n/a", "null"})
+
+
+def _parse_bend_law_args(raw_args: Any) -> list[str]:
+    chunks = (
+        [str(x) for x in raw_args]
+        if isinstance(raw_args, list)
+        else (raw_args.replace("\n", ",").replace(";", ",").split(",") if isinstance(raw_args, str) else [])
+    )
+    out: list[str] = []
+    for chunk in chunks:
+        for sub in chunk.split(" for "):
+            c = sub.strip().strip("\"`'").strip()
+            if c.startswith("for "):
+                c = c[4:].strip()
+            if not c or c.lower() in _EMPTY_TOKENS:
+                continue
+            if ":" not in c:
+                c = f"{c}: Bool"
+            out.append(c if c.startswith("+") else f"+{c}")
+    return out
+
+
+def _py_ident(raw: Any, default: str = "stub") -> str:
+    s = str(raw or "").strip().strip("\"`'").strip()
+    if s and s.isidentifier() and not keyword.iskeyword(s):
+        return s
+    cleaned = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in s).strip("_")
+    if not cleaned:
+        return default
+    cleaned = f"_{cleaned}" if cleaned[0].isdigit() else cleaned
+    return f"{cleaned}_" if keyword.iskeyword(cleaned) else cleaned
+
+
+def _split_top_comma(expr: str) -> list[str]:
+    parts, cur, depth = [], [], 0
+    for ch in expr:
+        depth = depth + 1 if ch in "([{" else (max(0, depth - 1) if ch in ")]}" else depth)
+        if ch == "," and depth == 0:
+            parts.append("".join(cur).strip())
+            cur = []
+        else:
+            cur.append(ch)
+    if cur or expr.endswith(","):
+        parts.append("".join(cur).strip())
+    return [p for p in parts if p]
+
+
+def _bend_bool_to_py(expr: str, params: list[str]) -> str:
+    s = str(expr or "").strip().strip("\"`'").strip()
+    if s in ("True{}", "True", "true"):
+        return "True"
+    if s in ("False{}", "False", "false"):
+        return "False"
+    if s.startswith("Bool.not(") and s.endswith(")"):
+        return f"(not {_bend_bool_to_py(s[9:-1], params)})"
+    if "(" in s and s.endswith(")"):
+        callee = s.split("(", 1)[0].strip().split(".")[-1].strip()
+        args = _split_top_comma(s[s.find("(") + 1 : -1])
+        if callee in ("and", "or", "bool_eq", "eq") and len(args) == 2:
+            op = "==" if callee in ("bool_eq", "eq") else callee
+            return f"({_bend_bool_to_py(args[0], params)} {op} {_bend_bool_to_py(args[1], params)})"
+    ident = _py_ident(s, default="")
+    return ident if (ident and ident in params) else (" and ".join(params) if params else "True")
+
+
+def _extract_law_stub_spec(law: dict[str, Any], conflict_names: set[str]) -> tuple[str, str | None, list[str], str]:
+    dims = (law.get("dimensions") or {})
+    raw_lhs = law.get("lhs") if law.get("lhs") is not None else (dims.get("lhs") or "")
+    raw_rhs = law.get("rhs") if law.get("rhs") is not None else (dims.get("rhs") or "")
+    lhs, rhs = str(raw_lhs).strip().strip("\"`'").strip(), str(raw_rhs).strip().strip("\"`'").strip()
+    fn_explicit = str(law.get("fn_name", law.get("function", dims.get("fn_name", ""))) or "").strip()
+    law_title = _py_ident(law.get("name", law.get("law", law.get("id", ""))) or "", default="")
+    call_target, target_rhs = lhs, rhs
+    if not fn_explicit and "(" in call_target:
+        first_callee = call_target.split("(", 1)[0].strip().split(".")[-1].strip()
+        if first_callee in ("bool_eq", "and", "or", "not", "eq") and "(" in call_target.split("(", 1)[1]:
+            inner_args = _split_top_comma(call_target[call_target.find("(") + 1 : -1])
+            call_target = inner_args[0] if inner_args else call_target.split("(", 1)[1]
+            if len(inner_args) >= 2 and target_rhs in ("True{}", "True", ""):
+                target_rhs = inner_args[1]
+        fn_raw = call_target.split("(", 1)[0].strip().split(".")[-1].strip()
+    else:
+        fn_raw = fn_explicit or law_title or "check_law"
+    fn_name = _py_ident(fn_raw, default="check_law")
+    if fn_name in conflict_names:
+        fn_name = f"check_{fn_name}"
+    alias_name = law_title if (law_title and law_title != fn_name and law_title not in conflict_names) else None
+    raw_args = law.get("args") if law.get("args") is not None else dims.get("args")
+    params = [
+        _py_ident(a.lstrip("+-").split(":", 1)[0].strip(), default=f"arg_{i}")
+        for i, a in enumerate(_parse_bend_law_args(raw_args))
+    ]
+    if not params and "(" in call_target and ")" in call_target:
+        raw_call_args = _split_top_comma(call_target[call_target.find("(") + 1 : call_target.rfind(")")])
+        params = [
+            _py_ident(ca, default=f"arg_{i}")
+            for i, ca in enumerate(raw_call_args)
+            if ca and ca not in ("True{}", "False{}") and "(" not in ca and "." not in ca
+        ]
+    params = params or ["x"]
+    rhs_clean = target_rhs if target_rhs and target_rhs not in ("True{}", "True") else ""
+    return fn_name, alias_name, params, _bend_bool_to_py(rhs_clean, params)
+
+
+def _extract_item_names(raw: Any) -> list[str]:
+    items = (
+        raw
+        if isinstance(raw, list)
+        else ([p.strip() for p in str(raw).split(",") if p.strip()] if isinstance(raw, str) and raw.strip() else [])
+    )
+    out: list[str] = []
+    for item in items:
+        raw_s = str(item.get("name", item.get("field", item.get("id", ""))) if isinstance(item, dict) else item)
+        if raw_s.strip() and raw_s.strip().lower() not in _EMPTY_TOKENS:
+            ident = _py_ident(raw_s.split(":", 1)[0].strip(), default="")
+            if ident and ident not in out:
+                out.append(ident)
+    return out
+
+
+def _fmt_spec_doc(raw_doc: str) -> list[str]:
+    clean = str(raw_doc or "").strip().replace('"""', "'''")
+    if not clean:
+        return []
+    parts = [p.strip() for p in clean.split(";") if p.strip()]
+    if len(parts) <= 1:
+        return [f'    """{clean}"""']
+    return [f'    """{parts[0]}', *(f"    - {p}" for p in parts[1:]), '    """']
+
+
+def _emit_interface_skeleton_lines(
+    iface_list: list[dict[str, Any]], emitted_laws: list[tuple[str, list[str]]], seen_schemas: set[str]
+) -> list[str]:
+    lines: list[str] = []
+    seen_ifaces: set[str] = set()
+    for ia in iface_list:
+        iname = _py_ident(
+            ia.get("name", ia.get("interface", ia.get("id"))) or "interface_stub", default="interface_stub"
+        )
+        if iname in seen_ifaces:
+            continue
+        seen_ifaces.add(iname)
+        dims = (ia.get("dimensions") or {})
+        ifile = str(next((_v for _v in (ia.get("file"), dims.get("file")) if _v), None) or "").strip()
+        i_doc = str(next((_v for _v in (ia.get("spec"), dims.get("spec")) if _v), None) or ia.get("text") or "").strip()
+        in_params = _extract_item_names(ia.get("inputs", ia.get("args", dims.get("inputs", dims.get("args")))))
+        out_types = _extract_item_names(
+            ia.get("outputs", ia.get("output", ia.get("returns", dims.get("outputs"))))
+        )
+        ret_ann = (
+            out_types[0]
+            if len(out_types) == 1
+            else (f"tuple[{', '.join(out_types)}]" if len(out_types) > 1 else "Any")
+        )
+        param_sig = ", ".join(f"{p}: Any = None" for p in in_params)
+        lines.extend(("", *([f"# FILE: {ifile}"] if ifile else []), f"def {iname}({param_sig}) -> {ret_ann}:"))
+        lines.extend(_fmt_spec_doc(i_doc))
+        for lfn, lparams in emitted_laws:
+            arg_exprs = [
+                (
+                    f"{in_params[i % len(in_params)]} is not None"
+                    if i % 3 == 0
+                    else (
+                        f"bool({in_params[i % len(in_params)]})"
+                        if i % 3 == 1
+                        else f"str({in_params[i % len(in_params)]}) != ''"
+                    )
+                )
+                if in_params
+                else p
+                for i, p in enumerate(lparams)
+            ]
+            lines.extend((
+                f"    # MUST CALL: {lfn}({', '.join(lparams)})",
+                f"    _law_{lfn} = {lfn}({', '.join(arg_exprs)})",
+            ))
+        law_guard = " and ".join(f"_law_{lfn}" for lfn, _ in emitted_laws)
+        is_schema_out = len(out_types) == 1 and out_types[0] in seen_schemas
+        ret_expr = f"{out_types[0]}()" if is_schema_out else (law_guard if emitted_laws else "None")
+        if emitted_laws and is_schema_out:
+            lines.append(f"    return {ret_expr} if ({law_guard}) else {ret_expr}")
+        else:
+            lines.append(f"    return {ret_expr}")
+    return lines
+
+
 from .ingest import (
     check_phase4_invariants,
     classify_lattice_proof_status,
@@ -268,6 +459,7 @@ __all__ = [
     "markovian_overwrite_rule",
     "matches_nd_slice",
     "max_lexical_similarity",
+    "normalize_board_graph",
     "phase4",
     "prohibition_blocks_task",
     "propagate_graph",

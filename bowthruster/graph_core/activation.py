@@ -1,4 +1,4 @@
-"""Spec 21 §1.3: Order-Independent Seed Activation (`compute_seed_activations`), Topological Temperature (`infer_query_temperature`), and Adaptive Barrier $\\tau(T)$ (`compute_tau`)."""
+"""Spec 21 §1.3: Order-Independent Seed Activation, Topological Temperature, and Adaptive Barrier (`activation.py`)."""
 
 from __future__ import annotations
 
@@ -20,32 +20,34 @@ def _build_rule_index(graph: dict[str, Any]) -> dict[str, tuple[str, dict[str, A
     """Maps `rule_id -> (scope_id, rule_dict)` across all scopes in `graph`."""
     out: dict[str, tuple[str, dict[str, Any]]] = {}
     for sid, scope in graph.get("scopes", {}).items():
-        if not isinstance(scope, dict):
+        if not scope:
             continue
         for r in scope.get("rules", []):
-            if isinstance(r, dict) and isinstance(r.get("id"), str) and r["id"]:
+            if isinstance(r.get("id"), str) and r["id"]:
                 out[r["id"]] = (sid, r)
     return out
 
 
-def _scope_cross_degree(graph: dict[str, Any], scope_id: str, rule_idx: dict[str, tuple[str, dict[str, Any]]]) -> int:
-    """Computes the cross-scope degree of `scope_id` across cross-scope `refs`, `in_edges`, `overrides`, and `exceptions` (Spec 21 §1.3)."""
+def _scope_cross_degree(
+    graph: dict[str, Any], scope_id: str, rule_idx: dict[str, tuple[str, dict[str, Any]]],
+) -> int:
+    """Computes cross-scope degree of `scope_id` across `refs`, `in_edges`, `overrides`, and `exceptions`."""
     scopes = graph.get("scopes", {})
     scope = scopes.get(scope_id)
-    if not isinstance(scope, dict):
+    if not scope:
         return 0
     neighbors: set[str] = set()
     for r in scope.get("rules", []):
-        if not isinstance(r, dict):
+        if not r:
             continue
         for ref_s in r.get("refs", []):
-            if isinstance(ref_s, str) and ref_s in scopes and ref_s != scope_id:
+            if ref_s in scopes and ref_s != scope_id:
                 neighbors.add(ref_s)
         for ov_id in r.get("overrides", []):
             if ov_id in rule_idx and rule_idx[ov_id][0] != scope_id:
                 neighbors.add(rule_idx[ov_id][0])
         for ex in r.get("exceptions", []):
-            if isinstance(ex, dict) and ex.get("rule_id") in rule_idx:
+            if ex.get("rule_id") in rule_idx:
                 ex_sid = rule_idx[ex["rule_id"]][0]
                 if ex_sid != scope_id:
                     neighbors.add(ex_sid)
@@ -53,14 +55,14 @@ def _scope_cross_degree(graph: dict[str, Any], scope_id: str, rule_idx: dict[str
         if in_rid in rule_idx and rule_idx[in_rid][0] != scope_id:
             neighbors.add(rule_idx[in_rid][0])
     for dep_s in scope.get("depends_on", []):
-        if isinstance(dep_s, str) and dep_s in scopes and dep_s != scope_id:
+        if dep_s in scopes and dep_s != scope_id:
             neighbors.add(dep_s)
     for fl in graph.get("flows", []):
-        if isinstance(fl, dict):
+        if fl:
             src, tgt = fl.get("source"), fl.get("target")
-            if src == scope_id and isinstance(tgt, str) and tgt in scopes and tgt != scope_id:
+            if src == scope_id and tgt in scopes and tgt != scope_id:
                 neighbors.add(tgt)
-            elif tgt == scope_id and isinstance(src, str) and src in scopes and src != scope_id:
+            elif tgt == scope_id and src in scopes and src != scope_id:
                 neighbors.add(src)
     return len(neighbors)
 
@@ -112,7 +114,7 @@ def _score_single_rule(
 
     rmeta = scope_meta.get(rid) if isinstance(scope_meta, dict) else None
     m_toks: set[str] = set()
-    if isinstance(rmeta, dict) and rmeta:
+    if rmeta:
         for mk, mv in rmeta.items():
             if mk != "heading_path":
                 m_toks.update(tokenize_content_words(f"{mk} {mv}"))
@@ -179,14 +181,14 @@ def _score_scope_initial(
             if it_s and it_s.lower() in q_clean:
                 initial_scope_score = max(initial_scope_score, 0.80)
     for fl in graph.get("flows", []):
-        if isinstance(fl, dict) and (fl.get("source") == sid or fl.get("target") == sid):
+        if (fl.get("source") == sid or fl.get("target") == sid):
             for fk in ("payload", "action", "condition", "text", "summary"):
                 if fl.get(fk):
                     sbf_tokens.update(tokenize_content_words(str(fl[fk])))
             if fl.get("payload") and str(fl["payload"]).lower() in q_clean:
                 initial_scope_score = max(initial_scope_score, 0.80)
     for art in graph.get("lattice_artifacts", []):
-        if isinstance(art, dict) and (art.get("scope_id") == sid or art.get("scope") == sid):
+        if (art.get("scope_id") == sid or art.get("scope") == sid):
             for ak in ("name", "kind", "spec", "text", "summary", "owner", "stage"):
                 if art.get(ak):
                     sbf_tokens.update(tokenize_content_words(str(art[ak])))
@@ -215,10 +217,10 @@ def compute_seed_activations(graph: dict[str, Any], query: str) -> tuple[dict[st
     seed_scopes: set[str] = set()
 
     for sid, scope in scopes.items():
-        if not isinstance(scope, dict):
+        if not scope:
             continue
         initial_scope_score, s_tokens = _score_scope_initial(graph, sid, scope, q_clean, q_tokens)
-        rules_list = [r for r in scope.get("rules", []) if isinstance(r, dict) and r.get("id")]
+        rules_list = [r for r in scope.get("rules", []) if r.get("id")]
         scope_anchored = initial_scope_score > 0.0 or any(
             _rule_matches_target_or_refs(r, q_clean, q_tokens) for r in rules_list
         )
@@ -230,7 +232,7 @@ def compute_seed_activations(graph: dict[str, Any], query: str) -> tuple[dict[st
             if scope_anchored and rules_list
             else [0.0] * len(rules_list)
         )
-        scope_meta = scope.get("_meta", {}) if isinstance(scope.get("_meta"), dict) else {}
+        scope_meta = (scope.get("_meta") or {})
         max_rule_score = 0.0
         any_rule_anchored = False
 
@@ -262,7 +264,10 @@ def compute_seed_activations(graph: dict[str, Any], query: str) -> tuple[dict[st
         if tid_low in q_clean or tid_low in q_tokens:
             t_score = 1.0
         else:
-            t_extra = f"{task.get('owner', '')} {task.get('stage', '')} {task.get('target_prop', '')} {task.get('condition', '')}"
+            t_extra = (
+                f"{task.get('owner', '')} {task.get('stage', '')} "
+                f"{task.get('target_prop', '')} {task.get('condition', '')}"
+            )
             t_tokens = set(tokenize_content_words(f"{tid} {task.get('text', '')} {t_extra}"))
             overlap_t = q_tokens & t_tokens
             if overlap_t:
@@ -293,7 +298,7 @@ def infer_query_temperature(graph: dict[str, Any], query: str) -> float:
     if len(seed_scopes) >= 3:
         return 0.70
     has_active_task_seed = any(
-        isinstance(t, dict) and seed_acts.get(str(t.get("id", "")), 0.0) >= 0.50
+        seed_acts.get(str(t.get("id", "")), 0.0) >= 0.50
         for t in graph.get("active_tasks", [])
     )
     rule_idx = _build_rule_index(graph)

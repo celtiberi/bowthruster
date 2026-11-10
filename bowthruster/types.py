@@ -178,10 +178,16 @@ class ModelBudget:
     def __post_init__(self) -> None:
         derived = (self.context_tokens, self.reserve_tokens, self.bytes_per_token_floor)
         if self.api_enforced:
-            ok = (_positive(self.context_tokens, int) and self.bytes_per_token_floor is None and self.budget_bytes is None
-                  and (self.reserve_is_max_tokens or (isinstance(self.reserve_tokens, int) and self.reserve_tokens >= 0)))
+            has_res = self.reserve_is_max_tokens or (isinstance(self.reserve_tokens, int) and self.reserve_tokens >= 0)
+            ok = (
+                _positive(self.context_tokens, int)
+                and self.bytes_per_token_floor is None
+                and self.budget_bytes is None
+                and has_res
+            )
             if not ok:
-                raise ValueError("an api_enforced budget has context_tokens and a reserve, and no floor or budget_bytes")
+                msg = "an api_enforced budget has context_tokens and a reserve, and no floor or budget_bytes"
+                raise ValueError(msg)
             return
         if self.budget_bytes is not None:
             ok = _positive(self.budget_bytes, int) and derived == (None, None, None) and not self.reserve_is_max_tokens
@@ -323,7 +329,7 @@ def attempt_fields(meta: dict[str, Any], failure: BaseException | None) -> dict[
 
 
 class JudgeError(Exception):
-    """T-Division, 2026-10-29: a judge's backend failed (an HTTP error, a malformed reply, a missing meta, an answer that
+    """T-Division, 2026-10-29: a judge's backend failed (an HTTP error, a malformed reply, a missing meta, or an answer
     is not a probability). In compiled mode it stops the run with kind judge_error, naming the node, the rule and the
     error. It is never counted as a rule firing, an undecided condition or a fact, and the selector never turns it into
     "no tools"."""

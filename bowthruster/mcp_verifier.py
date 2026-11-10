@@ -37,7 +37,7 @@ def verify_mcp_server_roundtrip(board: Any = None) -> dict[str, Any]:
 
     list_resp = handle_mcp_request({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
     tools = (list_resp or {}).get("result", {}).get("tools") or []
-    tool_names = {str(t.get("name")) for t in tools if isinstance(t, dict)}
+    tool_names = {str(t.get("name")) for t in tools}
     list_ok = bool(tool_names == set(KNOWN_TOOL_NAMES) and len(tools) == len(KNOWN_TOOL_NAMES))
 
     atlas_resp = handle_mcp_request({

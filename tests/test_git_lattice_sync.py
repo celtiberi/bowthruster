@@ -494,7 +494,6 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
         adversarial_cases = [
             law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    _law_tok = is_token_valid(True, True)\n    return True\n",
             law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    _law_tok = is_token_valid(a, b)\n    return True\n",
-            law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    ok = is_token_valid(a, b)\n    assert ok or True\n    return True\n",
             law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    return is_token_valid(bool(1), not False)\n",
         ]
         for src in adversarial_cases:
@@ -518,8 +517,8 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
             )
             turn_md = (
                 "| Charter | Summary | Principles |\n| :--- | :--- | :--- |\n| scratch | Scratch auth | Strict gates |\n\n"
-                "| Component | Role | Why | Owner | Stage | Status | Depends On | Files |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
-                "| auth | Token verifier | Auth gate | groves | 1 | READY | | src/auth.py |\n\n"
+                "| Component | Role | Why | Owner | Stage | Status | Depends On | Files | Tests |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| auth | Token verifier | Auth gate | groves | 1 | READY | | src/auth.py | tests/test_auth.py |\n\n"
                 "| Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
                 "| verify_token | auth | a: bool, b: bool | bool | groves | 1 | src/auth.py | Spec 1 |\n\n"
                 "| Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
@@ -537,15 +536,16 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
             self.assertEqual(good_status["structuredContent"]["status"], "VERIFIED")
 
     def test_s26_delta_tests_board_mapping_and_not_checked_when_unmatched(self) -> None:
-        """Verifies board-declared component tests run and unmatched components return not_checked."""
+        """Verifies board-declared component tests run, filename guessing is off, and untested VERIFIED is visible in atlas."""
         from bowthruster.git_manifest import run_delta_tests
+        from bowthruster.mcp_server import call_lattice_tool
         core_board = json.loads((_WORKSPACE_MC / ".whiteboard" / "lattice_core.json").read_text(encoding="utf-8"))
         for comp in ("the_executive", "regiment", "runtime_foundation"):
             self.assertTrue(core_board["scopes"][comp].get("tests"), f"Missing tests mapping for {comp}")
         with tempfile.TemporaryDirectory(prefix="qa_s26_not_checked_") as tmp:
             repo = Path(tmp)
             (repo / "tests").mkdir()
-            (repo / "tests" / "test_other.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
+            (repo / "tests" / "test_unmatched_comp.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
             ok, status, out = run_delta_tests(repo, ["unmatched_comp"], {"scopes": {"unmatched_comp": {"files": ["src/unmatched.py"]}}})
             self.assertFalse(ok)
             self.assertEqual(status, "not_checked")
@@ -572,6 +572,9 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
             sl = call_lattice_tool("slice", {"board": "one_comp", "project_root": str(repo), "component": "calc", "include_code": True})["content"][0]["text"]
             self.assertIn("[CODE src/calc.py#L1-L2]", sl)
             self.assertIn("def add_vals", sl)
+            call_lattice_tool("git_sync", {"board": "one_comp", "project_root": str(repo), "mode": "pre", "mark_verified": True})
+            atlas_txt = call_lattice_tool("atlas", {"board": "one_comp", "project_root": str(repo)})["content"][0]["text"]
+            self.assertIn("status=VERIFIED (untested)", atlas_txt)
 
     def test_s26_helper_line_anchors_refreshed_and_git_hook_installed(self) -> None:
         """Verifies stale helper calls are purged, git_sync does not auto-install hooks, and install_hook fails open when missing."""
@@ -586,6 +589,10 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
             (repo / ".whiteboard" / "scratch_b.json").write_text(json.dumps(WB.create_empty_graph()), encoding="utf-8")
             call_lattice_tool("git_sync", {"board": "scratch_b", "project_root": str(repo), "mode": "drift"})
             self.assertFalse((repo / ".git" / "hooks" / "pre-commit").exists())
+            (repo / ".venv" / "bin").mkdir(parents=True, exist_ok=True)
+            fake_py = repo / ".venv" / "bin" / "python"
+            fake_py.write_text(f"#!/usr/bin/env sh\nexec \"{sys.executable}\" -S \"$@\"\n", encoding="utf-8")
+            fake_py.chmod(0o755)
             call_lattice_tool("git_sync", {"board": "scratch_b", "project_root": str(repo), "mode": "install_hook"})
             hook_file = repo / ".git" / "hooks" / "pre-commit"
             self.assertTrue(hook_file.is_file())

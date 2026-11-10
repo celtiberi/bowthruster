@@ -16,6 +16,13 @@ EXECUTIVE_MAX_TOKENS = 2048
 _REQUIRED_REPLY_KEYS: tuple[str, ...] = ("decision", "bounce_reason", "user_message", "cited_items")
 
 
+def _first_val(mapping: dict[str, Any], *keys: str, default: str = "") -> str:
+    for k in keys:
+        if val := mapping.get(k):
+            return str(val)
+    return default
+
+
 class ExecutiveVoiceError(ValueError):
     """Fail-closed error raised when Executive Voice inputs or LLM replies violate Spec 23C contracts (§2.1)."""
 
@@ -59,7 +66,7 @@ _DEFAULT_EXECUTIVE_PROMPT: dict[str, Any] = {
 
 
 def load_executive_prompt(key: str = EXECUTIVE_PROMPT_KEY) -> dict[str, Any]:
-    """Loads `key` from `prompts/executive/executive.json` or falls back to the built-in deterministic template (Spec 23C §2.1.A)."""
+    """Loads `key` from `prompts/executive/executive.json` or falls back to the built-in deterministic template."""
     if not isinstance(key, str) or not key.strip():
         raise ExecutiveVoiceError("executive_invalid_prompt_key", [f"key must be a non-empty str, got {key!r}"])
     try:
@@ -112,7 +119,8 @@ def format_executive_prompt(gate_result: dict[str, Any]) -> str:
         flawed_ideas=json.dumps(gate_result.get("flawed_ideas", []), indent=2, ensure_ascii=False),
         clarification_questions=json.dumps(
             gate_result.get("clarification_questions", []),
-            indent=2, ensure_ascii=False
+            indent=2,
+            ensure_ascii=False,
         ),
         open_questions=json.dumps(gate_result.get("open_questions", []), indent=2, ensure_ascii=False),
         whiteboard_summary=_summarize_whiteboard_for_prompt(gate_result.get("whiteboard_graph")),
@@ -139,7 +147,7 @@ def _citation_errors(
     msg_str: str,
     cited_items: list[str],
 ) -> list[str]:
-    """Pure citation verifier returning descriptive errors for any missing conflict, flawed-idea, question, or commit citation."""
+    """Pure citation verifier returning descriptive errors for any missing conflict, flaw, question, or commit."""
     cit_errors: list[str] = []
     combined_low = (msg_str + " " + " ".join(cited_items)).lower()
     expected_decision = gate_result.get("decision")
@@ -257,12 +265,12 @@ def render_deterministic_executive_reply(gate_result: dict[str, Any]) -> dict[st
         for c in gate_result.get("conflicts", []):
             if not isinstance(c, dict):
                 continue
-            scope = c.get("scope") or "global_defaults"
+            scope = _first_val(c, "scope", default="global_defaults")
             t_prop = c.get("target_prop")
-            old_rid = c.get("existing_rule_id") or c.get("id") or "existing_rule"
-            old_txt = c.get("existing_rule_text") or c.get("text") or ""
-            inc_txt = c.get("incoming_text") or ""
-            desc = str(c.get("description") or c.get("text") or f"Rule conflict on {t_prop} in {scope}").strip()
+            old_rid = _first_val(c, "existing_rule_id", "id", default="existing_rule")
+            old_txt = _first_val(c, "existing_rule_text", "text")
+            inc_txt = _first_val(c, "incoming_text")
+            desc = _first_val(c, "description", "text", default=f"Rule conflict on {t_prop} in {scope}").strip()
             parts.append(
                 f"Rule conflict in scope '{scope}' on '{t_prop}': standing rule '{old_rid}' ({old_txt}) "
                 f"clashes with incoming item ({inc_txt}). {desc}"
@@ -272,26 +280,24 @@ def render_deterministic_executive_reply(gate_result: dict[str, Any]) -> dict[st
         for f in gate_result.get("flawed_ideas", []):
             if not isinstance(f, dict):
                 continue
-            f_kind = f.get("flaw_kind") or "FLAWED_IDEA"
-            scope = f.get("scope") or "global_defaults"
+            f_kind = _first_val(f, "flaw_kind", default="FLAWED_IDEA")
+            scope = _first_val(f, "scope", default="global_defaults")
             t_prop = f.get("target_prop")
-            basis_id = f.get("basis_id") or "basis"
-            basis_txt = f.get("basis_text") or ""
-            desc = str(f.get("description") or f"Flawed premise ({f_kind}) on {t_prop} in {scope}").strip()
+            basis_id = _first_val(f, "basis_id", default="basis")
+            basis_txt = _first_val(f, "basis_text")
+            desc = _first_val(f, "description", default=f"Flawed premise ({f_kind}) on {t_prop} in {scope}").strip()
             parts.append(
                 f"Flawed premise ({f_kind}) in scope '{scope}' on '{t_prop}' against '{basis_id}' ({basis_txt}): {desc}"
             )
             cited_items.append(desc)
 
         for cq in gate_result.get("clarification_questions", []):
-            cq_s = str(cq).strip()
-            if cq_s:
+            if cq_s := str(cq).strip():
                 parts.append(f"Clarification needed: {cq_s}")
                 cited_items.append(cq_s)
 
         for oq in gate_result.get("open_questions", []):
-            oq_s = str(oq).strip()
-            if oq_s:
+            if oq_s := str(oq).strip():
                 parts.append(f"Open question: {oq_s}")
                 cited_items.append(oq_s)
 
@@ -309,8 +315,8 @@ def render_deterministic_executive_reply(gate_result: dict[str, Any]) -> dict[st
     for m in gate_result.get("committed_items", []):
         if not isinstance(m, dict):
             continue
-        scope = str(m.get("primary_scope") or m.get("scope") or "global_defaults").strip()
-        txt = str(m.get("text") or m.get("canonical_text") or m.get("id") or "").strip()
+        scope = _first_val(m, "primary_scope", "scope", default="global_defaults").strip()
+        txt = _first_val(m, "text", "canonical_text", "id").strip()
         if txt:
             cited_items.append(txt)
             item_summaries.append(f"[{scope}] {txt}")
@@ -334,8 +340,7 @@ def _invoke_voice_generator(
     max_tokens: int,
     gate_result: dict[str, Any],
 ) -> dict[str, Any]:
-    """Calls `gen.generate_json(prompt, schema_rec, max_tokens)` or callable `gen`, unpacks `(raw, meta)` tuples,
-    and normalizes a dict reply (Spec 23C §2.1.C)."""
+    """Calls `gen.generate_json(prompt, schema_rec, max_tokens)` or callable `gen` and normalizes a dict reply."""
     if hasattr(gen, "generate_json") and callable(gen.generate_json):
         raw = gen.generate_json(prompt, schema_rec, max_tokens)
     elif callable(gen):

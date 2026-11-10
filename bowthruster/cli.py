@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 import contextlib
 import copy
 from datetime import datetime, timezone
@@ -24,51 +23,37 @@ except ImportError:
 BOWTHRUSTER_HOME = Path(__file__).resolve().parents[1]
 REPO_ROOT = (
     Path(os.environ.get("BOWTHRUSTER_PROJECT_ROOT")).resolve()
-    if (os.environ.get("BOWTHRUSTER_PROJECT_ROOT"))
+    if os.environ.get("BOWTHRUSTER_PROJECT_ROOT")
     else BOWTHRUSTER_HOME
 )
 if str(BOWTHRUSTER_HOME) not in sys.path:
     sys.path.insert(0, str(BOWTHRUSTER_HOME))
 
 import bowthruster.whiteboard as _wb  # noqa: E402
+from bowthruster.cli_commands import (  # noqa: E402
+    BUILD_STATUSES, STANDING_TYPES, _assemble_board_summary, _build_cli_parser,
+    _cmd_packets_or_show, _cmd_prove_or_history, _cmd_status, _dispatch_read_cmd,
+    _read_input_text, _remove_item_from_board,
+)
 from bowthruster.git_manifest import (  # noqa: E402
-    AST_EXTRACTORS,
-    DEFAULT_CONFIG_PATHS,
-    _PY_AST_CACHE,
-    _assemble_board_summary,
-    _build_git_manifest,
-    _collect_ref_map,
-    _extract_ast_local_calls,
-    _extract_py_ast_symbols,
-    _print_proof_radar,
-    _py_ast_extractor,
-    _remove_item_from_board,
-    _run_bend_proof_check,
-    _verify_component_files,
-    format_exception_error,
-    read_flight_logs,
-    record_flight_event,
-    register_ast_extractor,
-    run_delta_tests,
+    AST_EXTRACTORS, DEFAULT_CONFIG_PATHS, _PY_AST_CACHE, _build_git_manifest,
+    _collect_ref_map, _extract_ast_local_calls, _extract_py_ast_symbols,
+    _print_proof_radar, _py_ast_extractor, _run_bend_proof_check,
+    _verify_component_files, format_exception_error, read_flight_logs,
+    record_flight_event, register_ast_extractor, run_delta_tests,
 )
 from bowthruster.graph_core import SQLiteGraphStore  # noqa: E402
 from bowthruster.nlp import _extract_generic_source_symbols, verify_python_ast_laws_with_bend  # noqa: E402
 from bowthruster.the_table import render_lattice_atlas  # noqa: E402
 from bowthruster.whiteboard import (  # noqa: E402
-    ContextGraph,
-    create_empty_context_graph,
-    frustration as _wb_frust,
-    ingest as _wb_ingest,
-    mutations as _wb_mut,
-    slice_lattice,
-    sync_to_sqlite,
+    ContextGraph, annotate_active_tasks, create_empty_context_graph, expand_node,
+    frustration as _wb_frust, ingest as _wb_ingest, mutations as _wb_mut,
+    scan_graph, slice_lattice, sync_to_sqlite,
 )
 
 SESSIONS_ROOT = Path("/tmp/whiteboard_sessions")
 LIMITS_PATH = BOWTHRUSTER_HOME / "size_limits.json"
 FLIGHT_LOG_PATH = REPO_ROOT / ".whiteboard" / "logs" / "bowthruster_events.jsonl"
-STANDING_TYPES = ("BOUND", "PROHIBITION", "OBLIGATION", "POLICY")
-BUILD_STATUSES = ("DRAFT", "BLOCKED_BY_DEP", "READY", "IN_PROGRESS", "IN_QA", "FAILED", "VERIFIED", "STALE")
 
 
 def _get_evaluate_lattice_proof() -> Any:
@@ -80,13 +65,15 @@ def _get_compile_work_packets() -> Any:
 
 
 def _get_transition_build_status() -> Any:
-    return getattr(_wb, "transition_component_build_status", None) or getattr(
-        _wb_mut, "transition_component_build_status", None
+    return (
+        getattr(_wb, "transition_component_build_status", None)
+        or getattr(_wb_mut, "transition_component_build_status", None)
     )
 
 
 def _get_render_lattice_atlas() -> Any:
-    return getattr(sys.modules.get("bowthruster.the_table.surface"), "render_lattice_atlas", render_lattice_atlas)
+    surf_mod = sys.modules.get("bowthruster.the_table.surface")
+    return getattr(surf_mod, "render_lattice_atlas", render_lattice_atlas)
 
 
 def _call_compile_packets(
@@ -100,8 +87,7 @@ def _call_compile_packets(
     res = pkt_fn(graph, force=force)
     if status_filter:
         filtered = [
-            p
-            for p in (res.get("packets") or [])
+            p for p in (res.get("packets") or [])
             if str(p.get("build_status") or "").upper() == status_filter.upper()
         ]
         return {**res, "packets": filtered}
@@ -147,19 +133,13 @@ def _board_paths(board: str) -> tuple[Path, Path, Path, Path]:
     bdir = SESSIONS_ROOT / slug
     bdir.mkdir(parents=True, exist_ok=True)
     has_env_root = bool(os.environ.get("BOWTHRUSTER_PROJECT_ROOT"))
-    if (
-        slug not in ("default", "dogfood")
-        and not slug.endswith("_live")
-        and (wb_local.parent.is_dir() or has_env_root)
-    ):
+    is_named = slug not in ("default", "dogfood") and not slug.endswith("_live")
+    if is_named and (wb_local.parent.is_dir() or has_env_root):
         wb_local.parent.mkdir(parents=True, exist_ok=True)
-    use_local = wb_local.is_file() or (
-        (not (bdir / "whiteboard.json").is_file() or has_env_root)
-        and wb_local.parent.is_dir()
-        and slug not in ("default", "dogfood")
-        and not slug.endswith("_live")
-    )
-    return bdir, (wb_local if use_local else bdir / "whiteboard.json"), bdir / "whiteboard.sqlite", bdir / "transcript.jsonl"
+    has_session_wb = (bdir / "whiteboard.json").is_file()
+    use_local = wb_local.is_file() or ((not has_session_wb or has_env_root) and wb_local.parent.is_dir() and is_named)
+    wb_json = wb_local if use_local else bdir / "whiteboard.json"
+    return bdir, wb_json, bdir / "whiteboard.sqlite", bdir / "transcript.jsonl"
 
 
 def _save_board(graph: dict[str, Any], wb_json: Path, wb_sqlite: Path) -> None:
@@ -198,32 +178,17 @@ def _load_atlas_boards(
         names = [explicit_board]
     else:
         roots = (vault_wb,) if vault_wb.is_dir() else (SESSIONS_ROOT,)
-        cands = sorted(
-            {
-                p.stem if p.name != "whiteboard.json" else p.parent.name
-                for r in roots
-                if r.is_dir()
-                for p in r.rglob("*.json")
-            }
-        )
-        names = [
-            n for n in cands if n not in ("default", "dogfood") and not n.endswith("_live")
-        ] or [explicit_board or "default"]
+        cands = sorted({
+            p.stem if p.name != "whiteboard.json" else p.parent.name
+            for r in roots if r.is_dir() for p in r.rglob("*.json")
+        })
+        names = [n for n in cands if n not in ("default", "dogfood") and not n.endswith("_live")] or [
+            explicit_board or "default"
+        ]
     out: dict[str, dict[str, Any]] = {}
     for n in names:
-        cand = next(
-            (
-                c
-                for c in (
-                    vault_wb / f"{n}.json",
-                    vault_wb / n / "whiteboard.json",
-                    SESSIONS_ROOT / n / "whiteboard.json",
-                )
-                if c.is_file()
-            ),
-            None,
-        )
-        if cand:
+        cand_paths = (vault_wb / f"{n}.json", vault_wb / n / "whiteboard.json", SESSIONS_ROOT / n / "whiteboard.json")
+        if cand := next((c for c in cand_paths if c.is_file()), None):
             d = json.loads(cand.read_text(encoding="utf-8"))
             has_scopes = [k for k in (d.get("scopes") or {}) if k != "global_defaults"]
             if boards_csv or (not load_all and explicit_board) or has_scopes or d.get("flows"):
@@ -242,39 +207,20 @@ def _append_transcript(p: Path, record: dict[str, Any]) -> None:
         fh.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def _read_input_text(message: str | None, file_path: str | None) -> str:
-    if message is not None or file_path is not None:
-        raw = (
-            message
-            if message is not None
-            else (sys.stdin.read() if file_path == "-" else Path(file_path).read_text(encoding="utf-8"))
-        )
-        return raw.strip()
-    raise ValueError("Provide either -m/--message or -F/--file")
-
-
 def _execute_turn(
-    board: str,
-    speaker: str,
-    raw_text: str,
-    round_num: int | None,
-    profile: str | None = None,
-    config_path: str | None = None,
+    board: str, speaker: str, raw_text: str, round_num: int | None = None,
+    profile: str | None = None, config_path: str | None = None,
 ) -> int:
-    from bowthruster.git_manifest import install_git_precommit_hook
     from bowthruster.the_executive import run_executive_turn
 
-    install_git_precommit_hook(REPO_ROOT, board)
+    _ = (profile, config_path)
     with _board_lock(board):
         graph, wb_json, wb_sqlite, transcript_path = _load_board(board)
         history = _read_transcript(transcript_path)
         if round_num is None:
             last_turn = next((h for h in reversed(history) if h.get("event", "turn") == "turn"), None)
-            round_num = (
-                int(last_turn.get("round", 1)) + 1
-                if (last_turn and last_turn.get("decision") == "SEND_BACK_TO_USER")
-                else 1
-            )
+            is_retry = bool(last_turn and last_turn.get("decision") == "SEND_BACK_TO_USER")
+            round_num = int(last_turn.get("round", 1)) + 1 if is_retry and last_turn else 1
         t0 = time.perf_counter()
         res = run_executive_turn(graph, raw_text, db_path=wb_sqlite)
         elapsed_s = round(time.perf_counter() - t0, 3)
@@ -282,38 +228,24 @@ def _execute_turn(
             _save_board(res["whiteboard_graph"], wb_json, wb_sqlite)
         eval_fn = _get_evaluate_lattice_proof()
         proof = res.get("lattice_proof") or (eval_fn(res["whiteboard_graph"]) if eval_fn else None)
-        parsed_mcus = res.get("intake_packet", {}).get("parsed_mcus", [])
+        parsed_mcus = (res.get("intake_packet") or {}).get("parsed_mcus") or []
         _append_transcript(
             transcript_path,
             {
-                "event": "turn",
-                "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-                "speaker": speaker,
-                "round": round_num,
-                "turn_index": res["turn_index"],
-                "raw_text": raw_text,
-                "decision": res["decision"],
-                "bounce_reason": res["bounce_reason"],
-                "whiteboard_mutated": res["whiteboard_mutated"],
-                "user_message": res["user_message"],
-                "cited_items": res["cited_items"],
-                "committed_items": res.get("committed_items", []),
-                "conflicts": res.get("conflicts", []),
-                "flawed_ideas": res.get("flawed_ideas", []),
-                "clarification_questions": res.get("clarification_questions", []),
-                "open_questions": res.get("open_questions", []),
-                "parsed_mcus": parsed_mcus,
-                "lattice_proof_status": proof.get("status") if isinstance(proof, dict) else None,
-                "elapsed_s": elapsed_s,
+                "event": "turn", "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                "speaker": speaker, "round": round_num, "turn_index": res["turn_index"],
+                "raw_text": raw_text, "decision": res["decision"], "bounce_reason": res["bounce_reason"],
+                "whiteboard_mutated": res["whiteboard_mutated"], "user_message": res["user_message"],
+                "cited_items": res["cited_items"], "committed_items": res.get("committed_items") or [],
+                "conflicts": res.get("conflicts") or [], "flawed_ideas": res.get("flawed_ideas") or [],
+                "clarification_questions": res.get("clarification_questions") or [],
+                "open_questions": res.get("open_questions") or [], "parsed_mcus": parsed_mcus,
+                "lattice_proof_status": (proof or {}).get("status"), "elapsed_s": elapsed_s,
             },
         )
     record_flight_event(
-        board,
-        "turn",
-        elapsed_s * 1000.0,
-        "OK" if res["decision"] == "COMMIT_TO_WHITEBOARD" else "REJECTED",
-        decision=res["decision"],
-        violations=list(res.get("conflicts") or []) + list(res.get("flawed_ideas") or []),
+        board, "turn", elapsed_s * 1000.0, "OK" if res["decision"] == "COMMIT_TO_WHITEBOARD" else "REJECTED",
+        decision=res["decision"], violations=list(res.get("conflicts") or []) + list(res.get("flawed_ideas") or []),
     )
     cited_str = f"\nCited Items:       {', '.join(str(x) for x in res['cited_items'])}" if res["cited_items"] else ""
     print(
@@ -323,20 +255,16 @@ def _execute_turn(
         f"Executive Reply:   {res['user_message']}{cited_str}\nParsed MCUs ({len(parsed_mcus)}):"
     )
     for m in parsed_mcus:
-        print(
-            f"  - [mcu_{m.get('mcu_id')}] {m.get('type')} "
-            f"scope={m.get('scope_hint') or 'auto'} prop={m.get('target_prop')!r}: {m.get('text')}"
-        )
-    for label, key in (
-        ("Conflicts", "conflicts"),
-        ("Flawed Ideas", "flawed_ideas"),
-        ("Clarification Questions", "clarification_questions"),
-        ("Open Questions", "open_questions"),
-    ):
+        scope_h, prop_v = m.get("scope_hint") or "auto", m.get("target_prop")
+        print(f"  - [mcu_{m.get('mcu_id')}] {m.get('type')} scope={scope_h} prop={prop_v!r}: {m.get('text')}")
+    diag_keys = (
+        ("Conflicts", "conflicts"), ("Flawed Ideas", "flawed_ideas"),
+        ("Clarification Questions", "clarification_questions"), ("Open Questions", "open_questions"),
+    )
+    for label, key in diag_keys:
         if res.get(key):
             items_fmt = "\n".join(
-                f"  * {json.dumps(item, ensure_ascii=False) if isinstance(item, dict) else item}"
-                for item in res[key]
+                f"  * {json.dumps(item, ensure_ascii=False) if isinstance(item, dict) else item}" for item in res[key]
             )
             print(f"{label} ({len(res[key])}):\n{items_fmt}")
     _print_proof_radar(proof)
@@ -344,14 +272,10 @@ def _execute_turn(
 
 
 def execute_git_sync(
-    board: str,
-    mode: str,
-    manifest_arg: str | None = None,
-    *,
-    mark_verified: bool = False,
-    active_root: Path | None = None,
+    board: str, mode: str, manifest_arg: str | None = None, *,
+    mark_verified: bool = False, active_root: Path | None = None,
 ) -> tuple[dict[str, Any], str, bool]:
-    """Shared `git-sync` engine invoked by both CLI and MCP server (`pre`, `post`, `baseline`, `drift`, `install_hook`)."""
+    """Shared `git-sync` engine invoked by CLI and MCP (`pre`, `post`, `baseline`, `drift`, `install_hook`)."""
     from bowthruster.ai_memory import sync_git_diff_uris
     from bowthruster.git_manifest import install_git_precommit_hook
     from bowthruster.the_executive import detect_working_tree_drift, sync_post_commit_to_lattice
@@ -367,54 +291,58 @@ def execute_git_sync(
     if mode == "pre":
         uri_rep = sync_git_diff_uris(copy.deepcopy(graph), manifest)
         gate_res = dict(evaluate_git_commit_gate(graph, manifest, uri_sync_report=uri_rep))
-        allow = bool(gate_res.get("allowed", gate_res.get("allow_commit", True)))
+        allow = bool(gate_res.get("allowed", True))
         if allow and mark_verified:
             stale_sids = [
-                sid
-                for sid, sc in sorted((graph.get("scopes") or {}).items())
-                if isinstance(sc, dict)
-                and sid != "global_defaults"
+                sid for sid, sc in sorted((graph.get("scopes") or {}).items())
+                if sid != "global_defaults"
                 and (
-                    str(sc.get("status") or sc.get("build_status") or "").upper() in ("STALE", "READY")
+                    str(sc.get("status") or "").upper() in ("STALE", "READY")
                     or (
                         bool(sc.get("files") or (sc.get("attributes") or {}).get("files"))
-                        and str(sc.get("status") or sc.get("build_status") or "DRAFT").upper() != "VERIFIED"
+                        and str(sc.get("status") or "DRAFT").upper() != "VERIFIED"
                     )
                 )
             ]
             t_ran, t_ok, t_out = run_delta_tests(eff_root, stale_sids, graph)
             gate_res["delta_tests_ran"] = t_ran
             gate_res["delta_tests_passed"] = t_ok
-            gate_res["delta_tests_status"] = "PASSED" if t_ok is True else ("FAILED" if t_ok is False else "NOT_CHECKED")
+            t_status = "PASSED" if t_ok is True else ("FAILED" if t_ok is False else "NOT_CHECKED")
+            gate_res["delta_tests_status"] = t_status
             if t_ok is False:
                 allow = False
                 gate_res["allowed"] = False
                 gate_res["decision"] = "REJECT_COMMIT"
                 gate_res.setdefault("violations", []).append({
-                    "kind": "TEST_FAILURE",
-                    "scope": stale_sids[0] if stale_sids else "global_defaults",
-                    "path": "tests/",
-                    "description": f"Delta pytest failed:\n{t_out[-600:]}",
+                    "kind": "TEST_FAILURE", "scope": stale_sids[0] if stale_sids else "global_defaults",
+                    "path": "tests/", "description": f"Delta pytest failed:\n{t_out[-600:]}",
                 })
             else:
                 trans_fn = _get_transition_build_status()
                 for sid in stale_sids:
                     _verify_component_files(graph, sid)
                     trans_fn(graph, sid, "VERIFIED")
+                    if t_ok == "not_checked":
+                        graph["scopes"][sid]["verified_untested"] = True
                 if stale_sids:
                     _save_board(graph, wb_json, wb_sqlite)
                 gate_res["marked_verified_scopes"] = stale_sids
+                if t_ok == "not_checked":
+                    gate_res["verified_untested_scopes"] = stale_sids
         unreg = gate_res.get("unregistered_public_symbols") or []
         unreg_str = ", ".join(f"{u.get('scope')}:{u.get('symbol')}" for u in unreg)
+        ver_scopes = gate_res.get("marked_verified_scopes")
+        ver_sfx = f" marked_verified={ver_scopes}" if ver_scopes else ""
+        viol_sfx = f"\nviolations={json.dumps(gate_res.get('violations'))}" if gate_res.get("violations") else ""
+        unreg_sfx = f"\nunregistered_public_symbols ({len(unreg)}): {unreg_str}" if unreg else ""
+        n_viols = len(gate_res.get("violations") or [])
         pre_txt = (
             f"[GIT PRE-COMMIT GATE '{board}'] allowed={allow} decision={gate_res.get('decision')} "
             f"bounds_ok={gate_res.get('bounds_ok')} contracts_ok={gate_res.get('contracts_ok')} "
-            f"bend_proofs_ok={gate_res.get('bend_proofs_ok')} no_dangling_deletes={gate_res.get('no_dangling_deletes')} "
-            f"flow_schema_checked={gate_res.get('flow_schema_checked')} "
-            f"violations={len(gate_res.get('violations') or [])}"
-            + (f" marked_verified={gate_res['marked_verified_scopes']}" if gate_res.get("marked_verified_scopes") else "")
-            + (f"\nviolations={json.dumps(gate_res.get('violations'))}" if gate_res.get("violations") else "")
-            + (f"\nunregistered_public_symbols ({len(unreg)}): {unreg_str}" if unreg else "")
+            f"bend_proofs_ok={gate_res.get('bend_proofs_ok')} "
+            f"no_dangling_deletes={gate_res.get('no_dangling_deletes')} "
+            f"flow_schema_checked={gate_res.get('flow_schema_checked')} violations={n_viols}"
+            f"{ver_sfx}{viol_sfx}{unreg_sfx}"
         )
         return gate_res, pre_txt, allow
     if mode in ("post", "baseline"):
@@ -433,304 +361,40 @@ def execute_git_sync(
     drift_txt = (
         f"[GIT DRIFT '{board}'] has_drift={drift_res.get('has_drift')} "
         f"drifted_scopes={drift_res.get('drifted_scopes')} "
-        f"uncommitted={len(drift_res.get('uncommitted_files') or [])} "
-        f"dangling_uris={drift_res.get('dangling_uris')}"
+        f"uncommitted={len(drift_res.get('uncommitted_files') or [])} dangling_uris={drift_res.get('dangling_uris')}"
     )
     return drift_res, drift_txt, True
 
 
-def _build_cli_parser() -> argparse.ArgumentParser:
-    common = argparse.ArgumentParser(add_help=False)
-    parser = argparse.ArgumentParser(description="Multi-Round Executive <-> Whiteboard Dogfooding CLI")
-    for flg in ("--board", "--profile", "--config"):
-        common.add_argument(flg, default=argparse.SUPPRESS)
-        parser.add_argument(flg, default=None)
-    sub = parser.add_subparsers(dest="cmd", required=True)
-    p_turn = sub.add_parser("turn", parents=[common])
-    p_rep = sub.add_parser("replace", parents=[common])
-    p_rev = sub.add_parser("revoke", parents=[common])
-    for p in (p_rep, p_rev):
-        p.add_argument("rule_id")
-    for p in (p_turn, p_rep, p_rev):
-        p.add_argument("--speaker", default="agent")
-        p.add_argument("-m", "--message", default="Explicitly revoked" if p is p_rev else None)
-        if p is not p_rev:
-            p.add_argument("--round", type=int, default=None, dest="round_num")
-            p.add_argument("-F", "--file", default=None)
-    p_show, p_slice = sub.add_parser("show", parents=[common]), sub.add_parser("slice", parents=[common])
-    p_show.add_argument("--scope", default=None)
-    for flag in ("--component", "--division", "--stage", "--schema", "--kind"):
-        p_slice.add_argument(flag, default=None)
-    p_slice.add_argument("-q", "--query", default="")
-    p_slice.add_argument("--code", "--include-code", action="store_true", dest="include_code")
-    p_slice.add_argument("--mark-stale", action="store_true", dest="mark_stale")
-    p_pkts = sub.add_parser("packets", parents=[common])
-    p_stat = sub.add_parser("status", parents=[common])
-    p_atlas = sub.add_parser("atlas", parents=[common])
-    p_gsync = sub.add_parser("git-sync", parents=[common])
-    p_logs = sub.add_parser("logs", parents=[common])
-    p_pkts.add_argument("--wave", type=int, choices=(0, 1, 2), default=None)
-    p_pkts.add_argument("--component", default=None)
-    p_pkts.add_argument("--status", choices=BUILD_STATUSES, type=str.upper, default=None)
-    p_pkts.add_argument("--force", action="store_true")
-    p_stat.add_argument("component")
-    p_stat.add_argument("new_status", choices=BUILD_STATUSES, type=str.upper)
-    for flg, dst in (("--build-tag", "build_tag"), ("--core-tag", "core_tag"), ("--reason", "reason"), ("--for", "for_div")):
-        p_stat.add_argument(flg, default=None, dest=dst)
-    for flg, dst in (("--dispatch", "dispatch"), ("--no-ticket", "no_ticket")):
-        p_stat.add_argument(flg, action="store_true", dest=dst)
-    p_atlas.add_argument("--boards", default=None)
-    for flg, dst in (("--all", "load_all"), ("--mermaid", "mermaid"), ("--spec", "spec")):
-        p_atlas.add_argument(flg, action="store_true", dest=dst)
-    for flg, dst in (
-        ("--pre-commit", "pre_commit"), ("--post-commit", "post_commit"), ("--baseline", "baseline"),
-        ("--drift", "drift"), ("--mark-verified", "mark_verified"), ("--install-hook", "install_hook"),
-    ):
-        p_gsync.add_argument(flg, action="store_true", dest=dst)
-    p_gsync.add_argument("--manifest", default=None)
-    p_logs.add_argument("--limit", type=int, default=20)
-    p_logs.add_argument("--status", default=None)
-    p_prove = sub.add_parser("prove", parents=[common])
-    p_hist = sub.add_parser("history", parents=[common])
-    for p in (p_show, p_slice, p_prove, p_pkts, p_stat, p_atlas, p_gsync, p_logs, p_hist):
-        p.add_argument("--json", action="store_true", dest="as_json")
-    sub.add_parser("reset", parents=[common])
-    return parser
-
-
-def _cmd_git_sync(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
-    mode = (
-        "install_hook" if getattr(args, "install_hook", False)
-        else ("pre" if args.pre_commit else ("baseline" if args.baseline else ("post" if args.post_commit else "drift")))
-    )
-    payload, txt, allow = execute_git_sync(board, mode, args.manifest, mark_verified=bool(args.mark_verified))
-    record_flight_event(
-        board, f"git-sync:{mode}", (time.perf_counter() - t0_cmd) * 1000.0,
-        "OK" if allow else "REJECTED", decision=payload.get("decision"),
-        violations=payload.get("violations"),
-        modified_scopes=payload.get("marked_verified_scopes") or payload.get("modified_scopes") or payload.get("drifted_scopes"),
-        stale_cascaded_scopes=payload.get("cascaded_stale_scopes"),
-    )
-    print(json.dumps(payload, indent=2, sort_keys=True) if args.as_json else txt)
-    return 0 if allow else 1
-
-
-def _cmd_atlas(args: argparse.Namespace, board: str, explicit_board: str | None, t0_cmd: float) -> int:
-    boards_dict = _load_atlas_boards(explicit_board, args.boards, args.load_all)
-    view = _get_render_lattice_atlas()(boards_dict, has_local_seed_cues=False, explicit_atlas_request=True)
-    out_payload = {
-        "boards": list(boards_dict.keys()),
-        **{k: view.get(k) for k in ("atlas_mounted", "atlas_schematic", "atlas_metrics", "atlas_mermaid", "atlas_spec")},
-    }
-    record_flight_event(board, "atlas", (time.perf_counter() - t0_cmd) * 1000.0, "OK")
-    if args.as_json:
-        print(json.dumps(out_payload, indent=2, sort_keys=True, ensure_ascii=False))
-    elif args.spec:
-        print(str(view.get("atlas_spec") or ""))
-    else:
-        mm_sfx = f"\n\n[Atlas Mermaid]:\n{view['atlas_mermaid']}" if args.mermaid and view.get("atlas_mermaid") else ""
-        print(f"{view.get('atlas_schematic') or ''}\n\n[Atlas Metrics]: {json.dumps(view.get('atlas_metrics') or {}, sort_keys=True)}{mm_sfx}")
-    return 0
-
-
-def _cmd_slice(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
-    graph, wb_json, wb_sqlite, _ = _load_board(board)
-    view = dict(
-        slice_lattice(
-            graph, query=args.query, component=args.component, division=args.division,
-            stage=args.stage, schema=args.schema, kind=args.kind, include_code=args.include_code,
-        )
-    )
-    if args.mark_stale:
-        scopes_map, c_arg = graph.get("scopes") or {}, str(args.component or "").strip()
-        stale_sids = (
-            [c_arg] if (c_arg and c_arg in scopes_map) else sorted(
-                {str(m.get("scope")) for m in (view.get("matched_symbols") or []) if isinstance(m, dict) and m.get("scope") in scopes_map}
-                or {str(c.get("id")) for c in (view.get("component_specs") or []) if isinstance(c, dict) and c.get("id") in scopes_map and c.get("id") != "global_defaults"}
-            )
-        )
-        for sid in stale_sids:
-            _get_transition_build_status()(graph, sid, "STALE")
-        if stale_sids:
-            _save_board(graph, wb_json, wb_sqlite)
-        view["marked_stale_scopes"] = stale_sids
-    record_flight_event(board, "slice", (time.perf_counter() - t0_cmd) * 1000.0, "OK", modified_scopes=view.get("marked_stale_scopes"))
-    if args.as_json:
-        print(json.dumps(view, indent=2, sort_keys=True, ensure_ascii=False))
-    else:
-        stale_sfx = f"\n[MARKED STALE]: {view['marked_stale_scopes']}" if view.get("marked_stale_scopes") else ""
-        print((view.get("compact_view") or view.get("text") or "[EMPTY_SLICE]") + stale_sfx)
-    return 0
-
-
-def _cmd_status(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
-    trans_fn = _get_transition_build_status()
-    if trans_fn is None:
-        raise RuntimeError("transition_component_build_status is not yet promoted to bowthruster.whiteboard")
-    graph, wb_json, wb_sqlite, transcript_path = _load_board(board)
-    if args.new_status == "VERIFIED":
-        _verify_component_files(graph, args.component)
-    prev_tid = (graph.get("scopes", {}).get(args.component) or {}).get("active_ticket_id")
-    prev_ready = (
-        {str(p.get("packet_id")) for p in (_call_compile_packets(graph, force=True, status_filter="READY").get("packets") or [])}
-        if _get_compile_work_packets() else set()
-    )
-    snode = trans_fn(graph, args.component, args.new_status, build_tag=args.build_tag, core_tag=args.core_tag, failure_diagnostic=args.reason)
-    if prev_tid and not snode.get("active_ticket_id"):
-        snode["active_ticket_id"] = prev_tid
-    all_pkts = (_call_compile_packets(graph, force=True).get("packets") or []) if _get_compile_work_packets() else []
-    ready_pkts = [p for p in all_pkts if str(p.get("build_status") or "").upper() == "READY"]
-    unlocked_pkts = [p for p in ready_pkts if str(p.get("packet_id")) not in prev_ready]
-    _save_board(graph, wb_json, wb_sqlite)
-    payload = {
-        "component": args.component, "status": snode.get("status"), "build_tag": snode.get("build_tag"),
-        "core_tag": snode.get("core_tag"), "failure_diagnostic": snode.get("failure_diagnostic"),
-        "active_ticket_id": snode.get("active_ticket_id"), "ticket_info": {"ticket_id": snode.get("active_ticket_id")},
-        "ready_packets": [p.get("packet_id") for p in ready_pkts],
-        "newly_unlocked_packets": [p.get("packet_id") for p in unlocked_pkts],
-    }
-    _append_transcript(transcript_path, {"event": "status", "timestamp_utc": datetime.now(timezone.utc).isoformat(), **payload})
-    record_flight_event(board, f"status:{args.component}", (time.perf_counter() - t0_cmd) * 1000.0, "OK", decision=snode.get("status"), modified_scopes=[args.component])
-    if args.as_json:
-        print(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False))
-        return 0
-    unlocked_sfx = (
-        f"\n[NEWLY UNLOCKED READY PACKETS ({len(unlocked_pkts)})]: " + ", ".join(f"{p.get('packet_id')} (owner={p.get('owner')})" for p in unlocked_pkts)
-        if unlocked_pkts else ""
-    )
-    ready_ids = ", ".join(str(p.get("packet_id")) for p in ready_pkts) or "none"
-    print(
-        f"[STATUS] {args.component} -> status={snode.get('status')} build_tag={snode.get('build_tag')} "
-        f"core_tag={snode.get('core_tag')} ticket={snode.get('active_ticket_id')} "
-        f"failure_diagnostic={snode.get('failure_diagnostic')!r}{unlocked_sfx}\n[READY PACKETS ({len(ready_pkts)})]: {ready_ids}"
-    )
-    return 0
-
-
-def _cmd_packets(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
-    res = _call_compile_packets(_load_board(board)[0], force=args.force, status_filter=args.status)
-    pkts = [
-        p for p in (res.get("packets") or [])
-        if (args.wave is None or p.get("wave") == args.wave)
-        and (not args.component or p.get("component") == args.component)
-        and (not args.status or str(p.get("build_status") or "").upper() == args.status)
-    ]
-    record_flight_event(board, "packets", (time.perf_counter() - t0_cmd) * 1000.0, "OK" if res.get("ready_to_emit") or args.force else "REJECTED", decision=res.get("status"))
-    if args.as_json:
-        out_res = {**res, "packets": pkts} if (args.wave is not None or args.component or args.status) else res
-        print(json.dumps(out_res, indent=2, sort_keys=True, ensure_ascii=False))
-        return 0
-    if not res.get("ready_to_emit") and not args.force:
-        print(f"=== WORK PACKETS LOCKED ('{board}') ===\nStatus: {res.get('status')} (requires PROVEN_COMPLETE; pass --force to preview draft packets)")
-        _print_proof_radar(res.get("lattice_proof") or res)
-        return 0
-    print(f"=== WORK PACKETS '{board}' ({len(pkts)} packets | status={res.get('status')} | ready_to_emit={res.get('ready_to_emit')}) ===")
-    for p in pkts:
-        print(
-            f"\n[{p.get('packet_id')}] wave={p.get('wave')} kind={p.get('kind')} "
-            f"component={p.get('component')} owner={p.get('owner')} stage={p.get('stage')} "
-            f"build_status={p.get('build_status')} build_tag={p.get('build_tag')} "
-            f"core_tag={p.get('core_tag')} failure_diagnostic={p.get('failure_diagnostic')!r}\n{p.get('prompt_slice') or ''}"
-        )
-    return 0
-
-
-def _cmd_show(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
-    summary = _assemble_board_summary(_load_board(board)[0], args.scope, _get_evaluate_lattice_proof())
-    record_flight_event(board, "show", (time.perf_counter() - t0_cmd) * 1000.0, "OK")
-    if args.as_json:
-        print(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False))
-        return 0
-    print(f"=== WHITEBOARD '{board}' (Turn {summary['turn']}) ===")
-    _print_proof_radar(summary.get("lattice_proof"))
-    for sid, sdata in summary["scopes"].items():
-        fail_sfx = f"\n  ! Failure Diagnostic: {sdata['failure_diagnostic']}" if sdata.get("failure_diagnostic") else ""
-        attr_sfx = f"\n  Attributes: {json.dumps(sdata['attributes'], sort_keys=True)}" if sdata["attributes"] else ""
-        print(
-            f"\n[Scope: {sid}] (parent={sdata['parent']}, children={sdata['children']}, "
-            f"owner={sdata.get('owner')}, stage={sdata.get('stage')}, status={sdata.get('status')}, "
-            f"ticket={sdata.get('active_ticket_id')}, build_tag={sdata.get('build_tag')}, "
-            f"core_tag={sdata.get('core_tag')}){fail_sfx}{attr_sfx}"
-        )
-        for r in sdata["rules"]:
-            print(f"  - [{r['id']}] ({r['type']}) prop={r.get('target_prop')!r} op={r.get('bound_op')!r} val={r.get('bound_val')!r}: {r['text']}")
-    for label, key, fmt in (
-        ("Flows", "flows", lambda f: f"  - [{f.get('id')}] {f.get('source')} -> {f.get('target')} ({f.get('payload')}): {f.get('text')}"),
-        ("Lattice Artifacts", "lattice_artifacts", lambda a: f"  - [{a.get('id')}] {a.get('kind')}@{a.get('scope_id')} {a.get('name')}: {a.get('spec') or a.get('text')}"),
-        ("Active Tasks", "active_tasks", lambda t: f"  - [{t.get('id')}] status={t.get('status')} scope={t.get('scope')}: {t.get('text')}"),
-    ):
-        if summary[key]:
-            print(f"\n[{label}]:\n" + "\n".join(fmt(x) for x in summary[key]))
-    ctx_pack = summary["assemble_context_pack"]
-    print("\n[Read Engine Context Pack]:\n" + (ctx_pack.get("compact_view") or ctx_pack.get("text") or "[EMPTY_WHITEBOARD]"))
-    return 0
-
-
-def _cmd_prove_or_history(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
-    if args.cmd == "prove":
-        bdir, _, _, _ = _board_paths(board)
-        eval_fn = _get_evaluate_lattice_proof()
-        if eval_fn is None:
-            raise RuntimeError("evaluate_lattice_proof is not yet promoted to bowthruster.whiteboard")
-        proof = dict(eval_fn(_load_board(board)[0]))
-        b_ok, b_path, b_out = _run_bend_proof_check(bdir, str(proof.get("bend_proof_source") or ""))
-        proof.update({"bend_check_passed": b_ok, "bend_proof_file": str(b_path), "bend_output": b_out})
-        record_flight_event(board, "prove", (time.perf_counter() - t0_cmd) * 1000.0, "OK" if proof.get("is_proven") and b_ok else "REJECTED", decision=proof.get("status"))
-        if args.as_json:
-            print(json.dumps(proof, indent=2, sort_keys=True, ensure_ascii=False))
-        else:
-            print(
-                f"=== LATTICE PROOF '{board}' ===\nStatus:            {proof.get('status')} (is_proven={proof.get('is_proven')})\n"
-                f"Counts:            components={proof.get('component_count', 0)}, flows={proof.get('flow_count', 0)}, "
-                f"laws={proof.get('law_count', 0)}, contracts={proof.get('contract_count', 0)}\n"
-                f"Bend 2 Check:      {'PASS' if b_ok else 'FAIL'} ({b_path})"
-            )
-            _print_proof_radar(proof)
-        return 0
-    records = _read_transcript(_board_paths(board)[3])
-    record_flight_event(board, "history", (time.perf_counter() - t0_cmd) * 1000.0, "OK")
-    if args.as_json:
-        print(json.dumps(records, indent=2, ensure_ascii=False))
-        return 0
-    for idx, rec in enumerate(records, 1):
-        if rec.get("event") in ("revoke", "replace"):
-            print(f"[{idx}] {rec['event'].upper()} by {rec.get('speaker')}: rule_id={rec.get('rule_id')} removed={rec.get('removed')}")
-        elif rec.get("event") == "status":
-            print(f"[{idx}] STATUS {rec.get('component')} -> {rec.get('status')} (ticket={rec.get('active_ticket_id')}, build_tag={rec.get('build_tag')}, core_tag={rec.get('core_tag')})")
-        else:
-            print(
-                f"[{idx}] Turn {rec.get('turn_index')} (Round {rec.get('round')}, {rec.get('speaker')}): "
-                f"{rec.get('decision')} ({rec.get('bounce_reason')}) mutated={rec.get('whiteboard_mutated')}\n"
-                f"    Input: {rec.get('raw_text')}\n    Reply: {rec.get('user_message')}"
-            )
-    return 0
-
-
 def main() -> int:
-    parser = _build_cli_parser()
-    args = parser.parse_args()
+    args = _build_cli_parser().parse_args()
     explicit_board = getattr(args, "board", None)
     profile, config_path = getattr(args, "profile", None), getattr(args, "config", None)
     board, t0_cmd = explicit_board or "default", time.perf_counter()
     try:
-        if args.cmd == "logs":
-            entries = read_flight_logs(limit=args.limit, board=explicit_board, status=args.status)
-            if args.as_json:
-                print(json.dumps(entries, indent=2, ensure_ascii=False))
-            else:
-                lines = [
-                    f"[{e.get('timestamp')}] board={e.get('board')} cmd={e.get('tool_or_cmd')} status={e.get('status')} "
-                    f"decision={e.get('decision')} ({e.get('duration_ms')}ms, bytes={e.get('response_bytes', 0)}) "
-                    f"violations={len(e.get('violations') or [])}"
-                    + (f" error={e['error'].get('type')}: {e['error'].get('message')}" if e.get("error") else "")
-                    for e in entries
-                ]
-                print("\n".join(lines) or "(no flight log entries)")
-            return 0
+        if args.cmd in ("logs", "atlas", "slice"):
+            return _dispatch_read_cmd(args, board, explicit_board, t0_cmd)
         if args.cmd == "git-sync":
-            return _cmd_git_sync(args, board, t0_cmd)
-        if args.cmd == "atlas":
-            return _cmd_atlas(args, board, explicit_board, t0_cmd)
+            if getattr(args, "install_hook", False):
+                mode = "install_hook"
+            elif args.pre_commit:
+                mode = "pre"
+            elif args.baseline:
+                mode = "baseline"
+            elif args.post_commit:
+                mode = "post"
+            else:
+                mode = "drift"
+            payload, txt, allow = execute_git_sync(board, mode, args.manifest, mark_verified=bool(args.mark_verified))
+            mod_sc = payload.get("marked_verified_scopes", payload.get("modified_scopes"))
+            record_flight_event(
+                board, f"git-sync:{mode}", (time.perf_counter() - t0_cmd) * 1000.0, "OK" if allow else "REJECTED",
+                decision=payload.get("decision"), violations=payload.get("violations"),
+                modified_scopes=mod_sc or payload.get("drifted_scopes"),
+                stale_cascaded_scopes=payload.get("cascaded_stale_scopes"),
+            )
+            print(json.dumps(payload, indent=2, sort_keys=True) if args.as_json else txt)
+            return 0 if allow else 1
         if args.cmd == "reset":
             bdir, wb_json, wb_sqlite, transcript_path = _board_paths(board)
             for p in (wb_json, wb_sqlite, transcript_path, bdir / "LATTICE_PROOF.bend"):
@@ -740,7 +404,8 @@ def main() -> int:
             print(f"Reset Whiteboard session '{board}' at {bdir}")
             return 0
         if args.cmd == "turn":
-            return _execute_turn(board, args.speaker, _read_input_text(args.message, args.file), args.round_num, profile, config_path)
+            msg = _read_input_text(args.message, args.file)
+            return _execute_turn(board, args.speaker, msg, args.round_num, profile, config_path)
         if args.cmd in ("revoke", "replace"):
             graph, wb_json, wb_sqlite, transcript_path = _load_board(board)
             removed = _remove_item_from_board(graph, args.rule_id)
@@ -749,23 +414,26 @@ def main() -> int:
             _save_board(graph, wb_json, wb_sqlite)
             _append_transcript(
                 transcript_path,
-                {"event": args.cmd, "timestamp_utc": datetime.now(timezone.utc).isoformat(), "speaker": args.speaker, "rule_id": args.rule_id, "removed": removed, "reason": args.message or ""},
+                {
+                    "event": args.cmd, "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                    "speaker": args.speaker, "rule_id": args.rule_id, "removed": removed, "reason": args.message or "",
+                },
             )
             record_flight_event(board, args.cmd, (time.perf_counter() - t0_cmd) * 1000.0, "OK")
             print(f"[{args.cmd.upper()}] Removed from '{board}': {'; '.join(removed)}")
-            return _execute_turn(board, args.speaker, _read_input_text(args.message, args.file), args.round_num, profile, config_path) if args.cmd == "replace" else 0
-        if args.cmd == "slice":
-            return _cmd_slice(args, board, t0_cmd)
+            if args.cmd == "replace":
+                msg = _read_input_text(args.message, args.file)
+                return _execute_turn(board, args.speaker, msg, args.round_num, profile, config_path)
+            return 0
         if args.cmd == "status":
             return _cmd_status(args, board, t0_cmd)
-        if args.cmd == "packets":
-            return _cmd_packets(args, board, t0_cmd)
-        if args.cmd == "show":
-            return _cmd_show(args, board, t0_cmd)
+        if args.cmd in ("packets", "show"):
+            return _cmd_packets_or_show(args, board, t0_cmd)
         if args.cmd in ("prove", "history"):
             return _cmd_prove_or_history(args, board, t0_cmd)
     except Exception as exc:
-        record_flight_event(board, args.cmd, (time.perf_counter() - t0_cmd) * 1000.0, "ERROR", error=format_exception_error(exc))
+        dur_ms = (time.perf_counter() - t0_cmd) * 1000.0
+        record_flight_event(board, args.cmd, dur_ms, "ERROR", error=format_exception_error(exc))
         raise
     return 1
 

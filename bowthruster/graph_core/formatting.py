@@ -1,4 +1,4 @@
-"""Spec 21 §1.2: Shared Content-Word Tokenizer, Metadata Clamping, Token Cost, ACT-R Decay, and Two-Pass View Formatter."""
+"""Spec 21 §1.2: Content-Word Tokenizer, Metadata Clamping, Token Cost, ACT-R Decay, and View Formatter."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ _TYPE_TO_FACET: dict[str, str] = {
 
 
 def tokenize_content_words(text: str) -> list[str]:
-    """Extracts lowercase content/identifier tokens from `text` via `spaCy` and delimiter splitting (zero `import re`)."""
+    """Extracts lowercase content/identifier tokens from `text` via `spaCy` and delimiter splitting."""
     if not isinstance(text, str) or not text.strip():
         return []
     clean = restore_ascii_dots(text).strip()
@@ -105,7 +105,7 @@ def token_cost(obj: Any) -> int:
 
 
 def actr_base_level_activation(access_turns: list[int], current_turn: int) -> float:
-    """Computes ACT-R power-law base-level activation $B_i(t) = \\ln \\sum (\\max(1, t - t_k))^{-0.5}$ (Spec 21 §1.2)."""
+    """Computes ACT-R power-law base-level activation $B_i(t)$ (Spec 21 §1.2)."""
     if not isinstance(access_turns, list) or not access_turns:
         raise ValueError("access_turns must be a non-empty list of ints")
     if isinstance(current_turn, bool) or not isinstance(current_turn, int) or current_turn < 0:
@@ -132,7 +132,7 @@ def evict_from_ring(
         raise ValueError(f"max_ring must be >= 1, got {max_ring}")
     items: list[dict[str, Any]] = []
     for idx, n in enumerate(ring):
-        if not isinstance(n, dict):
+        if not n:
             raise ValueError(f"ring[{idx}] must be a dict, got {type(n).__name__}")
         items.append(copy.deepcopy(n))
     if len(items) <= max_ring:
@@ -195,7 +195,7 @@ def _pack_active_rules_and_lod2(
         scope_meta = scopes.get(sid, {}).get("_meta", {})
         rmeta = scope_meta.get(rid, {}) if isinstance(scope_meta, dict) else {}
         meta_tok_set: set[str] = set()
-        if isinstance(rmeta, dict) and rmeta:
+        if rmeta:
             for mk, mv in rmeta.items():
                 if mk != "heading_path":
                     meta_tok_set.update(tokenize_content_words(f"{mk} {mv}"))
@@ -218,7 +218,7 @@ def matches_nd_slice(is_unconstrained: bool, has_dim_overlap: bool) -> bool:
 
 
 def _format_component_line(comp: dict[str, Any]) -> str:
-    cid = comp.get("id") or comp.get("scope_id") or comp.get("scope") or ""
+    cid = next((_v for _v in (comp.get("id"), comp.get("scope_id")) if _v), None) or comp.get("scope") or ""
     tags: list[str] = []
     if comp.get("parent"):
         tags.append(f"parent={comp['parent']}")
@@ -231,9 +231,9 @@ def _format_component_line(comp: dict[str, Any]) -> str:
     if comp.get("stage"):
         tags.append(f"stage={comp['stage']}")
     prefix = f"@ COMPONENT [{cid}]" + (f" ({', '.join(tags)})" if tags else "")
-    role_str = str(comp.get("role") or comp.get("text") or "").strip()
+    role_str = str(next((_v for _v in (comp.get("role"), comp.get("text")) if _v), None) or "").strip()
     why_str = str(
-        comp.get("why") or (comp.get("attributes") if isinstance(comp.get("attributes"), dict) else {}).get("why")
+        comp.get("why") or ((comp.get("attributes") or {})).get("why")
         or ""
     ).strip()
     if why_str:
@@ -254,12 +254,12 @@ def _format_flow_line(fl: dict[str, Any]) -> str:
     step_val = fl.get("step")
     step_s = f" [{step_val}]" if step_val is not None and str(step_val).strip() != "" else ""
     src, tgt = fl.get("source", ""), fl.get("target", "")
-    payload = fl.get("payload") or fl.get("action") or ""
+    payload = next((_v for _v in (fl.get("payload"), fl.get("action")) if _v), None) or ""
     arrow = f"--[{payload}]-->" if payload else "-->"
     line = f"> FLOW{step_s} {src} {arrow} {tgt}"
     if fl.get("condition"):
         line += f" | if: {fl['condition']}"
-    txt = str(fl.get("text") or fl.get("summary") or "").strip()
+    txt = str(next((_v for _v in (fl.get("text"), fl.get("summary")) if _v), None) or "").strip()
     if txt:
         line += f": {txt}"
     return line
@@ -268,8 +268,8 @@ def _format_flow_line(fl: dict[str, Any]) -> str:
 def _format_artifact_line(art: dict[str, Any]) -> str:
     kind = str(art.get("kind") or "SCHEMA").upper()
     sigil = "#" if kind == "SCHEMA" else ("$" if kind == "INTERFACE" else ("%" if kind == "LAW" else "#"))
-    name = art.get("name") or art.get("id") or ""
-    scope_val = art.get("scope_id") or art.get("scope") or ""
+    name = next((_v for _v in (art.get("name"), art.get("id")) if _v), None) or ""
+    scope_val = next((_v for _v in (art.get("scope_id"), art.get("scope")) if _v), None) or ""
     tags: list[str] = []
     if scope_val:
         tags.append(f"scope={scope_val}")
@@ -282,7 +282,7 @@ def _format_artifact_line(art: dict[str, Any]) -> str:
     if kind == "INTERFACE" and (ins or outs):
         tags.append(f"in=[{', '.join(ins)}] -> out=[{', '.join(outs)}]")
     tags_s = f" ({', '.join(tags)})" if tags else ""
-    spec_or_text = str(art.get("spec") or art.get("text") or art.get("summary") or "").strip()
+    spec_or_text = str(art.get("spec") if art.get("spec") else art.get("text", art.get("summary", ""))).strip()
     return f"{sigil} {kind} [{name}]{tags_s}" + (f": {spec_or_text}" if spec_or_text else "")
 
 
@@ -300,16 +300,16 @@ def _collect_pre_rule_lines(view: dict[str, Any], scope_headers: list[str] | Non
     pre_rule_lines.append(hdr)
 
     for c in view.get("conflicts", []):
-        if isinstance(c, dict):
+        if c:
             pre_rule_lines.append(f"! CONFLICT [{c.get('scope', '')}] {c.get('text', '')}")
 
     for b in view.get("open_blockers", []):
-        if isinstance(b, dict) and b.get("type") != "CONFLICT":
+        if b.get("type") != "CONFLICT":
             pre_rule_lines.append(f"? BLOCKER ({b.get('type', 'OPEN')}) [{b.get('scope', '')}] {b.get('text', '')}")
 
     if view.get("node_type") == "SCOPE" and isinstance(view.get("scope"), dict):
         scope_obj = view["scope"]
-        nid = view.get("node_id") or scope_obj.get("id", "")
+        nid = next((_v for _v in (view.get("node_id"), scope_obj.get("id", "")) if _v), None)
         s_line = f"@ SCOPE [{nid}]"
         attrs = scope_obj.get("attributes")
         if isinstance(attrs, dict):
@@ -330,17 +330,17 @@ def _collect_pre_rule_lines(view: dict[str, Any], scope_headers: list[str] | Non
             pre_rule_lines.append(_format_component_line(comp))
 
     for fl in view.get("active_flows", []):
-        if isinstance(fl, dict):
+        if fl:
             pre_rule_lines.append(_format_flow_line(fl))
 
     for art in view.get("active_artifacts", []):
-        if isinstance(art, dict):
+        if art:
             pre_rule_lines.append(_format_artifact_line(art))
 
     for t in view.get("active_tasks", []):
-        if isinstance(t, dict):
+        if t:
             has_nd_tags = bool(
-                t.get("owner") or t.get("stage") or t.get("depends_on")
+                next((_v for _v in (t.get("owner"), t.get("stage")) if _v), None) or t.get("depends_on")
                 or (t.get("status") and t.get("status") != "ACTIVE")
             )
             if has_nd_tags:
@@ -353,7 +353,8 @@ def _collect_pre_rule_lines(view: dict[str, Any], scope_headers: list[str] | Non
                     t_tags.append(f"stage={t['stage']}")
                 if t.get("depends_on"):
                     t_tags.append(f"deps=[{', '.join(str(d) for d in t['depends_on'])}]")
-                pre_rule_lines.append(f"+ TASK {t.get('id', '')} [{t.get('scope', '')}] ({', '.join(t_tags)}): {t.get('text', '')}")
+                t_hdr = f"+ TASK {t.get('id', '')} [{t.get('scope', '')}] ({', '.join(t_tags)})"
+                pre_rule_lines.append(f"{t_hdr}: {t.get('text', '')}")
             else:
                 pre_rule_lines.append(f"+ TASK {t.get('id', '')} [{t.get('scope', '')}]: {t.get('text', '')}")
     return pre_rule_lines
@@ -372,7 +373,7 @@ def format_compact_view(
     lod2 = view.get("lod2_meta", {}) if isinstance(view.get("lod2_meta"), dict) else {}
     rule_blocks: list[tuple[str, list[str]]] = []
     for r in view.get("active_rules", []):
-        if not isinstance(r, dict):
+        if not r:
             continue
         rid = r.get("id", "")
         r_line = f"* [{r.get('scope', '')}] {rid} ({r.get('type', '')}): {r.get('text', '')}"
@@ -393,7 +394,7 @@ def format_compact_view(
 
     note_lines = [
         f"~ NOTE {n.get('id', '')}: {n.get('text', '')}"
-        for n in view.get("ambient_notes", []) if isinstance(n, dict) and n.get("text")
+        for n in view.get("ambient_notes", []) if n and n.get("text")
     ]
     admitted_pre: list[str] = []
     for ln in pre_rule_lines:
@@ -423,10 +424,11 @@ def format_compact_view(
     accepted_meta: list[list[str]] = [[] for _ in admitted_rules]
     for idx, (_, meta_lines) in enumerate(admitted_rules):
         for m_ln in meta_lines:
-            trial_lines = [
-                *admitted_pre,
-                *(ln for i, (rl, _) in enumerate(admitted_rules) for ln in ([rl, *accepted_meta[i], m_ln] if i == idx else [rl, *accepted_meta[i]])),
+            rule_part = [
+                ln for i, (rl, _) in enumerate(admitted_rules)
+                for ln in ([rl, *accepted_meta[i], m_ln] if i == idx else [rl, *accepted_meta[i]])
             ]
+            trial_lines = [*admitted_pre, *rule_part]
             if len(trial_lines) <= max_lines and token_cost("\n".join(trial_lines)) <= token_budget:
                 accepted_meta[idx].append(m_ln)
             else:

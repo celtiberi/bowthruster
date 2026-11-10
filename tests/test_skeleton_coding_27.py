@@ -417,15 +417,15 @@ def verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report):
         mf_ok = EXEC_GATE.verify_ast_call_graph_skeleton(
             g_mf,
             {"staged_files": [
-                {"path": "pkg/iface.py", "content": "def render_frames(lines, frame):\n    _append_frame(lines, frame)\n    return lines\n"},
-                {"path": "pkg/helper.py", "content": "def _append_frame(lines, frame):\n    lines.append(frame)\n"},
+                {"path": "pkg/iface.py", "content": "def render_frames(lines, frame):\n    return _append_frame(lines, frame)\n"},
+                {"path": "pkg/helper.py", "content": "def _append_frame(lines, frame):\n    lines.append(frame)\n    return lines\n"},
             ]},
         )
         mf_const = EXEC_GATE.verify_ast_call_graph_skeleton(
             g_mf,
             {"staged_files": [
-                {"path": "pkg/iface.py", "content": "def render_frames(lines, frame):\n    _append_frame(True, True)\n    return lines\n"},
-                {"path": "pkg/helper.py", "content": "def _append_frame(lines, frame):\n    lines.append(frame)\n"},
+                {"path": "pkg/iface.py", "content": "def render_frames(lines, frame):\n    return _append_frame(True, True)\n"},
+                {"path": "pkg/helper.py", "content": "def _append_frame(lines, frame):\n    lines.append(frame)\n    return lines\n"},
             ]},
         )
         self.assertEqual((mf_ok["is_valid"], mf_ok["disconnected_law_functions"], mf_const["is_valid"], mf_const["disconnected_law_functions"]), (True, 0, False, 1))

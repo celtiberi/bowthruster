@@ -1,6 +1,6 @@
 {
   "gate": {
-    "max_file_lines": null,
+    "max_file_lines": 500,
     "verify_files_exist_on_status": true,
     "require_call_graph_laws": true
   },

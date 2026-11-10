@@ -193,8 +193,8 @@ def compile_parsed_mcus(result: dict[str, Any]) -> list[dict[str, Any]]:
             )
         out: list[dict[str, Any]] = []
         for idx, (m, p) in enumerate(zip(result["mcus"], result["propositions"]), 1):
-            txt = str(p.get("canonical_text") or m.get("text") or "").strip()
-            cat = str(p.get("canonical_category") or m.get("canonical_category") or "CONTEXT").upper()
+            txt = str(next((_v for _v in (p.get("canonical_text"), m.get("text")) if _v), None) or "").strip()
+            cat = str(p.get("canonical_category", m.get("canonical_category")) or "CONTEXT").upper()
             has_num_lit = any(
                 l.get("kind") == "NUM" for l in (m.get("required_literals") or []) if isinstance(l, dict)
             )
@@ -273,7 +273,7 @@ def compile_intake_packet(
     doc_tables: list[dict[str, Any]] | None = None,
     turn_index: int = 1,
 ) -> IntakePacket:
-    """Compiles a Markdown pipe-table turn or `Phase3Result` dict into an `IntakePacket` (`$ INTERFACE compile_intake_packet`)."""
+    """Compiles a Markdown pipe-table turn or `Phase3Result` dict into an `IntakePacket`."""
     if not isinstance(turn_index, int) or isinstance(turn_index, bool) or turn_index < 1:
         raise Phase3InvariantError(
             "intake_invalid_turn_index", [f"turn_index must be a positive int, got {turn_index!r}"]
@@ -300,7 +300,7 @@ def compile_intake_packet(
         tables = copy.deepcopy(list(doc_tables))
     flow_sents = extract_flow_sentences(raw_text)
     has_tables_or_mcus = bool(
-        tables or flow_sents or phase3_result.get("mcus") or phase3_result.get("parsed_mcus")
+        tables or flow_sents or phase3_result.get("mcus", phase3_result.get("parsed_mcus"))
     )
     if raw_text.strip() and not has_tables_or_mcus:
         raise ValueError(CANONICAL_HEADERS_ERROR_MSG)

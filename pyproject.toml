@@ -1,6 +1,7 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = []
+build-backend = "bowthruster._pep517"
+backend-path = ["."]
 
 [project]
 name = "bowthruster"
@@ -14,9 +15,6 @@ dependencies = []
 [project.scripts]
 bowthruster = "bowthruster.cli:main"
 bowthruster-mcp = "bowthruster.mcp_server:main"
-
-[tool.hatch.build.targets.wheel]
-packages = ["bowthruster"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
