@@ -32,15 +32,12 @@ from bowthruster.the_executive.gate import evaluate_git_commit_gate
 from bowthruster.whiteboard import slice_lattice
 
 MCP_PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION = "2024-11-05", "bowthruster-mcp", "0.1.0"
-COMPACT_PACKET_KEYS: tuple[str, ...] = ("packet_id", "wave", "component", "owner", "stage", "build_status", "files", "depends_on", "prompt_slice", "laws_skeleton", "python_skeleton", "is_skeleton_complete")
+COMPACT_PACKET_KEYS: tuple[str, ...] = ("packet_id", "wave", "component", "owner", "stage", "build_status", "files", "depends_on", "prompt_slice", "laws_skeleton", "python_skeleton", "python_skeletons_by_file", "is_skeleton_complete")
 
 
 @dataclass(frozen=True)
 class McpJsonRpcRequest:
-    jsonrpc: str = "2.0"
-    id: Any = None
-    method: str = ""
-    params: dict[str, Any] = field(default_factory=dict)
+    jsonrpc: str = "2.0"; id: Any = None; method: str = ""; params: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -345,6 +342,8 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
                 res = _call_compile_packets(graph, force=bool(args.get("force", False)), status_filter=status_f)
                 wave_f, comp_f = args.get("wave"), args.get("component")
                 pkts = [p for p in (res.get("packets") or []) if (wave_f is None or p.get("wave") == int(wave_f)) and (not comp_f or p.get("component") == comp_f) and (not status_f or str(p.get("build_status") or "").upper() == status_f)]
+                if wave_f is None and not comp_f and not bool(args.get("include_raw", False)) and any(p.get("wave") in (1, 2) for p in pkts):
+                    pkts = [p for p in pkts if p.get("wave") != 0]
                 payload = {**res, "packets": pkts} if bool(args.get("include_raw", False)) else {"status": res.get("status"), "is_proven": res.get("is_proven"), "ready_to_emit": res.get("ready_to_emit"), "packets": [{k: p.get(k) for k in COMPACT_PACKET_KEYS} for p in pkts]}
                 resp, nbytes = _format_tool_result(payload)
                 record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK" if res.get("ready_to_emit") or args.get("force") else "REJECTED", decision=res.get("status"), response_bytes=nbytes)

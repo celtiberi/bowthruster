@@ -110,25 +110,25 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+  "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
   "lattice_artifacts": [
     {
       "calls": [
-        "_format_tool_result#L248-L252",
-        "_hot_reload_if_changed#L431-L456",
-        "_read_doc_resource#L215-L228",
-        "_resolve_project_root#L231-L245"
+        "_format_tool_result#L245-L249",
+        "_hot_reload_if_changed#L430-L455",
+        "_read_doc_resource#L212-L225",
+        "_resolve_project_root#L228-L242"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L255-L427",
+        "file": "bowthruster/mcp_server.py#L252-L426",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L255-L427",
+      "file": "bowthruster/mcp_server.py#L252-L426",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -150,19 +150,19 @@
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L431-L456",
-        "_read_doc_resource#L215-L228"
+        "_hot_reload_if_changed#L430-L455",
+        "_read_doc_resource#L212-L225"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "bowthruster/mcp_server.py#L459-L481",
+        "file": "bowthruster/mcp_server.py#L458-L480",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "bowthruster/mcp_server.py#L459-L481",
+      "file": "bowthruster/mcp_server.py#L458-L480",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -269,10 +269,10 @@
       "dimensions": {
         "description": "JSON-RPC 2.0 MCP request envelope",
         "fields": "jsonrpc, id, method, params",
-        "file": "bowthruster/mcp_server.py#L39-L43",
+        "file": "bowthruster/mcp_server.py#L39-L40",
         "schema": "McpJsonRpcRequest"
       },
-      "file": "bowthruster/mcp_server.py#L39-L43",
+      "file": "bowthruster/mcp_server.py#L39-L40",
       "id": "schema_mcp_server_mcpjsonrpcrequest",
       "inputs": [],
       "kind": "SCHEMA",
@@ -511,7 +511,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
       "outputs": [],
       "owner": "groves",
       "parent": null,
@@ -536,7 +536,7 @@
         "fields": "content, isError, structuredContent",
         "file": "bowthruster/mcp_server.py",
         "file_hashes": {
-          "bowthruster/mcp_server.py": "172b57a96103286f"
+          "bowthruster/mcp_server.py": "529e667133238619"
         },
         "files": [
           "bowthruster/mcp_server.py"
@@ -557,7 +557,7 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/mcp_server.py": "172b57a96103286f"
+        "bowthruster/mcp_server.py": "529e667133238619"
       },
       "files": [
         "bowthruster/mcp_server.py"
@@ -568,7 +568,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
       "outputs": [],
       "owner": "groves",
       "parent": null,

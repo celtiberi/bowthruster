@@ -275,9 +275,16 @@ def _extract_item_names(raw: Any) -> list[str]:
     return out
 
 
+def _fmt_spec_doc(raw_doc: str) -> list[str]:
+    clean = str(raw_doc or "").strip().replace('"""', "'''")
+    if not clean: return []
+    parts = [p.strip() for p in clean.split(";") if p.strip()]
+    return [f'    """{clean}"""'] if len(parts) <= 1 else [f'    """{parts[0]}', *(f"    - {p}" for p in parts[1:]), '    """']
+
+
 def compile_python_skeleton(
     scope_id: str, artifacts: list[dict[str, Any]] | None = None, *, schemas: list[dict[str, Any]] | None = None,
-    interfaces: list[dict[str, Any]] | None = None, laws: list[dict[str, Any]] | None = None,
+    interfaces: list[dict[str, Any]] | None = None, laws: list[dict[str, Any]] | None = None, rules: list[dict[str, Any]] | None = None,
 ) -> str:
     """Deterministically compiles an AST-parseable Python structural skeleton stub for `scope_id` from its `SCHEMA`, `INTERFACE`, and `LAW` artifacts (Stage 27)."""
     sid = str(scope_id or "global_defaults").strip() or "global_defaults"
@@ -286,53 +293,50 @@ def compile_python_skeleton(
     iface_list = [a for a in (interfaces if interfaces is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "INTERFACE"]) if isinstance(a, dict)]
     law_list = [a for a in (laws if laws is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "LAW"]) if isinstance(a, dict)]
 
-    lines: list[str] = [
-        f"# Python Structural Skeleton — Compiled by Whiteboard for {sid}",
-        "from __future__ import annotations", "", "from dataclasses import dataclass", "from typing import Any",
-    ]
+    lines: list[str] = [f"# Python Structural Skeleton — Compiled by Whiteboard for {sid}", "from __future__ import annotations", "", "from dataclasses import dataclass", "from typing import Any"]
+    seen_consts: set[str] = set()
+    for r in (rules or []):
+        if isinstance(r, dict) and str(r.get("type") or "").upper() == "BOUND" and isinstance(r.get("bound_val"), (int, float)) and not isinstance(r.get("bound_val"), bool):
+            tp = str(r.get("target_prop") or "").strip()
+            if tp and tp.isidentifier() and tp.lower() not in ("max_file_lines", "import", "depends_on", "value", "rule") and tp.upper() not in seen_consts:
+                seen_consts.add(tp.upper()); lines.append(f"{tp.upper()} = {r['bound_val']!r}  # BOUND: {tp} {r.get('bound_op') or '<='} {r['bound_val']!r}")
     seen_schemas: set[str] = set()
     for sc_art in schema_list:
         sname = _py_ident(sc_art.get("name") or sc_art.get("schema") or sc_art.get("id") or "SchemaStub", default="SchemaStub")
-        if sname in seen_schemas:
-            continue
+        if sname in seen_schemas: continue
         seen_schemas.add(sname)
         dims = sc_art.get("dimensions") if isinstance(sc_art.get("dimensions"), dict) else {}
-        sc_doc = str(sc_art.get("spec") or dims.get("spec") or sc_art.get("text") or "").strip().replace('"""', "'''")
+        sfile = str(sc_art.get("file") or dims.get("file") or "").strip()
+        sc_doc = str(sc_art.get("spec") or dims.get("spec") or sc_art.get("text") or "").strip()
         fields = _extract_item_names(sc_art.get("fields") or dims.get("fields")) or _extract_item_names(sc_art.get("inputs") or sc_art.get("outputs") or dims.get("inputs") or dims.get("outputs")) or ["value"]
-        lines.extend(("", "@dataclass(frozen=True)", f"class {sname}:", *([f'    """{sc_doc}"""'] if sc_doc else []), *(f"    {f_name}: Any = None" for f_name in fields)))
+        lines.extend(("", *([f"# FILE: {sfile}"] if sfile else []), "@dataclass(frozen=True)", f"class {sname}:", *_fmt_spec_doc(sc_doc), *(f"    {f_name}: Any = None" for f_name in fields)))
 
     iface_names = {_py_ident(ia.get("name") or ia.get("interface") or ia.get("id") or "interface_stub", default="interface_stub") for ia in iface_list}
-    emitted_laws: list[tuple[str, list[str]]] = []
-    seen_laws: set[str] = set()
+    emitted_laws, seen_laws = [], set()
     for law_art in law_list:
         lfn, lalias, lparams, py_expr = _extract_law_stub_spec(law_art, iface_names | seen_schemas)
         ldims = law_art.get("dimensions") if isinstance(law_art.get("dimensions"), dict) else {}
-        l_doc = str(law_art.get("spec") or ldims.get("spec") or law_art.get("text") or "").strip().replace('"""', "'''")
+        l_doc = str(law_art.get("spec") or ldims.get("spec") or law_art.get("text") or "").strip()
         for fn_id in (lfn, lalias):
             if fn_id and fn_id not in seen_laws:
-                seen_laws.add(fn_id)
-                emitted_laws.append((fn_id, lparams))
-                sig_params = ", ".join(f"{p}: bool = True" for p in lparams)
-                lines.extend(("", f"def {fn_id}({sig_params}) -> bool:", *([f'    """{l_doc}"""'] if l_doc else []), f"    return bool({py_expr})"))
+                seen_laws.add(fn_id); emitted_laws.append((fn_id, lparams))
+                lines.extend(("", f"def {fn_id}({', '.join(f'{p}: bool = True' for p in lparams)}) -> bool:", *_fmt_spec_doc(l_doc), f"    return bool({py_expr})"))
 
     seen_ifaces: set[str] = set()
     for ia in iface_list:
         iname = _py_ident(ia.get("name") or ia.get("interface") or ia.get("id") or "interface_stub", default="interface_stub")
-        if iname in seen_ifaces:
-            continue
+        if iname in seen_ifaces: continue
         seen_ifaces.add(iname)
         dims = ia.get("dimensions") if isinstance(ia.get("dimensions"), dict) else {}
-        i_doc = str(ia.get("spec") or dims.get("spec") or ia.get("text") or "").strip().replace('"""', "'''")
+        ifile = str(ia.get("file") or dims.get("file") or "").strip()
+        i_doc = str(ia.get("spec") or dims.get("spec") or ia.get("text") or "").strip()
         in_params = _extract_item_names(ia.get("inputs") or ia.get("args") or dims.get("inputs") or dims.get("args"))
         out_types = _extract_item_names(ia.get("outputs") or ia.get("output") or ia.get("returns") or dims.get("outputs"))
-        sig_in = ", ".join(f"{p}: Any = None" for p in in_params)
         ret_ann = out_types[0] if len(out_types) == 1 else (f"tuple[{', '.join(out_types)}]" if len(out_types) > 1 else "Any")
-        lines.extend(("", f"def {iname}({sig_in}) -> {ret_ann}:", *([f'    """{i_doc}"""'] if i_doc else [])))
+        lines.extend(("", *([f"# FILE: {ifile}"] if ifile else []), f"def {iname}({', '.join(f'{p}: Any = None' for p in in_params)}) -> {ret_ann}:", *_fmt_spec_doc(i_doc)))
         for lfn, lparams in emitted_laws:
-            lines.append(f"    # MUST CALL: {lfn}({', '.join(lparams)})")
-            lines.append(f"    _law_{lfn} = {lfn}({', '.join('True' for _ in lparams)})")
-        ret_stmt = f"return {out_types[0]}()" if (len(out_types) == 1 and out_types[0] in seen_schemas) else (f"return _law_{emitted_laws[0][0]}" if emitted_laws else "return None")
-        lines.append(f"    {ret_stmt}")
+            lines.extend((f"    # MUST CALL: {lfn}({', '.join(lparams)})", f"    _law_{lfn} = {lfn}({', '.join('True' for _ in lparams)})"))
+        lines.append(f"    {'return ' + out_types[0] + '()' if (len(out_types) == 1 and out_types[0] in seen_schemas) else ('return _law_' + emitted_laws[0][0] if emitted_laws else 'return None')}")
     has_defs = bool(seen_schemas or seen_ifaces or seen_laws or lines)
     if not (is_work_packet_self_contained(is_status_synced(has_defs), has_defs) and is_table_schema_valid(has_defs, bool(lines)) and is_flow_or_rule_table_fused(bool(all_arts), has_defs)):
         raise ValueError("status_sync_and_spec_docstring_law violated")
@@ -353,8 +357,14 @@ def _build_slice_packet(
     scope_schemas = [copy.deepcopy(a) for a in arts if str(a.get("kind") or "").upper() == "SCHEMA"]
     scope_ifaces = [copy.deepcopy(a) for a in arts if str(a.get("kind") or "").upper() == "INTERFACE"]
     scope_laws = [copy.deepcopy(a) for a in arts if str(a.get("kind") or "").upper() == "LAW"]
+    scope_rules = list(sl.get("active_rules", []))
     compiled_laws = compile_laws_bend(sid, scope_laws)
-    py_skeleton = compile_python_skeleton(sid, schemas=scope_schemas, interfaces=scope_ifaces, laws=scope_laws)
+    py_skeleton = compile_python_skeleton(sid, schemas=scope_schemas, interfaces=scope_ifaces, laws=scope_laws, rules=scope_rules)
+    art_files = sorted({str(a.get("file") or (a.get("dimensions") or {}).get("file") or "").strip() for a in [*scope_schemas, *scope_ifaces] if str(a.get("file") or (a.get("dimensions") or {}).get("file") or "").strip()})
+    by_file = {
+        f: compile_python_skeleton(sid, schemas=[s for s in scope_schemas if str(s.get("file") or (s.get("dimensions") or {}).get("file") or "").strip() in ("", f)], interfaces=[i for i in scope_ifaces if str(i.get("file") or (i.get("dimensions") or {}).get("file") or "").strip() == f], laws=scope_laws, rules=scope_rules)
+        for f in art_files
+    } if len(art_files) > 1 else {}
     return {
         "packet_id": pkt_id, "wave": wave, "kind": kind, "component": sid, "scope": sid,
         "owner": sc.get("owner") or default_owner, "stage": sc.get("stage"),
@@ -364,9 +374,10 @@ def _build_slice_packet(
         "files": list(sc.get("files", [])) if isinstance(sc.get("files"), list) else [],
         "schemas": scope_schemas, "laws": scope_laws,
         "compiled_laws_bend": compiled_laws, "laws_skeleton": compiled_laws,
-        "python_skeleton": py_skeleton, "is_skeleton_complete": is_python_skeleton_complete(bool(scope_schemas), bool(scope_ifaces), bool(scope_laws)),
+        "python_skeleton": py_skeleton, "python_skeletons_by_file": by_file,
+        "is_skeleton_complete": is_python_skeleton_complete(bool(scope_schemas), bool(scope_ifaces), bool(scope_laws)),
         "contracts": [copy.deepcopy(a) for a in arts if str(a.get("kind") or "").upper() in ("SCHEMA", "INTERFACE")],
-        "flows": list(sl.get("active_flows", [])), "rules": list(sl.get("active_rules", [])),
+        "flows": list(sl.get("active_flows", [])), "rules": scope_rules,
         "tasks": list(sl.get("active_tasks", [])), "prompt_slice": prompt_str,
     }
 
@@ -443,15 +454,10 @@ def query_context_graph(
     temperature: float | None = None, token_budget: int = 400, max_lines: int = 35,
 ) -> dict[str, Any]:
     """Queries `graph` in `'propagate'`, `'scan'`, or `'expand'` mode via the Whiteboard read engine (Spec 22C §2.1)."""
-    if not isinstance(graph, dict):
-        raise Phase4InvariantError("phase4_invalid_graph", [f"graph must be a dict, got {type(graph).__name__}"])
-    if mode not in ("propagate", "scan", "expand"):
-        raise ValueError(f"invalid query mode={mode!r}, expected 'propagate', 'scan', or 'expand'")
-    if mode == "expand":
-        target_id = node_id if (isinstance(node_id, str) and node_id.strip()) else str(query or "").strip()
-        return expand_node(graph, target_id, query=str(query or ""), token_budget=token_budget, max_lines=max_lines)
-    if mode == "scan" or not isinstance(query, str) or not query.strip():
-        return scan_graph(graph, str(query or "") if mode == "scan" else "", temperature=temperature, token_budget=token_budget, max_lines=max_lines)
+    if not isinstance(graph, dict): raise Phase4InvariantError("phase4_invalid_graph", [f"graph must be a dict, got {type(graph).__name__}"])
+    if mode not in ("propagate", "scan", "expand"): raise ValueError(f"invalid query mode={mode!r}, expected 'propagate', 'scan', or 'expand'")
+    if mode == "expand": return expand_node(graph, node_id if (isinstance(node_id, str) and node_id.strip()) else str(query or "").strip(), query=str(query or ""), token_budget=token_budget, max_lines=max_lines)
+    if mode == "scan" or not isinstance(query, str) or not query.strip(): return scan_graph(graph, str(query or "") if mode == "scan" else "", temperature=temperature, token_budget=token_budget, max_lines=max_lines)
     return propagate_graph(graph, query, temperature=temperature, token_budget=token_budget, max_lines=max_lines)
 
 
@@ -465,24 +471,19 @@ def run_turn(
     intake_packet: dict[str, Any] | None = None, store: SQLiteGraphStore | None = None, db_path: str | Path | None = None,
 ) -> IngestionResult:
     """Executes a full 3-Entity turn (Intake -> Whiteboard Ingestion -> Readout) (Spec 22C §2.2)."""
-    if graph is None:
-        graph = create_empty_context_graph(k_cap=k_cap, max_ring=max_ring, store=store, db_path=db_path)
-    elif not isinstance(graph, dict):
-        raise Phase4InvariantError("phase4_invalid_graph", [f"graph must be a dict, got {type(graph).__name__}"])
+    if graph is None: graph = create_empty_context_graph(k_cap=k_cap, max_ring=max_ring, store=store, db_path=db_path)
+    elif not isinstance(graph, dict): raise Phase4InvariantError("phase4_invalid_graph", [f"graph must be a dict, got {type(graph).__name__}"])
     prev_turn = max(int(graph.get("turn", 0)), int(graph.get("turn_index", 0)))
     if turn_index is not None and (isinstance(turn_index, bool) or not isinstance(turn_index, int)):
         raise Phase4InvariantError("phase4_invalid_intake_packet", [f"turn_index must be an int, got {turn_index!r}"])
     eff_turn = int(turn_index) if turn_index is not None else max(1, prev_turn + 1)
     if intake_packet is not None:
-        if not isinstance(intake_packet, dict):
-            raise Phase4InvariantError("phase4_invalid_intake_packet", [f"intake_packet must be a dict, got {type(intake_packet).__name__}"])
+        if not isinstance(intake_packet, dict): raise Phase4InvariantError("phase4_invalid_intake_packet", [f"intake_packet must be a dict, got {type(intake_packet).__name__}"])
         packet, p3 = dict(intake_packet, turn_index=eff_turn), phase3_result
     elif phase3_result is not None:
-        p3 = phase3_result
-        packet = compile_intake_packet(p3, turn_index=eff_turn)
+        p3, packet = phase3_result, compile_intake_packet(phase3_result, turn_index=eff_turn)
     else:
-        if not isinstance(raw_text, str):
-            raise Phase4InvariantError("phase4_invalid_raw_text", [f"raw_text must be a str, got {type(raw_text).__name__}"])
+        if not isinstance(raw_text, str): raise Phase4InvariantError("phase4_invalid_raw_text", [f"raw_text must be a str, got {type(raw_text).__name__}"])
         packet = compile_markdown_turn(raw_text, turn_index=eff_turn)
         p3 = {"raw_text": raw_text, "doc_tables": packet["doc_tables"], "structured_table_rows": packet["structured_table_rows"], "parsed_mcus": packet["parsed_mcus"], "intake_packet": packet, "grounding_status": "GROUNDED", "is_locked": True, "clarification_questions": [], "open_questions": []}
     res = ingest_intake_packet(graph, packet, k_cap=k_cap, max_ring=max_ring, store=store, db_path=db_path)
