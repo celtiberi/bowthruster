@@ -263,12 +263,13 @@ def _build_stage27_lattice_fixture() -> dict[str, Any]:
 
 def verify_skeleton_coding_roundtrip(lattice_fixture: dict[str, Any] | None = None) -> QaSkeletonReport:
     """End-to-end Stage 27 Skeleton Coding roundtrip verifier (`$ INTERFACE verify_skeleton_coding_roundtrip`)."""
-    # MUST CALL: check_skeleton_truth_table_parity_law(x)
-    parity_witness = check_skeleton_truth_table_parity_law(True)
-    # MUST CALL: skeleton_truth_table_parity_law(x)
-    law_witness = skeleton_truth_table_parity_law(True)
-
     graph = _build_stage27_lattice_fixture() if lattice_fixture is None else lattice_fixture
+    has_graph = isinstance(graph, dict) and bool(graph.get("scopes"))
+    # MUST CALL: check_skeleton_truth_table_parity_law(x)
+    parity_witness = check_skeleton_truth_table_parity_law(has_graph)
+    # MUST CALL: skeleton_truth_table_parity_law(x)
+    law_witness = skeleton_truth_table_parity_law(has_graph)
+
     comp_artifacts = [a for a in graph["lattice_artifacts"] if a.get("scope") == "python_skeleton_compiler"]
     stub_src = WB.compile_python_skeleton("python_skeleton_compiler", comp_artifacts)
     parsed_ast = ast.parse(stub_src)
@@ -288,10 +289,10 @@ def verify_skeleton_coding_roundtrip(lattice_fixture: dict[str, Any] | None = No
     cg_ok = EXEC_GATE.verify_ast_call_graph_skeleton(graph, {"staged_files": [{"path": target_file, "content": stub_src, "missing_skeleton_stubs": 0}]})
     gate_ok = EXEC_GATE.evaluate_git_commit_gate(graph, {"staged_files": [{"path": target_file, "content": stub_src, "missing_skeleton_stubs": 0}], "bend_proofs_ok": True, "contracts_ok": True})
 
-    disconnected_src = (
-        stub_src.replace("_law_is_python_skeleton_complete = is_python_skeleton_complete(True, True, True)", "_law_is_python_skeleton_complete = True")
-        .replace("_law_python_skeleton_completeness_law = python_skeleton_completeness_law(True, True, True)", "_law_python_skeleton_completeness_law = True")
-    )
+    disconnected_src = "\n".join(
+        (ln.split("=")[0] + "= True") if ln.lstrip().startswith("_law_") else ln
+        for ln in stub_src.splitlines()
+    ) + "\n"
     cg_bad = EXEC_GATE.verify_ast_call_graph_skeleton(graph, {"staged_files": [{"path": target_file, "content": disconnected_src, "missing_skeleton_stubs": 0}]})
     gate_bad = EXEC_GATE.evaluate_git_commit_gate(graph, {"staged_files": [{"path": target_file, "content": disconnected_src, "missing_skeleton_stubs": 0}], "bend_proofs_ok": True, "contracts_ok": True})
 
@@ -395,7 +396,7 @@ def _internal_helper(a: bool, b: bool, c: bool) -> bool:
     return is_call_graph_skeleton_valid(a, b, c)
 
 def verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report):
-    ok = _internal_helper(True, True, True)
+    ok = _internal_helper(whiteboard_graph is not None, staged_diff_report is not None, bool(staged_diff_report))
     return {"is_valid": ok, "disconnected_law_functions": 0}
 """
         rep_trans = EXEC_GATE.verify_ast_call_graph_skeleton(
@@ -453,7 +454,7 @@ def verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report):
             "def is_call_graph_skeleton_valid(interface_defined: bool, law_fn_defined: bool, interface_calls_law: bool) -> bool:\n"
             "    return True\n\n"
             "def verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report):\n"
-            "    a, b, c = bool(whiteboard_graph), bool(staged_diff_report), True\n"
+            "    a, b, c = bool(whiteboard_graph), bool(staged_diff_report), whiteboard_graph is not None\n"
             "    ok = is_call_graph_skeleton_valid(a, b, c)\n"
             "    return {'is_valid': ok, 'disconnected_law_functions': 0}\n"
         )

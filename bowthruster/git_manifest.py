@@ -17,7 +17,6 @@ from typing import Any
 from bowthruster.nlp import _extract_generic_source_symbols, verify_python_ast_laws_with_bend
 
 BOWTHRUSTER_HOME = Path(__file__).resolve().parents[1]
-LATTICE_HOME = BOWTHRUSTER_HOME
 DEFAULT_CONFIG_PATHS = (
     BOWTHRUSTER_HOME / "config.json",
     BOWTHRUSTER_HOME / "benchmarks" / "configs" / "config.json",
@@ -28,7 +27,7 @@ def _active_repo_root() -> Path:
     cli_mod = sys.modules.get("bowthruster.cli")
     if cli_mod is not None and hasattr(cli_mod, "REPO_ROOT"):
         return Path(getattr(cli_mod, "REPO_ROOT")).resolve()
-    env_root = os.environ.get("BOWTHRUSTER_PROJECT_ROOT") or os.environ.get("LATTICE_PROJECT_ROOT")
+    env_root = os.environ.get("BOWTHRUSTER_PROJECT_ROOT")
     return Path(env_root).resolve() if env_root else BOWTHRUSTER_HOME
 
 
@@ -85,8 +84,6 @@ def read_flight_logs(
     logs_dir = _active_repo_root() / ".whiteboard" / "logs"
     flog_p = logs_dir / "bowthruster_events.jsonl"
     if not flog_p.is_file():
-        flog_p = logs_dir / "lattice_events.jsonl"
-    if not flog_p.is_file():
         return []
     rows = [json.loads(ln) for ln in flog_p.read_text(encoding="utf-8").splitlines() if ln.strip()]
     filtered = [
@@ -129,7 +126,7 @@ def _py_ast_extractor(fp: Path) -> tuple[dict[str, tuple[int, int]], dict[str, l
         })
         for fn in fn_nodes
     }
-    res = (syms, {k: v for k, v in calls.items() if v})
+    res = (syms, calls)
     _PY_AST_CACHE[ckey] = res
     return res
 
@@ -198,12 +195,12 @@ def _verify_component_files(graph: dict[str, Any], comp: str) -> None:
     root = _active_repo_root()
     ref_m = _collect_ref_map(graph, comp)
     comp_files = list(ref_m.keys())
-    has_env_root = bool(os.environ.get("BOWTHRUSTER_PROJECT_ROOT") or os.environ.get("LATTICE_PROJECT_ROOT"))
+    has_env_root = bool(os.environ.get("BOWTHRUSTER_PROJECT_ROOT"))
 
     def res_fp(cp: str) -> Path:
-        if (root / cp).is_file() or has_env_root or not (LATTICE_HOME.parent / cp).is_file():
+        if (root / cp).is_file() or has_env_root or not (BOWTHRUSTER_HOME.parent / cp).is_file():
             return root / cp
-        return LATTICE_HOME.parent / cp
+        return BOWTHRUSTER_HOME.parent / cp
 
     if missing := [cp for cp in comp_files if not res_fp(cp).is_file()]:
         raise ValueError(f"Cannot mark '{comp}' VERIFIED; missing declared file(s) on disk: {', '.join(missing)}")
@@ -231,6 +228,18 @@ def _verify_component_files(graph: dict[str, Any], comp: str) -> None:
         ]
         if over:
             raise ValueError(f"Cannot mark '{comp}' VERIFIED; max_file_lines exceeded: {', '.join(over)}")
+    from bowthruster.the_executive.gate import evaluate_git_commit_gate
+
+    manifest = _build_git_manifest("pre", None, graph)
+    gate_res = evaluate_git_commit_gate(graph, manifest)
+    if not gate_res.get("allowed"):
+        viols = "; ".join(str(v.get("description") or v) for v in (gate_res.get("violations") or []))
+        raise ValueError(
+            f"Cannot mark '{comp}' VERIFIED; pre-commit gate rejected ({gate_res.get('bounce_reason')}): {viols}"
+        )
+    tests_ran, tests_ok, test_out = run_delta_tests(root, [comp], graph)
+    if tests_ok is False:
+        raise ValueError(f"Cannot mark '{comp}' VERIFIED; delta tests failed:\n{test_out[-600:]}")
     if isinstance(sc := ((graph.get("scopes") or {}).get(comp)), dict):
         from bowthruster.ai_memory import sync_git_diff_uris
 
@@ -259,31 +268,63 @@ def _verify_component_files(graph: dict[str, Any], comp: str) -> None:
         )
 
 
-def run_delta_tests(active_root: Path, stale_sids: list[str]) -> tuple[bool, bool, str]:
+def _match_component_test_files(
+    active_root: Path, stale_sids: list[str],
+    graph: dict[str, Any] | None = None
+) -> list[str]:
+    matched: list[str] = []
+    scopes = (graph or {}).get("scopes") if isinstance((graph or {}).get("scopes"), dict) else {}
+    for sid in stale_sids:
+        sc = scopes.get(sid) if isinstance(scopes.get(sid), dict) else {}
+        attrs = sc.get("attributes") if isinstance(sc.get("attributes"), dict) else {}
+        raw_t = sc.get("tests") or sc.get("test_files") or attrs.get("tests") or attrs.get("test_files") or []
+        t_items = raw_t if isinstance(raw_t, list) else ([p.strip() for p in str(raw_t).split(",") if p.strip()] if raw_t else [])
+        for f_item in (sc.get("files") or []):
+            s_item = str(f_item).strip()
+            if s_item.startswith("tests:"):
+                t_items.append(s_item.removeprefix("tests:").strip())
+        for tf_rel in t_items:
+            clean_t = _clean_ref_path(str(tf_rel))
+            if clean_t and (active_root / clean_t).is_file() and clean_t not in matched:
+                matched.append(clean_t)
+    tests_dir = active_root / "tests"
+    if not tests_dir.is_dir():
+        return matched
+    all_test_files = sorted(tests_dir.rglob("test_*.py"))
+    for tf in all_test_files:
+        rel_str = str(tf.relative_to(active_root))
+        if rel_str in matched:
+            continue
+        stem_low = tf.stem.lower()
+        short_stem = stem_low.removeprefix("test_")
+        for sid in stale_sids:
+            s_low = sid.lower()
+            s_core = s_low.removeprefix("the_")
+            if (
+                s_low in stem_low
+                or (short_stem and short_stem in s_low)
+                or (len(s_core) >= 4 and s_core in stem_low)
+            ):
+                matched.append(rel_str)
+                break
+    return matched
+
+
+def run_delta_tests(
+    active_root: Path, stale_sids: list[str],
+    graph: dict[str, Any] | None = None
+) -> tuple[bool, bool | str, str]:
     """
     Runs discovered delta `pytest` files for `stale_sids` under `active_root / 'tests'`.
-    Returns `(tests_ran, tests_passed, output_summary)`.
+    Returns `(tests_ran, tests_passed_or_not_checked, output_summary)`.
     """
-    tests_dir = active_root / "tests"
-    if not tests_dir.is_dir() or not stale_sids:
-        return False, True, ""
-    if active_root.resolve() == LATTICE_HOME.resolve() and os.environ.get("PYTEST_CURRENT_TEST"):
-        return False, True, "already_in_pytest_session"
-    all_test_files = sorted(tests_dir.rglob("test_*.py"))
-    if not all_test_files:
-        return False, True, ""
-    matched = [
-        str(tf.relative_to(active_root))
-        for tf in all_test_files
-        if any(
-            sid.lower() in tf.stem.lower() or tf.stem.removeprefix("test_").lower() in sid.lower()
-            for sid in stale_sids
-        )
-    ]
-    if not matched and len(all_test_files) <= 8:
-        matched = [str(tf.relative_to(active_root)) for tf in all_test_files]
+    if not stale_sids:
+        return False, "not_checked", "no stale scopes"
+    matched = _match_component_test_files(active_root, stale_sids, graph)
     if not matched:
-        return False, True, ""
+        return False, "not_checked", "no matching test files found"
+    if active_root.resolve() == BOWTHRUSTER_HOME.resolve() and os.environ.get("PYTEST_CURRENT_TEST"):
+        return True, True, f"already_in_pytest_session ({', '.join(matched)})"
     env = {**os.environ, "PYTHONPATH": str(active_root)}
     pytest_bin = shutil.which("pytest")
     cmd = [pytest_bin, "-q", *matched] if pytest_bin else [sys.executable, "-m", "unittest", *matched]
@@ -292,76 +333,43 @@ def run_delta_tests(active_root: Path, stale_sids: list[str]) -> tuple[bool, boo
     return True, proc.returncode == 0, out
 
 
-def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, Any] | None = None) -> dict[str, Any]:
-    if manifest_arg:
-        p = Path(manifest_arg)
-        return json.loads(p.read_text(encoding="utf-8") if p.is_file() else manifest_arg)
-    repo_root = _active_repo_root()
-    ref_map = _collect_ref_map(graph)
-    is_base = mode == "baseline" or (mode == "post" and not bool((graph or {}).get("last_commit_sha")))
-    has_env_root = bool(os.environ.get("BOWTHRUSTER_PROJECT_ROOT") or os.environ.get("LATTICE_PROJECT_ROOT"))
-    eff_root = (
-        LATTICE_HOME.parent
-        if (not has_env_root and ref_map and any((LATTICE_HOME.parent / cp).is_file() and not (repo_root / cp).is_file() for cp in ref_map))
-        else repo_root
+def install_git_precommit_hook(
+    repo_root: Path, board: str = "lattice_core",
+    *, overwrite: bool = False
+) -> Path | None:
+    """Installs a `.git/hooks/pre-commit` script invoking `bowthruster.cli git-sync --pre-commit`."""
+    hooks_dir = repo_root / ".git" / "hooks"
+    if not hooks_dir.is_dir():
+        return None
+    hook_path = hooks_dir / "pre-commit"
+    if hook_path.exists() and not overwrite:
+        return hook_path
+    script = (
+        "#!/usr/bin/env sh\n"
+        f"# BowThruster pre-commit verification gate (board: {board})\n"
+        f'"{sys.executable}" -m bowthruster.cli --board "{board}" git-sync --pre-commit\n'
     )
-    all_repos = [eff_root, *(p for p in sorted(LATTICE_HOME.iterdir()) if p.is_dir() and (p / ".git").exists())]
-    if mode in ("post", "baseline"):
-        cand_repos = [
-            r
-            for r in all_repos
-            if any(cp.startswith(r.relative_to(eff_root).as_posix() + "/") for cp in ref_map if r != eff_root)
-            or (r == eff_root and any(not cp.startswith(LATTICE_HOME.name + "/") for cp in ref_map))
-        ] or all_repos
-        ts_list = [
-            (
-                int(
-                    subprocess.run(
-                        ["git", "log", "-1", "--format=%ct"],
-                        cwd=str(r), text=True, capture_output=True
-                    ).stdout.strip()
-                    or 0
-                ),
-                r
-            )
-            for r in cand_repos
-        ]
-        repos = [max(ts_list, key=lambda x: x[0])[1]] if ts_list else [eff_root]
-    else:
-        repos = all_repos
-    git_cmd = (
-        ["git", "diff", "--cached", "-M", "--name-status"]
-        if mode == "pre"
-        else (
-            ["git", "show", "-M", "--name-status", "--format=%H", "HEAD"]
-            if mode in ("post", "baseline") else ["git", "status", "--porcelain"]
-        )
-    )
-    sha = (
-        subprocess.run(
-            ["git", "log", "-1", "--format=%H"],
-            cwd=str(repos[0]), text=True, capture_output=True,
-            timeout=15
-        ).stdout.strip() or None
-        if is_base
-        else None
-    )
+    hook_path.write_text(script, encoding="utf-8")
+    hook_path.chmod(0o755)
+    return hook_path
+
+
+def _collect_git_changed_files(
+    repos: list[Path],
+    eff_root: Path,
+    ref_map: dict[str, tuple[str, str]],
+    mode: str,
+    git_cmd: list[str],
+    is_base: bool,
+    graph: dict[str, Any] | None,
+) -> tuple[list[dict[str, Any]], str | None]:
+    sha: str | None = None
     files: list[dict[str, Any]] = []
-    file_hashes = (
-        {
-            raw_r: hashlib.sha256((eff_root / cp).read_bytes()).hexdigest()[:16]
-            for cp, (_, raw_r) in ref_map.items()
-            if (eff_root / cp).is_file()
-        }
-        if mode in ("post", "baseline")
-        else {}
-    )
     for r in ([] if is_base else repos):
         rel_pref = "" if r == eff_root else (r.relative_to(eff_root).as_posix() + "/")
         lines = [
             ln.strip() for ln in subprocess.run(
-                git_cmd, cwd=str(r), text=True, capture_output=True,
-                timeout=15
+                git_cmd, cwd=str(r), text=True, capture_output=True, timeout=15
             ).stdout.splitlines()
             if ln.strip()
         ]
@@ -381,8 +389,7 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
                 ) if fp.is_file() else None
                 fhash = hashlib.sha256(fp.read_bytes()).hexdigest()[:16] if fp.is_file() else ""
                 files.append({
-                    "status": st,
-                    "path": path,
+                    "status": st, "path": path,
                     "contract_changed": bool(old_p or fp.suffix in AST_EXTRACTORS),
                     **({"scope": sid_hit} if sid_hit else {}),
                     **({"old_path": old_p} if old_p else {}),
@@ -390,8 +397,7 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
                     **({"file_hash": fhash} if fhash else {}),
                     **(
                         {"ast_symbols": _extract_py_ast_symbols(fp)}
-                        if mode in ("pre", "post") and fp.is_file()
-                        and fp.suffix in AST_EXTRACTORS else {}
+                        if mode in ("pre", "post") and fp.is_file() and fp.suffix in AST_EXTRACTORS else {}
                     ),
                     **(
                         {"source": fp.read_text(encoding="utf-8", errors="ignore")}
@@ -416,9 +422,7 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
                 files.append({"status": "D", "path": cp, "scope": sid_hit})
             elif (sid_hit in touched_sc and cp not in seen) and fp.is_file():
                 files.append({
-                    "status": "M",
-                    "path": cp,
-                    "scope": sid_hit,
+                    "status": "M", "path": cp, "scope": sid_hit,
                     "contract_changed": fp.suffix in AST_EXTRACTORS,
                     **(
                         {"line_count": len(fp.read_text(encoding="utf-8", errors="ignore").splitlines())}
@@ -426,32 +430,73 @@ def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, An
                     ),
                     "file_hash": hashlib.sha256(fp.read_bytes()).hexdigest()[:16],
                     **(
-                        {
-                            "ast_symbols": _extract_py_ast_symbols(fp),
-                            "source": fp.read_text(encoding="utf-8", errors="ignore")
-                        }
+                        {"ast_symbols": _extract_py_ast_symbols(fp), "source": fp.read_text(encoding="utf-8", errors="ignore")}
                         if fp.suffix in AST_EXTRACTORS else {}
                     ),
                 })
+    return files, sha
+
+
+def _build_git_manifest(mode: str, manifest_arg: str | None, graph: dict[str, Any] | None = None) -> dict[str, Any]:
+    if manifest_arg:
+        p = Path(manifest_arg)
+        return json.loads(p.read_text(encoding="utf-8") if p.is_file() else manifest_arg)
+    repo_root = _active_repo_root()
+    ref_map = _collect_ref_map(graph)
+    is_base = mode == "baseline" or (mode == "post" and not bool((graph or {}).get("last_commit_sha")))
+    has_env_root = bool(os.environ.get("BOWTHRUSTER_PROJECT_ROOT"))
+    eff_root = (
+        BOWTHRUSTER_HOME.parent
+        if (not has_env_root and ref_map and any((BOWTHRUSTER_HOME.parent / cp).is_file() and not (repo_root / cp).is_file() for cp in ref_map))
+        else repo_root
+    )
+    all_repos = [eff_root, *(p for p in sorted(BOWTHRUSTER_HOME.iterdir()) if p.is_dir() and (p / ".git").exists())]
+    if mode in ("post", "baseline"):
+        cand_repos = [
+            r for r in all_repos
+            if any(cp.startswith(r.relative_to(eff_root).as_posix() + "/") for cp in ref_map if r != eff_root)
+            or (r == eff_root and any(not cp.startswith(BOWTHRUSTER_HOME.name + "/") for cp in ref_map))
+        ] or all_repos
+        ts_list = [
+            (
+                int(subprocess.run(["git", "log", "-1", "--format=%ct"], cwd=str(r), text=True, capture_output=True).stdout.strip() or 0),
+                r
+            )
+            for r in cand_repos
+        ]
+        repos = [max(ts_list, key=lambda x: x[0])[1]] if ts_list else [eff_root]
+    else:
+        repos = all_repos
+    git_cmd = (
+        ["git", "diff", "--cached", "-M", "--name-status"]
+        if mode == "pre"
+        else (["git", "show", "-M", "--name-status", "--format=%H", "HEAD"] if mode in ("post", "baseline") else ["git", "status", "--porcelain"])
+    )
+    sha = (
+        subprocess.run(["git", "log", "-1", "--format=%H"], cwd=str(repos[0]), text=True, capture_output=True, timeout=15).stdout.strip() or None
+        if is_base else None
+    )
+    file_hashes = (
+        {raw_r: hashlib.sha256((eff_root / cp).read_bytes()).hexdigest()[:16] for cp, (_, raw_r) in ref_map.items() if (eff_root / cp).is_file()}
+        if mode in ("post", "baseline") else {}
+    )
+    files, post_sha = _collect_git_changed_files(repos, eff_root, ref_map, mode, git_cmd, is_base, graph)
+    sha = post_sha or sha
     if is_base and files:
         raise ValueError("initial_baseline_stamp_law violated")
     cfg_mlb = (
-        next((json.loads(p.read_text(encoding="utf-8")) for p in DEFAULT_CONFIG_PATHS if p.is_file()), {}).get("gate")
-        or {}
+        next((json.loads(p.read_text(encoding="utf-8")) for p in DEFAULT_CONFIG_PATHS if p.is_file()), {}).get("gate") or {}
     ).get("max_file_lines")
     ast_by_f = {
         cp: _extract_py_ast_symbols(eff_root / cp)
-        for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS
-        and (eff_root / cp).is_file()
+        for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()
     } if mode in ("post", "baseline") else {}
     calls_by_f = {
         cp: _extract_ast_local_calls(eff_root / cp)
-        for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS
-        and (eff_root / cp).is_file()
+        for cp in ref_map if (eff_root / cp).suffix in AST_EXTRACTORS and (eff_root / cp).is_file()
     } if mode in ("post", "baseline") else {}
     bend_rep = verify_python_ast_laws_with_bend(
-        list((graph or {}).get("lattice_artifacts") or []),
-        files, (graph or {}).get("scopes")
+        list((graph or {}).get("lattice_artifacts") or []), files, (graph or {}).get("scopes")
     ) if mode == "pre" else {"bend_proofs_ok": True, "failed_laws": []}
     return {
         "commit_sha": sha,

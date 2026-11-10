@@ -249,16 +249,254 @@ def _get_table_cell(row: dict[str, Any], headers: list[Any], norm_headers: list[
     return next((str(row[k]) for k in keys if k in row and row[k] is not None), "")
 
 
+def _validate_table_headers(t_idx: int, headers: list[Any], norm_headers: list[str]) -> tuple[bool, bool, bool]:
+    has_comp_col = any(k in norm_headers for k in ("component", "scope", "scope_id", "module"))
+    is_charter_t = "charter" in norm_headers or "project" in norm_headers or (
+        "summary" in norm_headers and any(k in norm_headers for k in ("principles", "purpose", "why", "non_goals"))
+    )
+    is_flow_t = "flow" in norm_headers or ("source" in norm_headers and "target" in norm_headers)
+    is_rule_t = "rule" in norm_headers or "bound" in norm_headers or (
+        "type" in norm_headers and any(k in norm_headers for k in ("property", "target_prop", "value", "bound_val"))
+    )
+    if is_charter_t:
+        valid_hdrs = any(k in norm_headers for k in ("summary", "purpose", "why", "principles", "description"))
+    elif "interface" in norm_headers:
+        valid_hdrs = has_comp_col
+    elif "law" in norm_headers:
+        valid_hdrs = has_comp_col and any(k in norm_headers for k in ("lhs", "rhs", "theorem", "equation", "formula", "invariant", "spec", "description"))
+    elif "schema" in norm_headers:
+        valid_hdrs = any(k in norm_headers for k in ("fields", "field", "component", "scope", "scope_id", "module", "spec", "description"))
+    elif is_flow_t:
+        valid_hdrs = "source" in norm_headers and "target" in norm_headers
+    elif is_rule_t:
+        valid_hdrs = any(k in norm_headers for k in ("property", "target_prop", "value", "bound_val", "condition", "rule", "bound", "spec", "description"))
+    else:
+        valid_hdrs = len(norm_headers) >= 2 and any(
+            k in norm_headers for k in ("component", "scope", "scope_id", "module", "service", "division", "division_persona")
+        ) and (
+            not ("component" in norm_headers) or any(
+                k in norm_headers for k in (
+                    "role", "purpose", "responsibility", "why", "rationale", "owner", "division", "stage", "phase",
+                    "depends_on", "deps", "dependencies", "files", "file", "tests", "test", "test_files",
+                    "description", "tier", "media", "inputs", "outputs", "parent", "children",
+                )
+            )
+        )
+    if not valid_hdrs:
+        raise ValueError(f"doc_tables[{t_idx}] headers {headers!r}: {_CANONICAL_HEADERS_MSG}")
+    return is_charter_t, is_flow_t, is_rule_t
+
+
+def _fuse_flow_or_rule_rows(
+    graph: dict[str, Any], rows: list[Any], headers: list[Any], norm_headers: list[str],
+    is_flow_t: bool, turn_index: int, fused_scopes: list[str],
+) -> None:
+    if is_flow_t:
+        for row in (r for r in rows if isinstance(r, dict)):
+            raw_src = _get_table_cell(row, headers, norm_headers, ("source", "from", "sender", "producer"))
+            raw_tgt = _get_table_cell(row, headers, norm_headers, ("target", "to", "recipient", "consumer"))
+            if not raw_src.strip() or not raw_tgt.strip():
+                continue
+            src, tgt = _resolve_or_register_scope(graph, raw_src, create=True), _resolve_or_register_scope(graph, raw_tgt, create=True)
+            for sid in (src, tgt):
+                if sid not in fused_scopes:
+                    fused_scopes.append(sid)
+            raw_fnm = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("flow", "id", "name"))).strip().strip("\"`'*").strip()
+            raw_pay = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("payload", "contract", "schema", "data", "artifact", "message"))).strip().strip("\"`'*").strip()
+            pay = None if raw_pay.lower() in ("", "none", "-", "—", "n/a", "null") else raw_pay
+            raw_cond = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("condition", "when", "guard"))).strip().strip("\"`'*").strip()
+            cond = None if raw_cond.lower() in ("", "none", "-", "—", "n/a", "null") else raw_cond
+            upsert_flow_edge(
+                graph, src, tgt, payload=pay, condition=cond, text=f"{src} -> {tgt}" + (f" ({pay})" if pay else ""),
+                dimensions={"flow_name": raw_fnm} if raw_fnm and raw_fnm != raw_pay else None, current_turn=int(turn_index),
+            )
+        return
+    for row in (r for r in rows if isinstance(r, dict)):
+        raw_comp = _get_table_cell(row, headers, norm_headers, ("component", "scope", "scope_id", "module"))
+        comp_sid = _resolve_or_register_scope(graph, raw_comp, create=True) if raw_comp.strip() else "global_defaults"
+        if comp_sid not in fused_scopes:
+            fused_scopes.append(comp_sid)
+        raw_type = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("type", "kind", "facet"))).strip().upper() or "BOUND"
+        rtype = raw_type if raw_type in ("BOUND", "PROHIBITION", "OBLIGATION", "FACT", "POLICY", "GOAL", "PROPOSAL", "PERMISSION") else "BOUND"
+        raw_prop = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("property", "target_prop", "field", "metric", "rule", "bound"))).strip().strip("\"`'*").strip()
+        t_prop = _slugify_scope_id(raw_prop) if raw_prop and raw_prop.lower() not in ("none", "-", "—", "n/a", "null") else None
+        raw_op = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("op", "bound_op", "operator"))).strip().strip("\"`'*").strip()
+        b_op = raw_op if raw_op and raw_op.lower() not in ("none", "-", "—", "n/a", "null") else ("==" if t_prop else None)
+        raw_val = _get_table_cell(row, headers, norm_headers, ("value", "bound_val", "limit", "target"))
+        b_val = None if restore_ascii_dots(raw_val).strip().lower() in ("", "none", "-", "—", "n/a", "null") else _parse_scalar_cell(raw_val)
+        conds = _parse_list_cell(_get_table_cell(row, headers, norm_headers, ("condition", "conditions", "when")))
+        if b_val is None or any(sym in raw_prop for sym in ("<=", ">=", "==", "!=", "<", ">", "import ")):
+            expr_cell = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("rule_spec", "bound", "rule", "spec"))).strip() or raw_prop
+            ep, eo, ev, econds = _decompose_rule_expr(expr_cell, rtype)
+            t_prop, b_op, b_val = (_slugify_scope_id(ep) if ep else t_prop), (eo or b_op), (ev if ev is not None else b_val)
+            conds = [*conds, *[c for c in econds if c not in conds]]
+        if not t_prop and b_val is None:
+            continue
+        r_text = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("spec", "description", "text", "summary"))).strip() or f"{comp_sid}.{t_prop or 'rule'} {b_op or '=='} {b_val}"
+        prune_dysfluency_and_upsert_rule(
+            graph, comp_sid, {"type": rtype, "text": r_text, "target_prop": t_prop, "bound_op": b_op, "bound_val": b_val, "conditions": conds, "turn": int(turn_index)},
+        )
+
+
+def _fuse_artifact_or_law_rows(
+    graph: dict[str, Any], rows: list[Any], headers: list[Any], norm_headers: list[str],
+    turn_index: int, fused_scopes: list[str],
+) -> None:
+    if "schema" in norm_headers or "interface" in norm_headers:
+        art_kind = "SCHEMA" if "schema" in norm_headers else "INTERFACE"
+        name_keys = ("schema", "name", "id") if art_kind == "SCHEMA" else ("interface", "name", "id")
+        in_keys = ("fields", "field", "inputs", "input", "args", "params") if art_kind == "SCHEMA" else ("inputs", "input", "args", "params")
+        for row in (r for r in rows if isinstance(r, dict)):
+            raw_art = _get_table_cell(row, headers, norm_headers, name_keys) or str(row.get(headers[0], ""))
+            if not (art_name := restore_ascii_dots(raw_art).strip().strip("\"`'*").strip()):
+                continue
+            raw_comp = _get_table_cell(row, headers, norm_headers, ("component", "scope", "scope_id", "module"))
+            comp_sid = _resolve_or_register_scope(graph, raw_comp, create=True) if raw_comp.strip() else "global_defaults"
+            if comp_sid not in fused_scopes:
+                fused_scopes.append(comp_sid)
+            raw_file = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("file", "files", "path"))).strip().strip("\"`'*").strip()
+            clean_file = "" if raw_file.lower() in ("none", "-", "—", "n/a", "null") else raw_file
+            inputs_list = _parse_list_cell(_get_table_cell(row, headers, norm_headers, in_keys))
+            outputs_list = [] if art_kind == "SCHEMA" else _parse_list_cell(_get_table_cell(row, headers, norm_headers, ("output", "outputs", "return", "returns")))
+            raw_owner = _get_table_cell(row, headers, norm_headers, ("owner", "division"))
+            owner_val = (
+                (_extract_canonical_and_aliases(raw_owner)[0] if ("`" in raw_owner or "(" in raw_owner) else restore_ascii_dots(raw_owner).strip().strip("\"`'*").strip())
+                if raw_owner.strip() else None
+            )
+            raw_stage = _get_table_cell(row, headers, norm_headers, ("stage", "phase"))
+            stage_val = restore_ascii_dots(raw_stage).strip().strip("\"`'*").strip() if raw_stage.strip() else None
+            raw_spec = _get_table_cell(row, headers, norm_headers, ("spec", "description", "role", "summary"))
+            spec_str = restore_ascii_dots(raw_spec).strip() if raw_spec.strip() else (
+                f"{art_name}({', '.join(inputs_list)})" if art_kind == "SCHEMA" else f"{art_name}({', '.join(inputs_list)}) -> {', '.join(outputs_list)}"
+            )
+            art_entry = upsert_lattice_artifact(
+                graph, art_kind, art_name, scope_id=comp_sid, spec=spec_str, inputs=inputs_list, outputs=outputs_list,
+                owner=owner_val, stage=stage_val, dimensions={"_from_table": True, **({"file": clean_file} if clean_file else {})},
+                text=spec_str, current_turn=int(turn_index),
+            )
+            if clean_file:
+                art_entry["file"] = clean_file
+        return
+    for row in (r for r in rows if isinstance(r, dict)):
+        raw_law = _get_table_cell(row, headers, norm_headers, ("law", "name", "id", "theorem")) or str(row.get(headers[0], ""))
+        if not (law_name := restore_ascii_dots(raw_law).strip().strip("\"`'*").strip()):
+            continue
+        raw_comp = _get_table_cell(row, headers, norm_headers, ("component", "scope", "scope_id", "module"))
+        comp_sid = _resolve_or_register_scope(graph, raw_comp, create=True) if raw_comp.strip() else "global_defaults"
+        if comp_sid not in fused_scopes:
+            fused_scopes.append(comp_sid)
+        law_fields = {
+            lkey: rv for lkey in ("bend_dir", "args", "lhs", "rhs")
+            if (rv := restore_ascii_dots(_get_table_cell(row, headers, norm_headers, (lkey,))).strip().strip("\"`'").strip())
+            and rv.lower() not in ("none", "-", "—", "n/a", "null")
+        }
+        raw_thm = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("theorem", "equation", "formula", "invariant"))).strip().strip("\"`'").strip()
+        if ("lhs" not in law_fields or "rhs" not in law_fields) and "==" in raw_thm:
+            lhs_p, rhs_p = raw_thm.split("==", 1)
+            law_fields.setdefault("lhs", (lhs_p.split(":", 1)[1] if ("->" in lhs_p and ":" in lhs_p) else lhs_p).strip().strip("\"`'").strip())
+            law_fields.setdefault("rhs", rhs_p.strip().strip("\"`'").strip())
+        raw_owner = _get_table_cell(row, headers, norm_headers, ("owner", "division"))
+        owner_val = (
+            (_extract_canonical_and_aliases(raw_owner)[0] if ("`" in raw_owner or "(" in raw_owner) else restore_ascii_dots(raw_owner).strip().strip("\"`'*").strip())
+            if raw_owner.strip() else None
+        )
+        raw_stage = _get_table_cell(row, headers, norm_headers, ("stage", "phase"))
+        stage_val = restore_ascii_dots(raw_stage).strip().strip("\"`'*").strip() if raw_stage.strip() else None
+        raw_spec = _get_table_cell(row, headers, norm_headers, ("spec", "description", "summary"))
+        spec_str = (
+            restore_ascii_dots(raw_spec).strip() if raw_spec.strip()
+            else (f"{law_fields['lhs']} == {law_fields['rhs']}" if ("lhs" in law_fields and "rhs" in law_fields) else f"LAW {law_name}")
+        )
+        art_entry = upsert_lattice_artifact(
+            graph, "LAW", law_name, scope_id=comp_sid, spec=spec_str, owner=owner_val,
+            stage=stage_val, dimensions={"_from_table": True, **law_fields}, text=spec_str, current_turn=int(turn_index),
+        )
+        for lkey, lval in law_fields.items():
+            art_entry[lkey] = lval
+
+
+def _fuse_component_rows(
+    graph: dict[str, Any], table: dict[str, Any], rows: list[Any], headers: list[Any],
+    norm_headers: list[str], turn_index: int, fused_scopes: list[str],
+) -> None:
+    primary_col_idx = next((norm_headers.index(k) for k in ("component", "scope", "scope_id", "module") if k in norm_headers), 0)
+    primary_hdr, heading_path = str(headers[primary_col_idx]), table.get("heading_path")
+    non_alias_cols = frozenset({
+        "role", "purpose", "responsibility", "why", "rationale", "owner", "division", "stage", "phase",
+        "parent", "depends_on", "deps", "dependencies", "children", "inputs", "input", "outputs", "output", "files", "file", "scope",
+    })
+    for row in (r for r in rows if isinstance(r, dict)):
+        if not (raw_entity := str(row.get(primary_hdr, row.get(norm_headers[primary_col_idx], ""))).strip()):
+            continue
+        scope_id = _resolve_or_register_scope(graph, raw_entity, create=True)
+        scope = graph["scopes"][scope_id]
+        if scope_id not in fused_scopes:
+            fused_scopes.append(scope_id)
+        attrs = scope.setdefault("attributes", {})
+        if isinstance(heading_path, str) and heading_path.strip():
+            attrs.setdefault("heading_path", heading_path.strip())
+        attrs["updated_turn"] = int(turn_index)
+        sbf_kwargs, files_list = {}, None
+        for col_idx, raw_hdr in enumerate(headers):
+            if col_idx == primary_col_idx or (raw_hdr not in row and norm_headers[col_idx] not in row):
+                continue
+            col_key, raw_cell_str = norm_headers[col_idx], str(row.get(raw_hdr, row.get(norm_headers[col_idx], "")))
+            cell_val = _parse_scalar_cell(raw_cell_str)
+            attrs[col_key] = cell_val
+            if col_key not in non_alias_cols and isinstance(cell_val, str) and cell_val and ("`" in raw_cell_str or "/" in cell_val):
+                _register_scope_aliases(graph, scope_id, _extract_canonical_and_aliases(cell_val)[1])
+            clean_str = str(cell_val).strip()
+            is_empty_cell = clean_str.lower() in ("", "none", "-", "—", "n/a", "null")
+            if col_key in ("role", "purpose", "responsibility") and not is_empty_cell:
+                sbf_kwargs["role"] = attrs["_table_role"] = clean_str
+            elif col_key in ("why", "rationale") and not is_empty_cell:
+                scope["why"] = attrs["why"] = clean_str
+            elif col_key in ("owner", "division") and not is_empty_cell:
+                sbf_kwargs["owner"] = _extract_canonical_and_aliases(raw_cell_str)[0] if ("`" in raw_cell_str or "(" in raw_cell_str) else clean_str
+            elif col_key in ("stage", "phase") and not is_empty_cell:
+                sbf_kwargs["stage"] = clean_str
+            elif col_key == "parent" and not is_empty_cell:
+                sbf_kwargs["parent"] = _slugify_scope_id(clean_str) or clean_str
+            elif col_key in ("depends_on", "deps", "dependencies"):
+                dep_sids = [_resolve_or_register_scope(graph, d, create=True) for d in _parse_list_cell(raw_cell_str) if d]
+                sbf_kwargs["depends_on"] = [d for d in dep_sids if d != scope_id]
+                attrs["_table_depends_on"] = list(sbf_kwargs["depends_on"])
+            elif col_key == "children":
+                sbf_kwargs["children"] = [_resolve_or_register_scope(graph, c, create=True) for c in _parse_list_cell(raw_cell_str) if c]
+            elif col_key in ("inputs", "input"):
+                sbf_kwargs["inputs"] = _parse_list_cell(raw_cell_str)
+            elif col_key in ("outputs", "output"):
+                sbf_kwargs["outputs"] = _parse_list_cell(raw_cell_str)
+            elif col_key in ("files", "file") or (col_key == "scope" and files_list is None and not is_empty_cell):
+                files_list = _parse_list_cell(raw_cell_str)
+                scope["files"] = attrs["files"] = files_list
+                attrs["_table_files"] = list(files_list)
+            elif col_key in ("tests", "test", "test_files") and not is_empty_cell:
+                t_list = _parse_list_cell(raw_cell_str)
+                scope["tests"] = attrs["tests"] = t_list
+        if sbf_kwargs or files_list is not None:
+            eff_owner = sbf_kwargs.get("owner") or scope.get("owner") or "core"
+            upsert_component_spec(
+                graph, scope_id, role=sbf_kwargs.get("role"), inputs=sbf_kwargs.get("inputs"), outputs=sbf_kwargs.get("outputs"),
+                depends_on=sbf_kwargs.get("depends_on"), children=sbf_kwargs.get("children"), parent=sbf_kwargs.get("parent"),
+                owner=eff_owner, stage=sbf_kwargs.get("stage"), kind="COMPONENT", current_turn=int(turn_index),
+            )
+            if files_list is not None:
+                scope["files"] = files_list
+
+
 def fuse_table_attributes(
     graph: dict[str, Any], doc_tables: list[dict[str, Any]], turn_index: int = 1, *, source_turn: int | None = None,
 ) -> list[str]:
     """Stage 4A.3: Fuses Component, Flow, Contract (`interface`), Law, Schema, and Rule tables into `graph` (Spec 22C §2.2)."""
     if not isinstance(graph, dict) or not isinstance(doc_tables, list):
         raise ValueError("graph must be a dict and doc_tables must be a list")
-    if source_turn is not None: turn_index = int(source_turn)
-    fused_scopes, has_flow_or_rule = [], False
+    if source_turn is not None:
+        turn_index = int(source_turn)
+    fused_scopes: list[str] = []
     for t_idx, table in enumerate(doc_tables):
-        if not isinstance(table, dict): raise ValueError(f"doc_tables[{t_idx}] must be a dict")
+        if not isinstance(table, dict):
+            raise ValueError(f"doc_tables[{t_idx}] must be a dict")
         headers, rows = table.get("headers"), table.get("rows")
         if headers is None and rows is None and any(k in table for k in ("component", "interface", "law", "flow", "schema", "rule")):
             headers, rows = list(table.keys()), [table]
@@ -267,280 +505,23 @@ def fuse_table_attributes(
         norm_headers = [_slugify_scope_id(str(h)) for h in headers]
         if any(not nh for nh in norm_headers):
             raise ValueError(f"doc_tables[{t_idx}] contains empty/unmapped structural header in {headers!r}")
-        has_comp_col = any(k in norm_headers for k in ("component", "scope", "scope_id", "module"))
-        is_charter_t = "charter" in norm_headers or "project" in norm_headers or ("summary" in norm_headers and any(k in norm_headers for k in (
-            "principles", "purpose", "why",
-            "non_goals"
-        )))
-        is_flow_t = "flow" in norm_headers or ("source" in norm_headers and "target" in norm_headers)
-        is_rule_t = "rule" in norm_headers or "bound" in norm_headers or ("type" in norm_headers and any(k in norm_headers for k in (
-            "property", "target_prop",
-            "value", "bound_val"
-        )))
-        if is_charter_t: valid_hdrs = any(k in norm_headers for k in ("summary", "purpose", "why", "principles", "description"))
-        elif "interface" in norm_headers: valid_hdrs = has_comp_col
-        elif "law" in norm_headers: valid_hdrs = has_comp_col and any(k in norm_headers for k in (
-            "lhs", "rhs", "theorem", "equation",
-            "formula", "invariant", "spec",
-            "description"
-        ))
-        elif "schema" in norm_headers: valid_hdrs = any(k in norm_headers for k in (
-            "fields", "field", "component",
-            "scope", "scope_id", "module",
-            "spec", "description"
-        ))
-        elif is_flow_t: valid_hdrs = "source" in norm_headers and "target" in norm_headers
-        elif is_rule_t: valid_hdrs = any(k in norm_headers for k in (
-            "property", "target_prop",
-            "value", "bound_val", "condition",
-            "rule", "bound", "spec",
-            "description"
-        ))
-        else:
-            valid_hdrs = len(norm_headers) >= 2 and any(k in norm_headers for k in (
-                "component", "scope", "scope_id",
-                "module", "service", "division",
-                "division_persona"
-            )) and (not ("component" in norm_headers) or any(k in norm_headers for k in (
-                "role", "purpose", "responsibility",
-                "why", "rationale", "owner",
-                "division", "stage", "phase",
-                "depends_on", "deps", "dependencies",
-                "files", "file", "description",
-                "tier", "media", "inputs",
-                "outputs", "parent", "children"
-            )))
-        if not valid_hdrs:
-            raise ValueError(f"doc_tables[{t_idx}] headers {headers!r}: {_CANONICAL_HEADERS_MSG}")
-
+        is_charter_t, is_flow_t, is_rule_t = _validate_table_headers(t_idx, headers, norm_headers)
         if is_charter_t:
             for row in (r for r in rows if isinstance(r, dict)):
-                cname = restore_ascii_dots(
-                    _get_table_cell(row, headers, norm_headers, ("charter", "project", "board", "name"))
-                    or str(row.get(headers[0], ""))
-                ).strip().strip("\"`'*").strip() or "project"
+                raw_c = _get_table_cell(row, headers, norm_headers, ("charter", "project", "board", "name")) or str(row.get(headers[0], ""))
+                cname = restore_ascii_dots(raw_c).strip().strip("\"`'*").strip() or "project"
                 csum = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("summary", "purpose", "description", "why"))).strip()
                 cprin = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("principles", "non_goals", "rationale"))).strip()
                 graph["charter"] = {"name": cname, "summary": csum, "principles": cprin}
                 ensure_scope_node(graph, "global_defaults")["attributes"]["charter"] = dict(graph["charter"])
-                if "global_defaults" not in fused_scopes: fused_scopes.append("global_defaults")
-            continue
-
-        if is_flow_t:
-            has_flow_or_rule = True
-            for row in (r for r in rows if isinstance(r, dict)):
-                raw_src = _get_table_cell(row, headers, norm_headers, ("source", "from", "sender", "producer"))
-                raw_tgt = _get_table_cell(row, headers, norm_headers, ("target", "to", "recipient", "consumer"))
-                if not raw_src.strip() or not raw_tgt.strip(): continue
-                src, tgt = _resolve_or_register_scope(graph, raw_src, create=True), _resolve_or_register_scope(graph, raw_tgt, create=True)
-                for sid in (src, tgt):
-                    if sid not in fused_scopes: fused_scopes.append(sid)
-                raw_fnm = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("flow", "id", "name"))).strip().strip("\"`'*").strip()
-                raw_pay = restore_ascii_dots(_get_table_cell(
-                    row, headers, norm_headers,
-                    ("payload", "contract", "schema", "data", "artifact", "message")
-                )).strip().strip("\"`'*").strip()
-                pay = None if raw_pay.lower() in ("", "none", "-", "—", "n/a", "null") else raw_pay
-                raw_cond = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("condition", "when", "guard"))).strip().strip("\"`'*").strip()
-                cond = None if raw_cond.lower() in ("", "none", "-", "—", "n/a", "null") else raw_cond
-                upsert_flow_edge(
-                    graph, src, tgt, payload=pay, condition=cond,
-                    text=f"{src} -> {tgt}" + (f" ({pay})" if pay else ""),
-                    dimensions={"flow_name": raw_fnm}
-                    if raw_fnm and raw_fnm != raw_pay else None,
-                    current_turn=int(turn_index)
-                )
-            continue
-
-        if is_rule_t and "component" not in norm_headers[:1]:
-            has_flow_or_rule = True
-            for row in (r for r in rows if isinstance(r, dict)):
-                raw_comp = _get_table_cell(row, headers, norm_headers, ("component", "scope", "scope_id", "module"))
-                comp_sid = _resolve_or_register_scope(graph, raw_comp, create=True) if raw_comp.strip() else "global_defaults"
-                if comp_sid not in fused_scopes: fused_scopes.append(comp_sid)
-                raw_type = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("type", "kind", "facet"))).strip().upper() or "BOUND"
-                rtype = raw_type if raw_type in (
-                    "BOUND", "PROHIBITION", "OBLIGATION",
-                    "FACT", "POLICY", "GOAL", "PROPOSAL",
-                    "PERMISSION"
-                ) else "BOUND"
-                raw_prop = restore_ascii_dots(_get_table_cell(
-                    row, headers, norm_headers,
-                    ("property", "target_prop", "field", "metric", "rule", "bound")
-                )).strip().strip("\"`'*").strip()
-                t_prop = _slugify_scope_id(raw_prop) if raw_prop and raw_prop.lower() not in ("none", "-", "—", "n/a", "null") else None
-                raw_op = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("op", "bound_op", "operator"))).strip().strip("\"`'*").strip()
-                b_op = raw_op if raw_op and raw_op.lower() not in ("none", "-", "—", "n/a", "null") else ("==" if t_prop else None)
-                raw_val = _get_table_cell(row, headers, norm_headers, ("value", "bound_val", "limit", "target"))
-                b_val = None if restore_ascii_dots(raw_val).strip().lower() in ("", "none", "-", "—", "n/a", "null") else _parse_scalar_cell(raw_val)
-                conds = _parse_list_cell(_get_table_cell(row, headers, norm_headers, ("condition", "conditions", "when")))
-                if b_val is None or any(sym in raw_prop for sym in ("<=", ">=", "==", "!=", "<", ">", "import ")):
-                    expr_cell = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("rule_spec", "bound", "rule", "spec"))).strip() or raw_prop
-                    ep, eo, ev, econds = _decompose_rule_expr(expr_cell, rtype)
-                    t_prop, b_op, b_val = (_slugify_scope_id(ep) if ep else t_prop), (eo or b_op), (ev if ev is not None else b_val)
-                    conds = [*conds, *[c for c in econds if c not in conds]]
-                if not t_prop and b_val is None: continue
-                r_text = restore_ascii_dots(_get_table_cell(
-                    row, headers, norm_headers,
-                    ("spec", "description", "text", "summary")
-                )).strip() or f"{comp_sid}.{t_prop or 'rule'} {b_op or '=='} {b_val}"
-                prune_dysfluency_and_upsert_rule(
-                    graph, comp_sid,
-                    {"type": rtype, "text": r_text, "target_prop": t_prop, "bound_op": b_op, "bound_val": b_val, "conditions": conds, "turn": int(turn_index)},
-                )
-            continue
-
-        if "schema" in norm_headers or "interface" in norm_headers:
-            art_kind = "SCHEMA" if "schema" in norm_headers else "INTERFACE"
-            name_keys = ("schema", "name", "id") if art_kind == "SCHEMA" else ("interface", "name", "id")
-            in_keys = (
-                "fields", "field", "inputs", "input",
-                "args", "params"
-            ) if art_kind == "SCHEMA" else ("inputs", "input", "args", "params")
-            for row in (r for r in rows if isinstance(r, dict)):
-                raw_art = _get_table_cell(row, headers, norm_headers, name_keys) or str(row.get(headers[0], ""))
-                if not (art_name := restore_ascii_dots(raw_art).strip().strip("\"`'*").strip()): continue
-                raw_comp = _get_table_cell(row, headers, norm_headers, ("component", "scope", "scope_id", "module"))
-                comp_sid = _resolve_or_register_scope(graph, raw_comp, create=True) if raw_comp.strip() else "global_defaults"
-                if comp_sid not in fused_scopes: fused_scopes.append(comp_sid)
-                raw_file = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("file", "files", "path"))).strip().strip("\"`'*").strip()
-                clean_file = "" if raw_file.lower() in ("none", "-", "—", "n/a", "null") else raw_file
-                inputs_list = _parse_list_cell(_get_table_cell(row, headers, norm_headers, in_keys))
-                outputs_list = [] if art_kind == "SCHEMA" else _parse_list_cell(_get_table_cell(
-                    row, headers, norm_headers,
-                    ("output", "outputs", "return", "returns")
-                ))
-                raw_owner = _get_table_cell(row, headers, norm_headers, ("owner", "division"))
-                owner_val = (
-                    _extract_canonical_and_aliases(raw_owner)[0]
-                    if ("`" in raw_owner or "(" in raw_owner) else restore_ascii_dots(raw_owner).strip().strip("\"`'*").strip()
-                ) if raw_owner.strip() else None
-                raw_stage = _get_table_cell(row, headers, norm_headers, ("stage", "phase"))
-                stage_val = restore_ascii_dots(raw_stage).strip().strip("\"`'*").strip() if raw_stage.strip() else None
-                raw_spec = _get_table_cell(row, headers, norm_headers, ("spec", "description", "role", "summary"))
-                spec_str = restore_ascii_dots(raw_spec).strip() if raw_spec.strip() else (
-                    f"{art_name}({', '.join(inputs_list)})"
-                    if art_kind == "SCHEMA" else f"{art_name}({', '.join(inputs_list)}) -> {', '.join(outputs_list)}"
-                )
-                art_entry = upsert_lattice_artifact(
-                    graph, art_kind, art_name, scope_id=comp_sid, spec=spec_str, inputs=inputs_list, outputs=outputs_list,
-                    owner=owner_val, stage=stage_val, dimensions={"_from_table": True, **({"file": clean_file} if clean_file else {})},
-                    text=spec_str, current_turn=int(turn_index),
-                )
-                if clean_file: art_entry["file"] = clean_file
-            continue
-
-        if "law" in norm_headers:
-            for row in (r for r in rows if isinstance(r, dict)):
-                raw_law = _get_table_cell(row, headers, norm_headers, ("law", "name", "id", "theorem")) or str(row.get(headers[0], ""))
-                if not (law_name := restore_ascii_dots(raw_law).strip().strip("\"`'*").strip()): continue
-                raw_comp = _get_table_cell(row, headers, norm_headers, ("component", "scope", "scope_id", "module"))
-                comp_sid = _resolve_or_register_scope(graph, raw_comp, create=True) if raw_comp.strip() else "global_defaults"
-                if comp_sid not in fused_scopes: fused_scopes.append(comp_sid)
-                law_fields = {
-                    lkey: rv for lkey in ("bend_dir", "args", "lhs", "rhs")
-                    if (rv := restore_ascii_dots(_get_table_cell(row, headers, norm_headers, (lkey,))).strip().strip("\"`'").strip())
-                    and rv.lower() not in ("none", "-", "—", "n/a", "null")
-                }
-                if ("lhs" not in law_fields or "rhs" not in law_fields) and "==" in (raw_thm := restore_ascii_dots(_get_table_cell(
-                    row, headers, norm_headers,
-                    ("theorem", "equation", "formula", "invariant")
-                )).strip().strip("\"`'").strip()):
-                    lhs_p, rhs_p = raw_thm.split("==", 1)
-                    law_fields.setdefault("lhs", (lhs_p.split(":", 1)[1] if ("->" in lhs_p and ":" in lhs_p) else lhs_p).strip().strip("\"`'").strip())
-                    law_fields.setdefault("rhs", rhs_p.strip().strip("\"`'").strip())
-                raw_owner = _get_table_cell(row, headers, norm_headers, ("owner", "division"))
-                owner_val = (
-                    _extract_canonical_and_aliases(raw_owner)[0]
-                    if ("`" in raw_owner or "(" in raw_owner) else restore_ascii_dots(raw_owner).strip().strip("\"`'*").strip()
-                ) if raw_owner.strip() else None
-                raw_stage = _get_table_cell(row, headers, norm_headers, ("stage", "phase"))
-                stage_val = restore_ascii_dots(raw_stage).strip().strip("\"`'*").strip() if raw_stage.strip() else None
-                raw_spec = _get_table_cell(row, headers, norm_headers, ("spec", "description", "summary"))
-                spec_str = restore_ascii_dots(raw_spec).strip() if raw_spec.strip() else (
-                    f"{law_fields['lhs']} == {law_fields['rhs']}"
-                    if ("lhs" in law_fields and "rhs" in law_fields) else f"LAW {law_name}"
-                )
-                art_entry = upsert_lattice_artifact(
-                    graph, "LAW", law_name, scope_id=comp_sid, spec=spec_str, owner=owner_val,
-                    stage=stage_val, dimensions={"_from_table": True, **law_fields}, text=spec_str, current_turn=int(turn_index),
-                )
-                for lkey, lval in law_fields.items(): art_entry[lkey] = lval
-            continue
-
-        primary_col_idx = next(
-            (norm_headers.index(k) for k in ("component", "scope", "scope_id", "module") if k in norm_headers),
-            0
-        )
-        primary_hdr, heading_path = str(headers[primary_col_idx]), table.get("heading_path")
-        non_alias_cols = frozenset({
-            "role", "purpose", "responsibility",
-            "why", "rationale", "owner",
-            "division", "stage", "phase",
-            "parent", "depends_on", "deps",
-            "dependencies", "children",
-            "inputs", "input", "outputs",
-            "output", "files", "file",
-            "scope"
-        })
-        for row in (r for r in rows if isinstance(r, dict)):
-            if not (raw_entity := str(row.get(primary_hdr, row.get(norm_headers[primary_col_idx], ""))).strip()): continue
-            scope_id = _resolve_or_register_scope(graph, raw_entity, create=True)
-            scope = graph["scopes"][scope_id]
-            if scope_id not in fused_scopes: fused_scopes.append(scope_id)
-            attrs = scope.setdefault("attributes", {})
-            if isinstance(heading_path, str) and heading_path.strip(): attrs.setdefault("heading_path", heading_path.strip())
-            attrs["updated_turn"] = int(turn_index)
-            sbf_kwargs, files_list = {}, None
-            for col_idx, raw_hdr in enumerate(headers):
-                if col_idx == primary_col_idx or (raw_hdr not in row and norm_headers[col_idx] not in row): continue
-                col_key, raw_cell_str = norm_headers[col_idx], str(row.get(raw_hdr, row.get(norm_headers[col_idx], "")))
-                cell_val = _parse_scalar_cell(raw_cell_str)
-                attrs[col_key] = cell_val
-                if col_key not in non_alias_cols and isinstance(cell_val, str) and cell_val and ("`" in raw_cell_str or "/" in cell_val):
-                    _register_scope_aliases(graph, scope_id, _extract_canonical_and_aliases(cell_val)[1])
-                clean_str = str(cell_val).strip()
-                is_empty_cell = clean_str.lower() in ("", "none", "-", "—", "n/a", "null")
-                if col_key in ("role", "purpose", "responsibility") and not is_empty_cell:
-                    sbf_kwargs["role"] = attrs["_table_role"] = clean_str
-                elif col_key in ("why", "rationale") and not is_empty_cell:
-                    scope["why"] = attrs["why"] = clean_str
-                elif col_key in ("owner", "division") and not is_empty_cell:
-                    sbf_kwargs["owner"] = _extract_canonical_and_aliases(raw_cell_str)[0] if ("`" in raw_cell_str or "(" in raw_cell_str) else clean_str
-                elif col_key in ("stage", "phase") and not is_empty_cell: sbf_kwargs["stage"] = clean_str
-                elif col_key == "parent" and not is_empty_cell: sbf_kwargs["parent"] = _slugify_scope_id(clean_str) or clean_str
-                elif col_key in ("depends_on", "deps", "dependencies"):
-                    dep_sids = [
-                        _resolve_or_register_scope(graph, d, create=True)
-                        for d in _parse_list_cell(raw_cell_str)
-                        if d
-                    ]
-                    sbf_kwargs["depends_on"] = [d for d in dep_sids if d != scope_id]
-                    attrs["_table_depends_on"] = list(sbf_kwargs["depends_on"])
-                elif col_key == "children": sbf_kwargs["children"] = [
-                    _resolve_or_register_scope(graph, c, create=True)
-                    for c in _parse_list_cell(raw_cell_str)
-                    if c
-                ]
-                elif col_key in ("inputs", "input"): sbf_kwargs["inputs"] = _parse_list_cell(raw_cell_str)
-                elif col_key in ("outputs", "output"): sbf_kwargs["outputs"] = _parse_list_cell(raw_cell_str)
-                elif col_key in ("files", "file") or (col_key == "scope" and files_list is None and not is_empty_cell):
-                    files_list = _parse_list_cell(raw_cell_str)
-                    scope["files"] = attrs["files"] = files_list
-                    attrs["_table_files"] = list(files_list)
-            if sbf_kwargs or files_list is not None:
-                eff_owner = sbf_kwargs.get("owner") or scope.get("owner") or "core"
-                upsert_component_spec(
-                    graph, scope_id, role=sbf_kwargs.get("role"),
-                    inputs=sbf_kwargs.get("inputs"), outputs=sbf_kwargs.get("outputs"),
-                    depends_on=sbf_kwargs.get("depends_on"),
-                    children=sbf_kwargs.get("children"),
-                    parent=sbf_kwargs.get("parent"), owner=eff_owner,
-                    stage=sbf_kwargs.get("stage"), kind="COMPONENT",
-                    current_turn=int(turn_index)
-                )
-                if files_list is not None: scope["files"] = files_list
-
+                if "global_defaults" not in fused_scopes:
+                    fused_scopes.append("global_defaults")
+        elif is_flow_t or (is_rule_t and "component" not in norm_headers[:1]):
+            _fuse_flow_or_rule_rows(graph, rows, headers, norm_headers, is_flow_t, turn_index, fused_scopes)
+        elif "schema" in norm_headers or "interface" in norm_headers or "law" in norm_headers:
+            _fuse_artifact_or_law_rows(graph, rows, headers, norm_headers, turn_index, fused_scopes)
+        else:
+            _fuse_component_rows(graph, table, rows, headers, norm_headers, turn_index, fused_scopes)
     sync_to_sqlite(graph)
     return fused_scopes
 

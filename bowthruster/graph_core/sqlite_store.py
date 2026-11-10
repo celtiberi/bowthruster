@@ -175,20 +175,108 @@ class SQLiteGraphStore:
             for r in rows
         ]
 
+    def _save_scopes_and_nodes(self, graph: dict[str, Any]) -> None:
+        base_scope_keys = ("id", "parent", "aliases", "children", "rules", "in_edges", "attributes", "_meta")
+        for sid, scope in graph.get("scopes", {}).items():
+            if not isinstance(scope, dict):
+                continue
+            attrs_dict = dict(scope.get("attributes", {})) if isinstance(scope.get("attributes"), dict) else {}
+            if sbf_extra := {k: v for k, v in scope.items() if k not in base_scope_keys}:
+                attrs_dict["_sbf"] = sbf_extra
+            self.conn.execute(
+                "INSERT INTO scopes(id, parent, aliases_json, children_json, in_edges_json, attributes_json) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    str(sid), scope.get("parent"), json.dumps(list(scope.get("aliases", []))),
+                    json.dumps(list(scope.get("children", []))), json.dumps(list(scope.get("in_edges", []))),
+                    json.dumps(attrs_dict, sort_keys=True),
+                ),
+            )
+            scope_meta = scope.get("_meta", {}) if isinstance(scope.get("_meta"), dict) else {}
+            for r in scope.get("rules", []):
+                if not isinstance(r, dict) or not r.get("id"):
+                    continue
+                rid, bval = str(r["id"]), r.get("bound_val")
+                self.conn.execute(
+                    "INSERT OR REPLACE INTO nodes(id, scope_id, node_type, facet, text, target_prop, bound_op, bound_val_json, "
+                    "conditions_json, refs_json, overrides_json, exceptions_json, meta_keys_json, meta_tokens_json, created_turn, updated_turn) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        rid, str(r.get("scope") or sid), str(r.get("type") or r.get("node_type") or "FACT"),
+                        str(r.get("facet") or "context_facts"), str(r.get("text") or ""), r.get("target_prop"),
+                        r.get("bound_op"), json.dumps(bval) if bval is not None else None,
+                        json.dumps(list(r.get("conditions", []))), json.dumps(list(r.get("refs", []))),
+                        json.dumps(list(r.get("overrides", []))), json.dumps(list(r.get("exceptions", []))),
+                        json.dumps(list(r.get("meta_keys", []))), json.dumps(list(r.get("meta_tokens", []))),
+                        int(r.get("created_turn", 1)), int(r.get("updated_turn", 1)),
+                    ),
+                )
+                if isinstance(r.get("external_links"), list):
+                    for lk in r["external_links"]:
+                        if isinstance(lk, dict) and lk.get("uri"):
+                            self._upsert_link_row(rid, str(lk["uri"]), str(lk.get("kind", "reference")), str(lk.get("summary", "")), lk.get("metadata"), lk.get("link_id"))
+            for rid, rmeta in scope_meta.items():
+                if isinstance(rmeta, dict):
+                    for mk, mv in rmeta.items():
+                        self.conn.execute("INSERT OR REPLACE INTO node_meta(node_id, scope_id, meta_key, meta_val) VALUES (?, ?, ?, ?)", (str(rid), str(sid), str(mk), str(mv)))
+
+    def _save_flows_and_artifacts(self, graph: dict[str, Any]) -> None:
+        base_flow_keys = ("id", "source", "target", "payload", "action", "condition", "step", "text", "dimensions", "turn")
+        for idx, fl in enumerate(graph.get("flows", [])):
+            if not isinstance(fl, dict):
+                continue
+            fid = str(fl.get("id") or f"flow_{idx + 1}")
+            dims = dict(fl["dimensions"]) if isinstance(fl.get("dimensions"), dict) else {}
+            f_extra = {k: v for k, v in fl.items() if k not in base_flow_keys}
+            if "dimensions" not in fl:
+                f_extra["_omit_dims"] = True
+            if "id" not in fl:
+                f_extra["_omit_id"] = True
+            if f_extra:
+                dims["_extra"] = f_extra
+            self.conn.execute(
+                "INSERT OR REPLACE INTO flows(id, source, target, payload, action, condition, step, text, dimensions_json, turn) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    fid, str(fl.get("source", "")), str(fl.get("target", "")), fl.get("payload"), fl.get("action"),
+                    fl.get("condition"), _safe_int(fl.get("step"), None),
+                    str(fl.get("text") if fl.get("text") is not None else fl.get("summary", "")),
+                    json.dumps(dims, sort_keys=True), _safe_int(fl.get("turn"), _safe_int(graph.get("turn"), 1)) or 1,
+                ),
+            )
+        base_art_keys = ("id", "kind", "scope_id", "name", "spec", "inputs", "outputs", "owner", "stage", "dimensions", "text", "turn")
+        for idx, art in enumerate(graph.get("lattice_artifacts", [])):
+            if not isinstance(art, dict):
+                continue
+            aid = str(art.get("id") or f"art_{idx + 1}")
+            dims = dict(art["dimensions"]) if isinstance(art.get("dimensions"), dict) else {}
+            a_extra = {k: v for k, v in art.items() if k not in base_art_keys}
+            if "dimensions" not in art:
+                a_extra["_omit_dims"] = True
+            if "scope_id" not in art:
+                a_extra["_omit_scope_id"] = True
+            if a_extra:
+                dims["_extra"] = a_extra
+            self.conn.execute(
+                "INSERT OR REPLACE INTO lattice_artifacts("
+                "id, kind, scope_id, name, spec, inputs_json, outputs_json, owner, stage, dimensions_json, text, turn"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    aid, str(art.get("kind", "SCHEMA")), str(art.get("scope_id") or art.get("scope") or "global_defaults"),
+                    str(art.get("name") or aid), str(art.get("spec") or ""), json.dumps(list(art.get("inputs", []))),
+                    json.dumps(list(art.get("outputs", []))), art.get("owner"), art.get("stage"), json.dumps(dims, sort_keys=True),
+                    str(art.get("text") if art.get("text") is not None else art.get("summary", "")),
+                    _safe_int(art.get("turn"), _safe_int(graph.get("turn"), 1)) or 1,
+                ),
+            )
+
     def save_graph(self, graph: dict[str, Any]) -> None:
         """Atomically syncs `graph` into the 10 SQLite relational tables inside a single transaction (Spec 21 §1.1)."""
         if not isinstance(graph, dict):
             raise ValueError(f"graph must be a dict, got {type(graph).__name__}")
-
         with self.conn:
-            for tbl in (
-                "graph_meta", "scopes", "nodes", "node_meta", "active_tasks",
-                "ambient_notes", "open_blockers", "flows", "lattice_artifacts",
-            ):
+            for tbl in ("graph_meta", "scopes", "nodes", "node_meta", "active_tasks", "ambient_notes", "open_blockers", "flows", "lattice_artifacts"):
                 self.conn.execute(f"DELETE FROM {tbl}")
             if "external_links" in graph:
                 self.conn.execute("DELETE FROM external_links")
-
             meta_scalars: dict[str, Any] = {
                 "version": int(graph.get("version", 1)), "turn": int(graph.get("turn", 0)),
                 "k_cap": int(graph.get("k_cap", 5)), "max_ring": int(graph.get("max_ring", 10)),
@@ -197,74 +285,18 @@ class SQLiteGraphStore:
                 meta_scalars["_has_flows"] = True
             if "lattice_artifacts" in graph:
                 meta_scalars["_has_lattice_artifacts"] = True
-
-            base_scope_keys = ("id", "parent", "aliases", "children", "rules", "in_edges", "attributes", "_meta")
-            for sid, scope in graph.get("scopes", {}).items():
-                if not isinstance(scope, dict):
-                    continue
-                attrs_dict = dict(scope.get("attributes", {})) if isinstance(scope.get("attributes"), dict) else {}
-                if sbf_extra := {k: v for k, v in scope.items() if k not in base_scope_keys}:
-                    attrs_dict["_sbf"] = sbf_extra
-                self.conn.execute(
-                    "INSERT INTO scopes(id, parent, aliases_json, children_json, in_edges_json, attributes_json) VALUES (?, ?, ?, ?, ?, ?)",
-                    (
-                        str(sid), scope.get("parent"), json.dumps(list(scope.get("aliases", []))),
-                        json.dumps(list(scope.get("children", []))), json.dumps(list(scope.get("in_edges", []))),
-                        json.dumps(attrs_dict, sort_keys=True),
-                    ),
-                )
-                scope_meta = scope.get("_meta", {}) if isinstance(scope.get("_meta"), dict) else {}
-                for r in scope.get("rules", []):
-                    if not isinstance(r, dict) or not r.get("id"):
-                        continue
-                    rid, bval = str(r["id"]), r.get("bound_val")
-                    self.conn.execute(
-                        "INSERT OR REPLACE INTO nodes(id, scope_id, node_type, facet, text, target_prop, bound_op, bound_val_json, "
-                        "conditions_json, refs_json, overrides_json, exceptions_json, meta_keys_json, meta_tokens_json, created_turn, updated_turn) "
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        (
-                            rid, str(r.get("scope") or sid), str(r.get("type") or r.get("node_type") or "FACT"),
-                            str(r.get("facet") or "context_facts"), str(r.get("text") or ""), r.get("target_prop"),
-                            r.get("bound_op"), json.dumps(bval) if bval is not None else None,
-                            json.dumps(list(r.get("conditions", []))), json.dumps(list(r.get("refs", []))),
-                            json.dumps(list(r.get("overrides", []))), json.dumps(list(r.get("exceptions", []))),
-                            json.dumps(list(r.get("meta_keys", []))), json.dumps(list(r.get("meta_tokens", []))),
-                            int(r.get("created_turn", 1)), int(r.get("updated_turn", 1)),
-                        ),
-                    )
-                    if isinstance(r.get("external_links"), list):
-                        for lk in r["external_links"]:
-                            if isinstance(lk, dict) and lk.get("uri"):
-                                self._upsert_link_row(
-                                    rid, str(lk["uri"]), str(lk.get("kind", "reference")),
-                                    str(lk.get("summary", "")), lk.get("metadata"), lk.get("link_id"),
-                                )
-                for rid, rmeta in scope_meta.items():
-                    if isinstance(rmeta, dict):
-                        for mk, mv in rmeta.items():
-                            self.conn.execute(
-                                "INSERT OR REPLACE INTO node_meta(node_id, scope_id, meta_key, meta_val) VALUES (?, ?, ?, ?)",
-                                (str(rid), str(sid), str(mk), str(mv)),
-                            )
-
+            self._save_scopes_and_nodes(graph)
             ext_links_top = graph.get("external_links")
             if isinstance(ext_links_top, dict):
                 for nid, lk_list in ext_links_top.items():
                     if isinstance(lk_list, list):
                         for lk in lk_list:
                             if isinstance(lk, dict) and lk.get("uri"):
-                                self._upsert_link_row(
-                                    str(nid), str(lk["uri"]), str(lk.get("kind", "reference")),
-                                    str(lk.get("summary", "")), lk.get("metadata"), lk.get("link_id"),
-                                )
+                                self._upsert_link_row(str(nid), str(lk["uri"]), str(lk.get("kind", "reference")), str(lk.get("summary", "")), lk.get("metadata"), lk.get("link_id"))
             elif isinstance(ext_links_top, list):
                 for lk in ext_links_top:
                     if isinstance(lk, dict) and lk.get("node_id") and lk.get("uri"):
-                        self._upsert_link_row(
-                            str(lk["node_id"]), str(lk["uri"]), str(lk.get("kind", "reference")),
-                            str(lk.get("summary", "")), lk.get("metadata"), lk.get("link_id"),
-                        )
-
+                        self._upsert_link_row(str(lk["node_id"]), str(lk["uri"]), str(lk.get("kind", "reference")), str(lk.get("summary", "")), lk.get("metadata"), lk.get("link_id"))
             task_extras: dict[str, dict[str, Any]] = {}
             base_task_keys = ("id", "scope", "text", "status", "depends_on", "governed_by", "created_turn")
             for t in graph.get("active_tasks", []):
@@ -276,19 +308,16 @@ class SQLiteGraphStore:
                 self.conn.execute(
                     "INSERT OR REPLACE INTO active_tasks(id, scope, text, status, depends_on_json, governed_by_json, created_turn) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (
-                        tid, str(t.get("scope", "global_defaults")), str(t.get("text", "")),
-                        str(t.get("status", "ACTIVE")), json.dumps(list(t.get("depends_on", []))),
-                        json.dumps(list(t.get("governed_by", []))), int(t.get("created_turn", 1)),
+                        tid, str(t.get("scope", "global_defaults")), str(t.get("text", "")), str(t.get("status", "ACTIVE")),
+                        json.dumps(list(t.get("depends_on", []))), json.dumps(list(t.get("governed_by", []))), int(t.get("created_turn", 1)),
                     ),
                 )
-
             for n in graph.get("ambient_notes", []):
                 if isinstance(n, dict) and n.get("id"):
                     self.conn.execute(
                         "INSERT OR REPLACE INTO ambient_notes(id, text, access_turns_json) VALUES (?, ?, ?)",
                         (str(n["id"]), str(n.get("text", "")), json.dumps(list(n.get("access_turns", [1])))),
                     )
-
             for b in graph.get("open_blockers", []):
                 if isinstance(b, dict) and b.get("id"):
                     extra_payload = {k: v for k, v in b.items() if k not in ("id", "type", "scope", "text", "status")}
@@ -299,138 +328,13 @@ class SQLiteGraphStore:
                             str(b.get("text", "")), str(b.get("status", "OPEN")), json.dumps(extra_payload, sort_keys=True),
                         ),
                     )
-
-            base_flow_keys = (
-                "id", "source", "target", "payload",
-                "action", "condition", "step", "text",
-                "dimensions", "turn"
-            )
-            for idx, fl in enumerate(graph.get("flows", [])):
-                if not isinstance(fl, dict):
-                    continue
-                fid = str(fl.get("id") or f"flow_{idx + 1}")
-                dims = dict(fl["dimensions"]) if isinstance(fl.get("dimensions"), dict) else {}
-                f_extra = {k: v for k, v in fl.items() if k not in base_flow_keys}
-                if "dimensions" not in fl:
-                    f_extra["_omit_dims"] = True
-                if "id" not in fl:
-                    f_extra["_omit_id"] = True
-                if f_extra:
-                    dims["_extra"] = f_extra
-                self.conn.execute(
-                    "INSERT OR REPLACE INTO flows(id, source, target, payload, action, condition, step, text, dimensions_json, turn) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        fid, str(fl.get("source", "")), str(fl.get("target", "")),
-                        fl.get("payload"), fl.get("action"), fl.get("condition"),
-                        _safe_int(fl.get("step"), None),
-                        str(fl.get("text") if fl.get("text") is not None else fl.get("summary", "")),
-                        json.dumps(dims, sort_keys=True), _safe_int(fl.get("turn"), _safe_int(graph.get("turn"), 1)) or 1,
-                    ),
-                )
-
-            base_art_keys = (
-                "id", "kind", "scope_id", "name", "spec",
-                "inputs", "outputs", "owner", "stage",
-                "dimensions", "text", "turn"
-            )
-            for idx, art in enumerate(graph.get("lattice_artifacts", [])):
-                if not isinstance(art, dict):
-                    continue
-                aid = str(art.get("id") or f"art_{idx + 1}")
-                dims = dict(art["dimensions"]) if isinstance(art.get("dimensions"), dict) else {}
-                a_extra = {k: v for k, v in art.items() if k not in base_art_keys}
-                if "dimensions" not in art:
-                    a_extra["_omit_dims"] = True
-                if "scope_id" not in art:
-                    a_extra["_omit_scope_id"] = True
-                if a_extra:
-                    dims["_extra"] = a_extra
-                self.conn.execute(
-                    "INSERT OR REPLACE INTO lattice_artifacts(id, kind, scope_id, name, spec, inputs_json, outputs_json, "
-                    "owner, stage, dimensions_json, text, turn) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        aid, str(art.get("kind", "SCHEMA")),
-                        str(art.get("scope_id") or art.get("scope") or "global_defaults"),
-                        str(art.get("name") or aid), str(art.get("spec") or ""),
-                        json.dumps(list(art.get("inputs", []))), json.dumps(list(art.get("outputs", []))),
-                        art.get("owner"), art.get("stage"), json.dumps(dims, sort_keys=True),
-                        str(art.get("text") if art.get("text") is not None else art.get("summary", "")),
-                        _safe_int(art.get("turn"), _safe_int(graph.get("turn"), 1)) or 1,
-                    ),
-                )
-
+            self._save_flows_and_artifacts(graph)
             if task_extras:
                 meta_scalars["_task_extras"] = task_extras
             for k, v in meta_scalars.items():
                 self.conn.execute("INSERT INTO graph_meta(key, val_json) VALUES (?, ?)", (k, json.dumps(v)))
 
-    def load_graph(self) -> dict[str, Any]:
-        """Reconstructs the canonical graph dictionary from the 10 SQLite tables (Spec 21 §1.1)."""
-        scalars: dict[str, Any] = {"version": 1, "turn": 0, "k_cap": 5, "max_ring": 10}
-        for r in self.conn.execute("SELECT key, val_json FROM graph_meta").fetchall():
-            scalars[str(r["key"])] = json.loads(r["val_json"])
-        task_extras = scalars.get("_task_extras", {}) if isinstance(scalars.get("_task_extras"), dict) else {}
-
-        meta_by_scope_node: dict[str, dict[str, dict[str, str]]] = {}
-        meta_by_node: dict[str, dict[str, str]] = {}
-        for r in self.conn.execute("SELECT node_id, scope_id, meta_key, meta_val FROM node_meta ORDER BY rowid ASC").fetchall():
-            nid, sid, mk, mv = str(r["node_id"]), str(r["scope_id"]), str(r["meta_key"]), str(r["meta_val"])
-            meta_by_scope_node.setdefault(sid, {}).setdefault(nid, {})[mk] = mv
-            meta_by_node.setdefault(nid, {})[mk] = mv
-
-        links_by_node: dict[str, list[dict[str, Any]]] = {}
-        for r in self.conn.execute("SELECT link_id, node_id, uri, kind, summary, metadata_json FROM external_links ORDER BY rowid ASC").fetchall():
-            nid = str(r["node_id"])
-            links_by_node.setdefault(nid, []).append({
-                "link_id": str(r["link_id"]), "node_id": nid, "uri": str(r["uri"]),
-                "kind": str(r["kind"]), "summary": str(r["summary"]), "metadata": json.loads(r["metadata_json"]),
-            })
-
-        rules_by_scope: dict[str, list[dict[str, Any]]] = {}
-        for r in self.conn.execute("SELECT * FROM nodes ORDER BY rowid ASC").fetchall():
-            rules_by_scope.setdefault(str(r["scope_id"]), []).append(_row_to_node_dict(r, meta_by_node, links_by_node))
-
-        scopes: dict[str, Any] = {}
-        for r in self.conn.execute("SELECT * FROM scopes ORDER BY rowid ASC").fetchall():
-            sid = str(r["id"])
-            attrs_loaded = json.loads(r["attributes_json"])
-            sbf_loaded = attrs_loaded.pop("_sbf", None) if isinstance(attrs_loaded, dict) else None
-            s_dict: dict[str, Any] = {
-                "id": sid, "parent": r["parent"],
-                "aliases": json.loads(r["aliases_json"]), "children": json.loads(r["children_json"]),
-                "rules": rules_by_scope.get(sid, []), "in_edges": json.loads(r["in_edges_json"]),
-                "attributes": attrs_loaded, "_meta": meta_by_scope_node.get(sid, {}),
-            }
-            if isinstance(sbf_loaded, dict):
-                s_dict.update(sbf_loaded)
-            scopes[sid] = s_dict
-
-        active_tasks: list[dict[str, Any]] = []
-        for r in self.conn.execute("SELECT * FROM active_tasks ORDER BY rowid ASC").fetchall():
-            tid = str(r["id"])
-            t_dict: dict[str, Any] = {
-                "id": tid, "scope": str(r["scope"]), "text": str(r["text"]), "status": str(r["status"]),
-                "depends_on": json.loads(r["depends_on_json"]), "governed_by": json.loads(r["governed_by_json"]),
-                "created_turn": int(r["created_turn"]),
-            }
-            if tid in task_extras and isinstance(task_extras[tid], dict):
-                t_dict.update(copy.deepcopy(task_extras[tid]))
-            active_tasks.append(t_dict)
-
-        ambient_notes = [
-            {"id": str(r["id"]), "text": str(r["text"]), "access_turns": json.loads(r["access_turns_json"])}
-            for r in self.conn.execute("SELECT * FROM ambient_notes ORDER BY rowid ASC").fetchall()
-        ]
-        open_blockers: list[dict[str, Any]] = []
-        for r in self.conn.execute("SELECT * FROM open_blockers ORDER BY rowid ASC").fetchall():
-            b_dict: dict[str, Any] = {
-                "id": str(r["id"]), "type": str(r["type"]), "scope": str(r["scope"]),
-                "text": str(r["text"]), "status": str(r["status"]),
-            }
-            b_dict.update(json.loads(r["payload_json"]))
-            open_blockers.append(b_dict)
-
+    def _load_flows_and_artifacts(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         flows_list: list[dict[str, Any]] = []
         for r in self.conn.execute("SELECT * FROM flows ORDER BY rowid ASC").fetchall():
             fid = str(r["id"])
@@ -451,7 +355,6 @@ class SQLiteGraphStore:
             if isinstance(f_extra, dict) and f_extra:
                 f_dict.update(f_extra)
             flows_list.append(f_dict)
-
         artifacts_list: list[dict[str, Any]] = []
         for r in self.conn.execute("SELECT * FROM lattice_artifacts ORDER BY rowid ASC").fetchall():
             aid = str(r["id"])
@@ -473,7 +376,65 @@ class SQLiteGraphStore:
             if isinstance(a_extra, dict) and a_extra:
                 a_dict.update(a_extra)
             artifacts_list.append(a_dict)
+        return flows_list, artifacts_list
 
+    def load_graph(self) -> dict[str, Any]:
+        """Reconstructs the canonical graph dictionary from the 10 SQLite tables (Spec 21 §1.1)."""
+        scalars: dict[str, Any] = {"version": 1, "turn": 0, "k_cap": 5, "max_ring": 10}
+        for r in self.conn.execute("SELECT key, val_json FROM graph_meta").fetchall():
+            scalars[str(r["key"])] = json.loads(r["val_json"])
+        task_extras = scalars.get("_task_extras", {}) if isinstance(scalars.get("_task_extras"), dict) else {}
+        meta_by_scope_node: dict[str, dict[str, dict[str, str]]] = {}
+        meta_by_node: dict[str, dict[str, str]] = {}
+        for r in self.conn.execute("SELECT node_id, scope_id, meta_key, meta_val FROM node_meta ORDER BY rowid ASC").fetchall():
+            nid, sid, mk, mv = str(r["node_id"]), str(r["scope_id"]), str(r["meta_key"]), str(r["meta_val"])
+            meta_by_scope_node.setdefault(sid, {}).setdefault(nid, {})[mk] = mv
+            meta_by_node.setdefault(nid, {})[mk] = mv
+        links_by_node: dict[str, list[dict[str, Any]]] = {}
+        for r in self.conn.execute("SELECT link_id, node_id, uri, kind, summary, metadata_json FROM external_links ORDER BY rowid ASC").fetchall():
+            nid = str(r["node_id"])
+            links_by_node.setdefault(nid, []).append({
+                "link_id": str(r["link_id"]), "node_id": nid, "uri": str(r["uri"]),
+                "kind": str(r["kind"]), "summary": str(r["summary"]), "metadata": json.loads(r["metadata_json"]),
+            })
+        rules_by_scope: dict[str, list[dict[str, Any]]] = {}
+        for r in self.conn.execute("SELECT * FROM nodes ORDER BY rowid ASC").fetchall():
+            rules_by_scope.setdefault(str(r["scope_id"]), []).append(_row_to_node_dict(r, meta_by_node, links_by_node))
+        scopes: dict[str, Any] = {}
+        for r in self.conn.execute("SELECT * FROM scopes ORDER BY rowid ASC").fetchall():
+            sid = str(r["id"])
+            attrs_loaded = json.loads(r["attributes_json"])
+            sbf_loaded = attrs_loaded.pop("_sbf", None) if isinstance(attrs_loaded, dict) else None
+            s_dict: dict[str, Any] = {
+                "id": sid, "parent": r["parent"],
+                "aliases": json.loads(r["aliases_json"]), "children": json.loads(r["children_json"]),
+                "rules": rules_by_scope.get(sid, []), "in_edges": json.loads(r["in_edges_json"]),
+                "attributes": attrs_loaded, "_meta": meta_by_scope_node.get(sid, {}),
+            }
+            if isinstance(sbf_loaded, dict):
+                s_dict.update(sbf_loaded)
+            scopes[sid] = s_dict
+        active_tasks: list[dict[str, Any]] = []
+        for r in self.conn.execute("SELECT * FROM active_tasks ORDER BY rowid ASC").fetchall():
+            tid = str(r["id"])
+            t_dict: dict[str, Any] = {
+                "id": tid, "scope": str(r["scope"]), "text": str(r["text"]), "status": str(r["status"]),
+                "depends_on": json.loads(r["depends_on_json"]), "governed_by": json.loads(r["governed_by_json"]),
+                "created_turn": int(r["created_turn"]),
+            }
+            if tid in task_extras and isinstance(task_extras[tid], dict):
+                t_dict.update(copy.deepcopy(task_extras[tid]))
+            active_tasks.append(t_dict)
+        ambient_notes = [
+            {"id": str(r["id"]), "text": str(r["text"]), "access_turns": json.loads(r["access_turns_json"])}
+            for r in self.conn.execute("SELECT * FROM ambient_notes ORDER BY rowid ASC").fetchall()
+        ]
+        open_blockers: list[dict[str, Any]] = []
+        for r in self.conn.execute("SELECT * FROM open_blockers ORDER BY rowid ASC").fetchall():
+            b_dict: dict[str, Any] = {"id": str(r["id"]), "type": str(r["type"]), "scope": str(r["scope"]), "text": str(r["text"]), "status": str(r["status"])}
+            b_dict.update(json.loads(r["payload_json"]))
+            open_blockers.append(b_dict)
+        flows_list, artifacts_list = self._load_flows_and_artifacts()
         out: dict[str, Any] = {
             "version": int(scalars.get("version", 1)), "turn": int(scalars.get("turn", 0)),
             "k_cap": int(scalars.get("k_cap", 5)), "max_ring": int(scalars.get("max_ring", 10)),

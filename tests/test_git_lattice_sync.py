@@ -359,10 +359,10 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             "def is_widget_ready_0(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef is_widget_ready_1(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef is_widget_ready_2(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef is_widget_ready_3(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef run_widget(a: bool = True, b: bool = True) -> bool:\n    return is_widget_ready_0(a, b) and is_widget_ready_1(a, b) and is_widget_ready_2(a, b) and is_widget_ready_3(a, b)\n",
             encoding="utf-8",
         )
-        orig_lh, orig_cli_root = MCP_SRV.LATTICE_HOME, CLI.REPO_ROOT
+        orig_lh, orig_cli_root = MCP_SRV.BOWTHRUSTER_HOME, CLI.REPO_ROOT
         try:
             import concurrent.futures
-            MCP_SRV.LATTICE_HOME = fake_lat_home
+            MCP_SRV.BOWTHRUSTER_HOME = fake_lat_home
             disc_board = _resolve_project_root("sib_board")
             disc_msg = _resolve_project_root("new_board", message="Inspect src/widget.py in sibling repo")
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
@@ -372,7 +372,7 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             r_spec = call_lattice_tool("atlas", {"board": "sib_board", "project_root": str(sib_repo), "spec": True})["structuredContent"]
             par_scopes = set((json.loads((sib_repo / ".whiteboard" / "sib_board.json").read_text(encoding="utf-8")).get("scopes") or {}).keys())
         finally:
-            MCP_SRV.LATTICE_HOME = orig_lh
+            MCP_SRV.BOWTHRUSTER_HOME = orig_lh
             shutil.rmtree(Path("/tmp/whiteboard_sessions/sib_board"), ignore_errors=True)
         restored_cli_root = (
             CLI.REPO_ROOT == orig_cli_root and all(not r.get("isError") for r in par_turns) and {f"par_comp_{i}" for i in range(4)} <= par_scopes
@@ -480,6 +480,113 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
         finally:
             _nlp_m._find_bend_binary = orig_find
             _nlp_m._check_synthesized_bend_proof.cache_clear()
+
+    def test_s26_adversarial_law_wiring_and_no_law_escape(self) -> None:
+        """Verifies _law_ escape, tautological assert, and constant expression calls are rejected."""
+        probe_wb = {
+            "scopes": {"auth": {"id": "auth", "status": "STALE", "files": ["src/auth.py"], "rules": []}},
+            "lattice_artifacts": [
+                {"id": "iface_v", "kind": "INTERFACE", "name": "verify_token", "scope": "auth", "file": "src/auth.py", "inputs": ["a: bool", "b: bool"]},
+                {"id": "law_tok", "kind": "LAW", "name": "token_law", "scope": "auth", "args": "a: Bool, b: Bool", "lhs": "MOD.is_token_valid(a, b)", "rhs": "Bool.and(a, b)"},
+            ],
+        }
+        law_fn = "def is_token_valid(a: bool, b: bool) -> bool:\n    return bool(a and b)\n"
+        adversarial_cases = [
+            law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    _law_tok = is_token_valid(True, True)\n    return True\n",
+            law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    _law_tok = is_token_valid(a, b)\n    return True\n",
+            law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    ok = is_token_valid(a, b)\n    assert ok or True\n    return True\n",
+            law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    return is_token_valid(bool(1), not False)\n",
+        ]
+        for src in adversarial_cases:
+            res = EXEC_GATE.evaluate_git_commit_gate(probe_wb, {"files": [{"path": "src/auth.py", "source": src}], "bend_proofs_ok": True})
+            self.assertFalse(res["allowed"], f"Adversarial case should have been rejected:\n{src}")
+
+    def test_s26_status_verified_bypass_blocked_on_failing_test_or_gate(self) -> None:
+        """Verifies status(new_status='VERIFIED') runs gate + delta tests and rejects broken code."""
+        from bowthruster.mcp_server import call_lattice_tool
+        with tempfile.TemporaryDirectory(prefix="qa_s26_status_") as tmp:
+            repo = Path(tmp)
+            (repo / "src").mkdir()
+            (repo / "tests").mkdir()
+            (repo / "src" / "auth.py").write_text(
+                "def is_token_valid(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef verify_token(a: bool, b: bool) -> bool:\n    ok = is_token_valid(a, b)\n    return False\n",
+                encoding="utf-8",
+            )
+            (repo / "tests" / "test_auth.py").write_text(
+                "from src.auth import verify_token\ndef test_verify():\n    assert verify_token(True, True) is True\n",
+                encoding="utf-8",
+            )
+            turn_md = (
+                "| Charter | Summary | Principles |\n| :--- | :--- | :--- |\n| scratch | Scratch auth | Strict gates |\n\n"
+                "| Component | Role | Why | Owner | Stage | Status | Depends On | Files |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| auth | Token verifier | Auth gate | groves | 1 | READY | | src/auth.py |\n\n"
+                "| Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| verify_token | auth | a: bool, b: bool | bool | groves | 1 | src/auth.py | Spec 1 |\n\n"
+                "| Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| token_law | auth | groves | 1 | laws | a: Bool, b: Bool | MOD.is_token_valid(a, b) | Bool.and(a, b) | Spec 1 |\n"
+            )
+            call_lattice_tool("turn", {"board": "scratch", "project_root": str(repo), "message": turn_md})
+            bad_status = call_lattice_tool("status", {"board": "scratch", "project_root": str(repo), "component": "auth", "new_status": "VERIFIED"})
+            self.assertTrue(bad_status["isError"])
+            (repo / "src" / "auth.py").write_text(
+                "def is_token_valid(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef verify_token(a: bool, b: bool) -> bool:\n    ok = is_token_valid(a, b)\n    return ok\n",
+                encoding="utf-8",
+            )
+            good_status = call_lattice_tool("status", {"board": "scratch", "project_root": str(repo), "component": "auth", "new_status": "VERIFIED"})
+            self.assertFalse(good_status["isError"])
+            self.assertEqual(good_status["structuredContent"]["status"], "VERIFIED")
+
+    def test_s26_delta_tests_board_mapping_and_not_checked_when_unmatched(self) -> None:
+        """Verifies board-declared component tests run and unmatched components return not_checked."""
+        from bowthruster.git_manifest import run_delta_tests
+        core_board = json.loads((_WORKSPACE_MC / ".whiteboard" / "lattice_core.json").read_text(encoding="utf-8"))
+        for comp in ("the_executive", "regiment", "runtime_foundation"):
+            self.assertTrue(core_board["scopes"][comp].get("tests"), f"Missing tests mapping for {comp}")
+        with tempfile.TemporaryDirectory(prefix="qa_s26_not_checked_") as tmp:
+            repo = Path(tmp)
+            (repo / "tests").mkdir()
+            (repo / "tests" / "test_other.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
+            ok, status, out = run_delta_tests(repo, ["unmatched_comp"], {"scopes": {"unmatched_comp": {"files": ["src/unmatched.py"]}}})
+            self.assertFalse(ok)
+            self.assertEqual(status, "not_checked")
+            self.assertIn("no matching test files", out)
+
+    def test_s26_scratch_repo_slice_include_code_and_single_component_packets(self) -> None:
+        """Verifies 1-component board is PROVEN_COMPLETE, returns packets, and slice(include_code=True) embeds code."""
+        from bowthruster.mcp_server import call_lattice_tool
+        with tempfile.TemporaryDirectory(prefix="qa_s26_scratch_") as tmp:
+            repo = Path(tmp)
+            (repo / "src").mkdir()
+            (repo / "src" / "calc.py").write_text("def add_vals(x: int, y: int) -> int:\n    return x + y\n", encoding="utf-8")
+            turn_md = (
+                "| Charter | Summary | Principles |\n| :--- | :--- | :--- |\n| one_comp | Single component board | Fast navigation |\n\n"
+                "| Component | Role | Why | Owner | Stage | Status | Depends On | Files |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| calc | Calculator | Adds ints | groves | 1 | READY | | src/calc.py |\n\n"
+                "| Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| add_vals | calc | x: int, y: int | int | groves | 1 | src/calc.py | Spec 1 |\n"
+            )
+            t_res = call_lattice_tool("turn", {"board": "one_comp", "project_root": str(repo), "message": turn_md})["structuredContent"]
+            self.assertEqual(t_res["lattice_proof"]["status"], "PROVEN_COMPLETE")
+            pkts = call_lattice_tool("packets", {"board": "one_comp", "project_root": str(repo)})["structuredContent"]
+            self.assertEqual(len(pkts["packets"]), 1)
+            sl = call_lattice_tool("slice", {"board": "one_comp", "project_root": str(repo), "component": "calc", "include_code": True})["content"][0]["text"]
+            self.assertIn("[CODE src/calc.py#L1-L2]", sl)
+            self.assertIn("def add_vals", sl)
+
+    def test_s26_helper_line_anchors_refreshed_and_git_hook_installed(self) -> None:
+        """Verifies stale helper calls are purged on disk refresh and install_git_precommit_hook writes pre-commit hook."""
+        from bowthruster.git_manifest import install_git_precommit_hook
+        from bowthruster.mcp_server import call_lattice_tool
+        sl_txt = call_lattice_tool("slice", {"board": "lattice_core", "component": "the_executive", "query": "evaluate_git_commit_gate"})["content"][0]["text"]
+        self.assertNotIn("_paths_match#L93-L96", sl_txt)
+        with tempfile.TemporaryDirectory(prefix="qa_s26_hook_") as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init"], cwd=str(repo), capture_output=True, check=True)
+            hook_file = install_git_precommit_hook(repo, "lattice_core")
+            self.assertIsNotNone(hook_file)
+            assert hook_file is not None
+            self.assertTrue(hook_file.is_file())
+            self.assertIn("git-sync --pre-commit", hook_file.read_text(encoding="utf-8"))
 
     def test_s26_standing_rule_49_no_regex_and_line_budget(self) -> None:
         """Verifies zero `import re` and <= 500 lines across Stage 26 implementation and test files."""

@@ -95,7 +95,7 @@ class _PureNLP:
 _PURE_NLP = _PureNLP()
 
 
-def _get_spacy_nlp() -> Any:
+def _get_tokenizer_nlp() -> Any:
     """Returns the pure-stdlib tokenizer wrapper (zero spacy/torch dependency)."""
     return _PURE_NLP
 
@@ -448,13 +448,9 @@ def _check_bend_dir_proof(bend_dir_rel: str) -> bool | str:
     return True
 
 
-def verify_python_ast_laws_with_bend(
-    artifacts: list[dict[str, Any]],
-    staged_files: list[dict[str, Any]],
-    scopes: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Transpiles staged Python `% LAW` functions to Bend 2 and verifies `LHS == RHS` across all truth-table assignments and via `bend`."""
-    checked_laws, failed_laws = [], []
+def _parse_staged_py_functions(
+    staged_files: list[dict[str, Any]]
+) -> list[tuple[str, str, dict[str, ast.FunctionDef | ast.AsyncFunctionDef], dict[str, str]]]:
     py_files: list[tuple[str, str, dict[str, ast.FunctionDef | ast.AsyncFunctionDef], dict[str, str]]] = []
     for f in staged_files:
         src = f.get("source") if f.get("source") is not None else (f.get("content") if f.get("content") is not None else f.get("code"))
@@ -467,16 +463,25 @@ def verify_python_ast_laws_with_bend(
         fmap = {n.name: n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
         amap = {
             t.id: n.value.id for n in tree.body
-            if isinstance(n, ast.Assign) and isinstance(n.value, ast.Name)
-            and n.value.id in fmap for t in n.targets
-            if isinstance(t, ast.Name)
+            if isinstance(n, ast.Assign) and isinstance(n.value, ast.Name) and n.value.id in fmap
+            for t in n.targets if isinstance(t, ast.Name)
         }
         for alias, target in list(amap.items()):
             if alias not in fmap and target in fmap:
                 fmap[alias] = fmap[target]
         if fmap:
             py_files.append((str(f.get("path") or f.get("file") or "").strip(), str(f.get("scope") or f.get("component") or "").strip(), fmap, amap))
+    return py_files
 
+
+def verify_python_ast_laws_with_bend(
+    artifacts: list[dict[str, Any]],
+    staged_files: list[dict[str, Any]],
+    scopes: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Transpiles staged Python `% LAW` functions to Bend 2 and verifies `LHS == RHS` across all truth-table assignments and via `bend`."""
+    checked_laws, failed_laws = [], []
+    py_files = _parse_staged_py_functions(staged_files)
     if not py_files:
         has_bend_bin = bool(_find_bend_binary())
         return {
@@ -546,14 +551,13 @@ def verify_python_ast_laws_with_bend(
     ok_val: bool | str = False if failed_laws else (True if has_bend_bin else "not_checked")
     return {
         "bend_proofs_ok": ok_val, "bend_proof_status": status,
-        "bend_binary_checked": has_checked
-        and has_bend_bin, "truth_table_checked": has_checked,
+        "bend_binary_checked": has_checked and has_bend_bin, "truth_table_checked": has_checked,
         "failed_laws": failed_laws, "checked_laws": checked_laws
     }
 
 
 __all__ = [
-    "ASCII_PERIOD", "_extract_generic_source_symbols", "_get_spacy_nlp", "dense_text_similarities",
+    "ASCII_PERIOD", "_extract_generic_source_symbols", "_get_tokenizer_nlp", "dense_text_similarities",
     "lexical_token_similarity", "max_lexical_similarity", "protect_ascii_dots", "restore_ascii_dots",
     "soft_token_overlap_count", "tokenize_words", "transpile_py_fn_to_bend_bool", "verify_python_ast_laws_with_bend",
 ]

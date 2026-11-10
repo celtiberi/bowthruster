@@ -106,6 +106,35 @@ class ExecutiveTurnResult(dict[str, Any]):
 PostCommitSyncResult = WorkingTreeDriftReport = ExecutiveTurnResult
 
 
+def _prepare_turn_intake(
+    raw_text: str, phase3_result: dict[str, Any] | None, intake_packet: dict[str, Any] | None,
+    eff_turn: int, turn_index: int | None, prev_turn: int,
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    had_precompiled = intake_packet is not None or phase3_result is not None
+    if intake_packet is not None:
+        return intake_packet, phase3_result
+    if phase3_result is None:
+        if not isinstance(raw_text, str):
+            raise ExecutivePreflightError("preflight_invalid_raw_text", [f"raw_text must be a str, got {type(raw_text).__name__}"])
+        intake_packet = compile_markdown_turn(raw_text, turn_index=eff_turn)
+        phase3_result = {
+            "raw_text": raw_text, "doc_tables": intake_packet["doc_tables"],
+            "structured_table_rows": intake_packet["structured_table_rows"],
+            "parsed_mcus": intake_packet["parsed_mcus"], "intake_packet": intake_packet,
+            "grounding_status": "GROUNDED", "is_locked": True,
+            "clarification_questions": [], "open_questions": [],
+        }
+        return intake_packet, phase3_result
+    if not isinstance(phase3_result, dict):
+        raise ExecutivePreflightError("preflight_invalid_packet", [f"phase3_result must be a dict, got {type(phase3_result).__name__}"])
+    if isinstance(phase3_result.get("intake_packet"), dict):
+        intake_packet = copy.deepcopy(phase3_result["intake_packet"])
+        if turn_index is not None or not had_precompiled or prev_turn > 0:
+            intake_packet["turn_index"] = eff_turn
+        return intake_packet, phase3_result
+    return compile_intake_packet(phase3_result, turn_index=eff_turn), phase3_result
+
+
 def run_executive_turn(
     whiteboard_graph: dict[str, Any] | None = None,
     raw_text: str = "", *, gen: Any = None,
@@ -126,64 +155,24 @@ def run_executive_turn(
         raise ExecutivePreflightError("preflight_invalid_whiteboard", [f"whiteboard_graph must be a dict or None, got {type(whiteboard_graph).__name__}"])
     if turn_index is not None and (isinstance(turn_index, bool) or not isinstance(turn_index, int) or turn_index < 1):
         raise ExecutivePreflightError("preflight_invalid_packet", [f"turn_index must be a positive int, got {turn_index!r}"])
-    prev_turn = max(
-        int(whiteboard_graph.get("turn", 0) or 0),
-        int(whiteboard_graph.get("turn_index", 0) or 0)
-    ) if isinstance(whiteboard_graph, dict) else 0
-    eff_turn, had_precompiled_intake = (int(turn_index) if turn_index is not None else max(1, prev_turn + 1)), (intake_packet is not None or phase3_result is not None)
-    if intake_packet is None:
-        if phase3_result is None:
-            if not isinstance(raw_text, str):
-                raise ExecutivePreflightError("preflight_invalid_raw_text", [f"raw_text must be a str, got {type(raw_text).__name__}"])
-            intake_packet = compile_markdown_turn(raw_text, turn_index=eff_turn)
-            phase3_result = {
-                "raw_text": raw_text, "doc_tables": intake_packet["doc_tables"],
-                "structured_table_rows": intake_packet["structured_table_rows"],
-                "parsed_mcus": intake_packet["parsed_mcus"],
-                "intake_packet": intake_packet, "grounding_status": "GROUNDED",
-                "is_locked": True, "clarification_questions": [],
-                "open_questions": []
-            }
-        elif not isinstance(phase3_result, dict):
-            raise ExecutivePreflightError("preflight_invalid_packet", [f"phase3_result must be a dict, got {type(phase3_result).__name__}"])
-        elif isinstance(phase3_result.get("intake_packet"), dict):
-            intake_packet = copy.deepcopy(phase3_result["intake_packet"])
-            if turn_index is not None or not had_precompiled_intake or prev_turn > 0:
-                intake_packet["turn_index"] = eff_turn
-        else:
-            intake_packet = compile_intake_packet(phase3_result, turn_index=eff_turn)
-
+    prev_turn = max(int(whiteboard_graph.get("turn", 0) or 0), int(whiteboard_graph.get("turn_index", 0) or 0)) if isinstance(whiteboard_graph, dict) else 0
+    eff_turn = int(turn_index) if turn_index is not None else max(1, prev_turn + 1)
+    intake_packet, phase3_result = _prepare_turn_intake(raw_text, phase3_result, intake_packet, eff_turn, turn_index, prev_turn)
     cue_text = raw_text if isinstance(raw_text, str) and raw_text.strip() else " ".join(
-        str(m.get("text") or m.get("canonical_text") or "") for m in (
-            intake_packet.get("parsed_mcus", [])
-            if isinstance(intake_packet, dict) else []
-        ) if isinstance(m, dict)
+        str(m.get("text") or m.get("canonical_text") or "") for m in (intake_packet.get("parsed_mcus", []) if isinstance(intake_packet, dict) else []) if isinstance(m, dict)
     )
     seed_cues = extract_concept_cues(cue_text)
-    recalled_concepts = recall_concepts(
-        whiteboard_graph if isinstance(whiteboard_graph, dict) else (store if store is not None else {"scopes": {}}),
-        seed_cues
-    )
+    recalled_concepts = recall_concepts(whiteboard_graph if isinstance(whiteboard_graph, dict) else (store if store is not None else {"scopes": {}}), seed_cues)
     sync_fn, forage_fn = _resolve_table_fns()
     active_table_state, table_view = table_state, None
     if callable(sync_fn):
         pre_graph = clone_whiteboard_for_trial(whiteboard_graph) if isinstance(whiteboard_graph, dict) else None
-        pre_view = (
-            propagate_graph(pre_graph, cue_text)
-            if cue_text.strip() else scan_graph(pre_graph, "")
-        ) if isinstance(pre_graph, dict) else None
+        pre_view = (propagate_graph(pre_graph, cue_text) if cue_text.strip() else scan_graph(pre_graph, "")) if isinstance(pre_graph, dict) else None
         table_view = sync_fn(active_table_state, recalled_concepts, context_view=pre_view, current_turn=eff_turn)
-        if isinstance(table_view, dict) and isinstance(table_view.get("table_state"), dict): active_table_state = table_view["table_state"]
-
-    preflight_report = inspect_turn_preflight(
-        intake_packet, whiteboard_graph, turn_index=turn_index,
-        flawed_idea_critiques=flawed_idea_critiques
-    )
-    gate_result = execute_gate_decision(
-        preflight_report, whiteboard_graph,
-        k_cap=k_cap, max_ring=max_ring, store=store,
-        db_path=db_path
-    )
+        if isinstance(table_view, dict) and isinstance(table_view.get("table_state"), dict):
+            active_table_state = table_view["table_state"]
+    preflight_report = inspect_turn_preflight(intake_packet, whiteboard_graph, turn_index=turn_index, flawed_idea_critiques=flawed_idea_critiques)
+    gate_result = execute_gate_decision(preflight_report, whiteboard_graph, k_cap=k_cap, max_ring=max_ring, store=store, db_path=db_path)
     wb_graph, cur_turn = gate_result["whiteboard_graph"], int(gate_result["turn_index"])
     if gate_result["decision"] == "COMMIT_TO_WHITEBOARD" and bool(gate_result.get("whiteboard_mutated")) and isinstance(wb_graph, dict):
         _collect_and_index_turn_rules(wb_graph, cur_turn)
@@ -196,46 +185,29 @@ def run_executive_turn(
         if callable(sync_fn):
             post_view = propagate_graph(wb_graph, cue_text) if cue_text.strip() else scan_graph(wb_graph, "")
             table_view = sync_fn(active_table_state, recalled_concepts, context_view=post_view, current_turn=cur_turn)
-            if isinstance(table_view, dict) and isinstance(table_view.get("table_state"), dict): active_table_state = table_view["table_state"]
-
-    stage2_directives = [
-        copy.deepcopy(d) for d in (foraging_directives or [])
-        if isinstance(d, dict)
-    ] + _build_conflict_foraging_directives(gate_result, active_table_state)
+            if isinstance(table_view, dict) and isinstance(table_view.get("table_state"), dict):
+                active_table_state = table_view["table_state"]
+    stage2_directives = [copy.deepcopy(d) for d in (foraging_directives or []) if isinstance(d, dict)] + _build_conflict_foraging_directives(gate_result, active_table_state)
     foraging_actions: list[dict[str, Any]] = []
     if stage2_directives and callable(forage_fn):
-        table_view = forage_fn(
-            active_table_state, stage2_directives,
-            whiteboard_graph=wb_graph if isinstance(wb_graph, dict) else None,
-            store=store, current_turn=cur_turn
-        )
+        table_view = forage_fn(active_table_state, stage2_directives, whiteboard_graph=wb_graph if isinstance(wb_graph, dict) else None, store=store, current_turn=cur_turn)
         if isinstance(table_view, dict):
             foraging_actions = list(table_view.get("foraging_actions_applied", []))
-            if isinstance(table_view.get("table_state"), dict): active_table_state = table_view["table_state"]
+            if isinstance(table_view.get("table_state"), dict):
+                active_table_state = table_view["table_state"]
     elif isinstance(table_view, dict):
         table_view.setdefault("foraging_actions_applied", [])
         table_view.setdefault("foraging_steps", 0)
-
     voice_reply = synthesize_executive_voice(gate_result)
     lattice_proof = gate_result["lattice_proof"] if isinstance(gate_result.get("lattice_proof"), dict) else _eval_lattice_proof(wb_graph)
     if bool(gate_result.get("whiteboard_mutated")) and isinstance(wb_graph, dict):
         wb_graph["lattice_proof"] = lattice_proof
-    if (
-        gate_result["decision"] == "COMMIT_TO_WHITEBOARD"
-        and isinstance(lattice_proof, dict)
-        and "[Lattice Proof:" not in (user_msg := str(voice_reply.get("user_message") or ""))
-    ):
+    if gate_result["decision"] == "COMMIT_TO_WHITEBOARD" and isinstance(lattice_proof, dict) and "[Lattice Proof:" not in (user_msg := str(voice_reply.get("user_message") or "")):
         if lattice_proof.get("is_proven") is True:
-            gap_ids = ", ".join(g.get("scope", "?") + ":" + g.get("kind", "?") for g in gaps)
-            voice_reply["user_message"] = (
-                f"{user_msg}\n[Lattice Proof: INCOMPLETE_DRAFT ({len(gaps)} gap(s) remaining before Work Packets unlock: {gap_ids})]"
-            )
+            voice_reply["user_message"] = f"{user_msg}\n[Lattice Proof: PROVEN_COMPLETE (0 gaps — Work Packets ready to emit)]"
         elif lattice_proof.get("status") == "INCOMPLETE_DRAFT" and (gaps := list(lattice_proof.get("open_gaps") or [])):
             gap_ids = ", ".join(g.get("scope", "?") + ":" + g.get("kind", "?") for g in gaps)
-            voice_reply["user_message"] = (
-                f"{user_msg}\n[Lattice Proof: INCOMPLETE_DRAFT ({len(gaps)} gap(s) remaining before Work Packets unlock: {gap_ids})]"
-            )
-
+            voice_reply["user_message"] = f"{user_msg}\n[Lattice Proof: INCOMPLETE_DRAFT ({len(gaps)} gap(s) remaining before Work Packets unlock: {gap_ids})]"
     return ExecutiveTurnResult({
         "turn_index": cur_turn, "decision": gate_result["decision"], "bounce_reason": gate_result["bounce_reason"], "should_commit": gate_result["should_commit"],
         "whiteboard_mutated": gate_result["whiteboard_mutated"], "user_message": voice_reply["user_message"], "cited_items": list(voice_reply["cited_items"]),
@@ -269,44 +241,26 @@ def _paths_match(p1: Any, p2: Any) -> bool:
 def _scope_file_refs(graph: dict[str, Any], sid: str, sc: dict[str, Any]) -> list[str]:
     attrs = sc.get("attributes") if isinstance(sc.get("attributes"), dict) else {}
     refs: list[str] = []
-    for raw_list in (
-        sc.get("files"), attrs.get("files"),
-        attrs.get("_table_files"), sc.get("source_links"),
-        sc.get("external_uris")
-    ):
+    for raw_list in (sc.get("files"), attrs.get("files"), attrs.get("_table_files"), sc.get("source_links"), sc.get("external_uris")):
         refs.extend([str(x) for x in raw_list if x] if isinstance(raw_list, list) else ([p.strip() for p in raw_list.split(",") if p.strip()] if isinstance(raw_list, str) else []))
-    for lk_list in (
-        sc.get("external_links"), (graph.get("external_links") or {}).get(sid)
-        if isinstance(graph.get("external_links"), dict) else None,
-        *[r.get("external_links") for r in (sc.get("rules") or []) if isinstance(r, dict)]
-    ):
+    ext_top = (graph.get("external_links") or {}).get(sid) if isinstance(graph.get("external_links"), dict) else None
+    for lk_list in (sc.get("external_links"), ext_top, *[r.get("external_links") for r in (sc.get("rules") or []) if isinstance(r, dict)]):
         if isinstance(lk_list, list):
             refs.extend(str(lk.get("target_uri") or lk.get("uri") or "") for lk in lk_list if isinstance(lk, dict))
     for art in (graph.get("lattice_artifacts") if isinstance(graph.get("lattice_artifacts"), list) else ()):
         if isinstance(art, dict) and str(art.get("scope_id") or art.get("scope") or "") == sid:
-            refs.extend(
-                str(c).strip() for c in (
-                    art.get("file"), (art.get("dimensions") or {}).get("file")
-                    if isinstance(art.get("dimensions"), dict) else None,
-                    art.get("target_uri"), art.get("uri")
-                )
-                if isinstance(c, str) and c.strip()
-            )
+            dim_f = (art.get("dimensions") or {}).get("file") if isinstance(art.get("dimensions"), dict) else None
+            refs.extend(str(c).strip() for c in (art.get("file"), dim_f, art.get("target_uri"), art.get("uri")) if isinstance(c, str) and c.strip())
     return refs
 
 
-def _find_owning_scopes(
-    graph: dict[str, Any], path: Any, old_path: Any = None,
-    explicit_scope: Any = None
-) -> list[str]:
+def _find_owning_scopes(graph: dict[str, Any], path: Any, old_path: Any = None, explicit_scope: Any = None) -> list[str]:
     scopes = graph.get("scopes") if isinstance(graph.get("scopes"), dict) else {}
     owners = [str(explicit_scope).strip()] if str(explicit_scope or "").strip() in scopes else []
     return owners + [
-        sid for sid, sc in scopes.items() if isinstance(sc, dict)
-        and sid not in owners and any(
-            _paths_match(r, path) or (old_path and _paths_match(r, old_path))
-            for r in _scope_file_refs(graph, sid, sc)
-        )
+        sid for sid, sc in scopes.items()
+        if isinstance(sc, dict) and sid not in owners
+        and any(_paths_match(r, path) or (old_path and _paths_match(r, old_path)) for r in _scope_file_refs(graph, sid, sc))
     ]
 
 
@@ -320,24 +274,17 @@ def _scope_direct_deps(sc: dict[str, Any]) -> list[str]:
     return deps
 
 
-def _upsert_contract_artifact(
-    graph: dict[str, Any], sid: str, kind: str,
-    item: Any, file_path: str, eff_turn: int
-) -> str:
+def _upsert_contract_artifact(graph: dict[str, Any], sid: str, kind: str, item: Any, file_path: str, eff_turn: int) -> str:
     if not (name := str((item.get("name") or item.get("interface") or item.get("schema") or item.get("id") or item.get("function") or item.get("class")) if isinstance(item, dict) else item).strip()):
         return ""
     k_clean = str(item.get("kind", kind) if isinstance(item, dict) else kind).strip().upper()
     k_clean, artifacts = (k_clean if k_clean in ("INTERFACE", "SCHEMA", "LAW") else "INTERFACE"), graph.setdefault("lattice_artifacts", [])
-    if (entry := next(
+    entry = next(
         (a for a in artifacts if isinstance(a, dict) and a.get("kind") == k_clean and a.get("scope_id", a.get("scope")) == sid and str(a.get("name", "")).lower() == name.lower()),
-        None
-    )) is None:
-        entry = ArtifactEntry({
-            "id": f"{k_clean.lower()}_{sid}_{name.lower()}",
-            "kind": k_clean, "name": name,
-            "scope_id": sid, "scope": sid,
-            "created_turn": eff_turn
-        })
+        None,
+    )
+    if entry is None:
+        entry = ArtifactEntry({"id": f"{k_clean.lower()}_{sid}_{name.lower()}", "kind": k_clean, "name": name, "scope_id": sid, "scope": sid, "created_turn": eff_turn})
         artifacts.append(entry)
     if isinstance(item, dict):
         for k_src, k_dst in (("inputs", "inputs"), ("args", "inputs"), ("outputs", "outputs"), ("returns", "outputs")):
@@ -351,66 +298,30 @@ def _upsert_contract_artifact(
     return name
 
 
-def _parse_git_report_entries(report: dict[str, Any] | list[Any]) -> tuple[
-    list[dict[str, Any]], dict[str, str],
-    dict[str, int], dict[str, str]
-]:
+def _parse_git_report_entries(report: dict[str, Any] | list[Any]) -> tuple[list[dict[str, Any]], dict[str, str], dict[str, int], dict[str, str]]:
     if isinstance(report, list):
         return [copy.deepcopy(x) if isinstance(x, dict) else {"path": str(x)} for x in report], {}, {}, {}
     rename_map, raw_ren = {}, report.get("renamed_files") or report.get("renames")
-    for rn in (
-        [{"old_path": k, "new_path": v} for k, v in raw_ren.items()]
-        if isinstance(raw_ren, dict) else (raw_ren if isinstance(raw_ren, list) else ())
-    ):
-        if (
-            isinstance(rn, dict) and (op := str(rn.get("old_path") or rn.get("from_path") or rn.get("old") or rn.get("old_uri") or "").strip())
-            and (np := str(rn.get("new_path") or rn.get("to_path") or rn.get("path") or rn.get("new") or rn.get("new_uri") or "").strip())
-        ):
-            rename_map[op] = np
+    for rn in ([{"old_path": k, "new_path": v} for k, v in raw_ren.items()] if isinstance(raw_ren, dict) else (raw_ren if isinstance(raw_ren, list) else ())):
+        if isinstance(rn, dict):
+            op = str(rn.get("old_path") or rn.get("from_path") or rn.get("old") or rn.get("old_uri") or "").strip()
+            np = str(rn.get("new_path") or rn.get("to_path") or rn.get("path") or rn.get("new") or rn.get("new_uri") or "").strip()
+            if op and np:
+                rename_map[op] = np
         elif isinstance(rn, (tuple, list)) and len(rn) >= 2:
             rename_map[str(rn[0]).strip()] = str(rn[1]).strip()
-    line_shifts = {
-        str(k): int(v) for k, v in (report.get("line_shifts") or report.get("line_deltas") or {}).items()
-        if isinstance(v, int)
-    }
-    top_hashes = {
-        str(k): str(v) for k, v in (
-            report.get("file_hashes") or report.get("sha256")
-            or report.get("hashes") or {}
-        ).items()
-        if v
-    }
-    entries, raw_f = (
-        [], report.get("files") or report.get("changed_files")
-        or report.get("file_changes") or report.get("changes")
-        or report.get("diff_entries") or report.get("entries")
-    )
+    line_shifts = {str(k): int(v) for k, v in (report.get("line_shifts") or report.get("line_deltas") or {}).items() if isinstance(v, int)}
+    top_hashes = {str(k): str(v) for k, v in (report.get("file_hashes") or report.get("sha256") or report.get("hashes") or {}).items() if v}
+    entries, raw_f = [], report.get("files") or report.get("changed_files") or report.get("file_changes") or report.get("changes") or report.get("diff_entries") or report.get("entries")
     if isinstance(raw_f, dict):
-        entries.extend(
-            {"path": str(fp), **(info if isinstance(info, dict) else {"file_hash": str(info)})}
-            for fp, info in raw_f.items()
-        )
+        entries.extend({"path": str(fp), **(info if isinstance(info, dict) else {"file_hash": str(info)})} for fp, info in raw_f.items())
     elif isinstance(raw_f, list):
         entries.extend(copy.deepcopy(x) if isinstance(x, dict) else {"path": str(x)} for x in raw_f)
-    for key, st_code in (
-        ("modified_files", "M"), ("added_files", "A"),
-        ("untracked_files", "??"), ("deleted_files", "D"),
-        ("removed_files", "D")
-    ):
-        entries.extend(
-            {"status": st_code, **(copy.deepcopy(x) if isinstance(x, dict) else {"path": str(x)})}
-            for x in ((report.get(key) or []) if isinstance(report.get(key), list) else ())
-        )
-    entries.extend(
-        {"old_path": op, "path": np, "status": "R"}
-        for op, np in list(rename_map.items())
-        if not any(_paths_match(fe.get("path") or fe.get("new_path"), np) for fe in entries)
-    )
+    for key, st_code in (("modified_files", "M"), ("added_files", "A"), ("untracked_files", "??"), ("deleted_files", "D"), ("removed_files", "D")):
+        entries.extend({"status": st_code, **(copy.deepcopy(x) if isinstance(x, dict) else {"path": str(x)})} for x in ((report.get(key) or []) if isinstance(report.get(key), list) else ()))
+    entries.extend({"old_path": op, "path": np, "status": "R"} for op, np in list(rename_map.items()) if not any(_paths_match(fe.get("path") or fe.get("new_path"), np) for fe in entries))
     for fe in entries:
-        op, np = str(fe.get("old_path") or fe.get("from_path") or "").strip(), str(
-            fe.get("path") or fe.get("file") or fe.get("new_path")
-            or fe.get("uri") or ""
-        ).strip()
+        op, np = str(fe.get("old_path") or fe.get("from_path") or "").strip(), str(fe.get("path") or fe.get("file") or fe.get("new_path") or fe.get("uri") or "").strip()
         if op and np:
             rename_map.setdefault(op, np)
         if isinstance(fe.get("line_shift", fe.get("line_delta")), int) and np:
@@ -418,61 +329,20 @@ def _parse_git_report_entries(report: dict[str, Any] | list[Any]) -> tuple[
     return entries, rename_map, line_shifts, top_hashes
 
 
-def sync_post_commit_to_lattice(
-    whiteboard_graph: dict[str, Any], commit_report: dict[str, Any],
-    *, store: Any = None, current_turn: int | None = None
-) -> PostCommitSyncResult:
-    """Synchronizes a completed git commit (`commit_report`) into `whiteboard_graph` and AI Memory, applying Law 4 (`postcommit_stale_cascade_law`) downstream `STALE` cascade."""
-    if not isinstance(whiteboard_graph, dict):
-        raise ExecutivePreflightError("postcommit_invalid_whiteboard", [f"whiteboard_graph must be a dict, got {type(whiteboard_graph).__name__}"])
-    if not isinstance(commit_report, dict):
-        raise ExecutivePreflightError(
-            "postcommit_invalid_commit_report",
-            [f"commit_report must be a dict, got {type(commit_report).__name__}"]
-        )
-    if current_turn is not None and (
-        isinstance(current_turn, bool) or not isinstance(current_turn, int)
-        or current_turn < 1
-    ):
-        raise ExecutivePreflightError("postcommit_invalid_turn", [f"current_turn must be a positive int, got {current_turn!r}"])
-    eff_turn = int(current_turn) if current_turn is not None else max(
-        1, int(whiteboard_graph.get("turn", 0) or 0),
-        int(whiteboard_graph.get("turn_index", 0) or 0)
-    )
-    if isinstance(store, SQLiteGraphStore):
-        whiteboard_graph["_sqlite_store"] = store
-    raw_sha = commit_report.get("commit_sha") or commit_report.get("sha") or commit_report.get("commit_id") or commit_report.get("head_sha")
-    commit_sha = str(raw_sha).strip() if isinstance(raw_sha, str) and raw_sha.strip() else None
-    if commit_sha is not None: whiteboard_graph["last_commit_sha"] = commit_sha
-    file_entries, rename_map, line_shifts, top_hashes = _parse_git_report_entries(commit_report)
+def _apply_commit_file_updates(
+    whiteboard_graph: dict[str, Any], commit_report: dict[str, Any], file_entries: list[dict[str, Any]],
+    top_hashes: dict[str, str], commit_sha: str | None, eff_turn: int,
+    modified_scopes: list[str], contract_changed_scopes: set[str],
+) -> list[str]:
     scopes = whiteboard_graph.setdefault("scopes", {})
-    modified_scopes = [s for s in (commit_report.get("modified_scopes") or []) if isinstance(s, str) and s in scopes]
-    contract_changed_scopes = {
-        s for s in (commit_report.get("contract_changed_scopes") or commit_report.get("changed_contracts") or [])
-        if isinstance(s, str) and s in scopes
-    }
-    updated_artifacts, contract_keys = [], (
-        ("INTERFACE", "updated_interfaces"),
-        ("INTERFACE", "interfaces"), ("INTERFACE", "ast_functions"),
-        ("SCHEMA", "ast_classes"), ("SCHEMA", "updated_schemas"),
-        ("SCHEMA", "schemas")
-    )
-
+    updated_artifacts: list[str] = []
+    contract_keys = (("INTERFACE", "updated_interfaces"), ("INTERFACE", "interfaces"), ("INTERFACE", "ast_functions"), ("SCHEMA", "ast_classes"), ("SCHEMA", "updated_schemas"), ("SCHEMA", "schemas"))
     for fe in file_entries:
         is_del = str(fe.get("status") or "").strip().upper() in ("D", "DELETED", "REMOVED", "REMOVE")
-        path, old_path = str(
-            fe.get("path") or fe.get("file") or fe.get("new_path")
-            or fe.get("uri") or ""
-        ).strip(), str(fe.get("old_path") or fe.get("from_path") or "").strip()
-        f_hash = str(
-            fe.get("file_hash") or fe.get("sha256")
-            or fe.get("hash") or fe.get("blob_sha")
-            or top_hashes.get(path) or ""
-        ).strip()
-        for sid in _find_owning_scopes(
-            whiteboard_graph, path, old_path, fe.get("scope")
-            or fe.get("scope_id") or fe.get("component")
-        ):
+        path = str(fe.get("path") or fe.get("file") or fe.get("new_path") or fe.get("uri") or "").strip()
+        old_path = str(fe.get("old_path") or fe.get("from_path") or "").strip()
+        f_hash = str(fe.get("file_hash") or fe.get("sha256") or fe.get("hash") or fe.get("blob_sha") or top_hashes.get(path) or "").strip()
+        for sid in _find_owning_scopes(whiteboard_graph, path, old_path, fe.get("scope") or fe.get("scope_id") or fe.get("component")):
             if sid not in modified_scopes:
                 modified_scopes.append(sid)
             sc = scopes[sid]
@@ -485,10 +355,7 @@ def sync_post_commit_to_lattice(
                 if old_path:
                     fh_map.pop(old_path, None)
                 fh_map[path] = f_hash
-            if bool(
-                fe.get("contract_changed") or commit_report.get("contract_changed")
-                or any(fe.get(k) for _, k in contract_keys)
-            ):
+            if bool(fe.get("contract_changed") or commit_report.get("contract_changed") or any(fe.get(k) for _, k in contract_keys)):
                 contract_changed_scopes.add(sid)
                 for kind, key in contract_keys:
                     for item in (fe.get(key) or []):
@@ -500,7 +367,6 @@ def sync_post_commit_to_lattice(
                             art["updated_turn"] = eff_turn
                             if (aname := str(art.get("name") or art.get("id") or "")) and aname not in updated_artifacts:
                                 updated_artifacts.append(aname)
-
     for path, f_hash in top_hashes.items():
         for sid in _find_owning_scopes(whiteboard_graph, path):
             if sid not in modified_scopes:
@@ -515,48 +381,55 @@ def sync_post_commit_to_lattice(
                 contract_changed_scopes.add(sid)
     for kind, key in contract_keys:
         for item in (commit_report.get(key) or []) if isinstance(commit_report.get(key), list) else ():
-            for sid in (
-                [str(item.get("scope") or item.get("scope_id") or item.get("component"))]
-                if isinstance(item, dict) and (
-                    item.get("scope") or item.get("scope_id")
-                    or item.get("component")
-                ) else modified_scopes
-            ):
+            raw_scope = (item.get("scope") or item.get("scope_id") or item.get("component")) if isinstance(item, dict) else None
+            item_sids = [str(raw_scope)] if raw_scope else modified_scopes
+            for sid in item_sids:
                 if sid in scopes:
                     contract_changed_scopes.add(sid)
                     if (aname := _upsert_contract_artifact(whiteboard_graph, sid, kind, item, "", eff_turn)) and aname not in updated_artifacts:
                         updated_artifacts.append(aname)
+    return updated_artifacts
 
+
+def sync_post_commit_to_lattice(
+    whiteboard_graph: dict[str, Any], commit_report: dict[str, Any],
+    *, store: Any = None, current_turn: int | None = None
+) -> PostCommitSyncResult:
+    """Synchronizes a completed git commit (`commit_report`) into `whiteboard_graph` and AI Memory, applying Law 4 (`postcommit_stale_cascade_law`) downstream `STALE` cascade."""
+    if not isinstance(whiteboard_graph, dict):
+        raise ExecutivePreflightError("postcommit_invalid_whiteboard", [f"whiteboard_graph must be a dict, got {type(whiteboard_graph).__name__}"])
+    if not isinstance(commit_report, dict):
+        raise ExecutivePreflightError("postcommit_invalid_commit_report", [f"commit_report must be a dict, got {type(commit_report).__name__}"])
+    if current_turn is not None and (isinstance(current_turn, bool) or not isinstance(current_turn, int) or current_turn < 1):
+        raise ExecutivePreflightError("postcommit_invalid_turn", [f"current_turn must be a positive int, got {current_turn!r}"])
+    eff_turn = int(current_turn) if current_turn is not None else max(1, int(whiteboard_graph.get("turn", 0) or 0), int(whiteboard_graph.get("turn_index", 0) or 0))
+    if isinstance(store, SQLiteGraphStore):
+        whiteboard_graph["_sqlite_store"] = store
+    raw_sha = commit_report.get("commit_sha") or commit_report.get("sha") or commit_report.get("commit_id") or commit_report.get("head_sha")
+    commit_sha = str(raw_sha).strip() if isinstance(raw_sha, str) and raw_sha.strip() else None
+    if commit_sha is not None:
+        whiteboard_graph["last_commit_sha"] = commit_sha
+    file_entries, rename_map, line_shifts, top_hashes = _parse_git_report_entries(commit_report)
+    scopes = whiteboard_graph.setdefault("scopes", {})
+    modified_scopes = [s for s in (commit_report.get("modified_scopes") or []) if isinstance(s, str) and s in scopes]
+    contract_changed_scopes = {s for s in (commit_report.get("contract_changed_scopes") or commit_report.get("changed_contracts") or []) if isinstance(s, str) and s in scopes}
+    updated_artifacts = _apply_commit_file_updates(whiteboard_graph, commit_report, file_entries, top_hashes, commit_sha, eff_turn, modified_scopes, contract_changed_scopes)
     uri_sync_report: dict[str, Any] = copy.deepcopy(commit_report["uri_sync_report"]) if isinstance(commit_report.get("uri_sync_report"), dict) else {}
     if callable(sync_uris_fn := getattr(importlib.import_module("bowthruster.ai_memory"), "sync_git_diff_uris", None)):
-        eff_manifest = {
-            **commit_report, **({"renames": rename_map} if rename_map else {}),
-            **({"line_shifts": line_shifts} if line_shifts else {})
-        }
+        eff_manifest = {**commit_report, **({"renames": rename_map} if rename_map else {}), **({"line_shifts": line_shifts} if line_shifts else {})}
         sig_params = inspect.signature(sync_uris_fn).parameters
-        accepts_turn = "current_turn" in sig_params or any(
-            p.kind == inspect.Parameter.VAR_KEYWORD
-            for p in sig_params.values()
-        )
+        accepts_turn = "current_turn" in sig_params or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig_params.values())
         u_res = sync_uris_fn(whiteboard_graph, eff_manifest, current_turn=eff_turn) if accepts_turn else sync_uris_fn(whiteboard_graph, eff_manifest)
         if isinstance(u_res, dict):
             uri_sync_report.update(u_res)
-    del_paths = [
-        str(fe.get("path") or fe.get("file") or fe.get("uri") or "").strip()
-        for fe in file_entries if str(fe.get("status") or "").strip().upper() in ("D", "DELETED", "REMOVED", "REMOVE")
-    ]
+    del_paths = [str(fe.get("path") or fe.get("file") or fe.get("uri") or "").strip() for fe in file_entries if str(fe.get("status") or "").strip().upper() in ("D", "DELETED", "REMOVED", "REMOVE")]
     dangling = list(uri_sync_report.get("dangling_uris") or [])
     for sid, sc in (scopes.items() if del_paths else ()):
         for ref in (_scope_file_refs(whiteboard_graph, sid, sc) if isinstance(sc, dict) else ()):
             if any(_paths_match(ref, dp) for dp in del_paths) and ref not in dangling:
                 dangling.append(ref)
-    for k, v in (
-        ("updated_uris", []), ("renamed_count", len(rename_map)),
-        ("dangling_uri_pointers", len(dangling)),
-        ("dangling_uris", dangling), ("is_valid", len(dangling) == 0)
-    ):
+    for k, v in (("updated_uris", []), ("renamed_count", len(rename_map)), ("dangling_uri_pointers", len(dangling)), ("dangling_uris", dangling), ("is_valid", len(dangling) == 0)):
         uri_sync_report.setdefault(k, v)
-
     cascaded_stale_scopes: list[str] = []
     for dep_sid, dep_sc in list(scopes.items()):
         if isinstance(dep_sc, dict):
@@ -565,20 +438,10 @@ def sync_post_commit_to_lattice(
                 if (cur := queue.pop(0)) not in visited_anc:
                     visited_anc.add(cur)
                     if isinstance(cur_sc := scopes.get(cur), dict):
-                        queue.extend(
-                            nxt for nxt in _scope_direct_deps(cur_sc)
-                            if nxt not in visited_anc and nxt != dep_sid
-                        )
+                        queue.extend(nxt for nxt in _scope_direct_deps(cur_sc) if nxt not in visited_anc and nxt != dep_sid)
             attrs = dep_sc.get("attributes") if isinstance(dep_sc.get("attributes"), dict) else {}
-            dep_status = str(
-                dep_sc.get("status") or dep_sc.get("build_status")
-                or attrs.get("status") or attrs.get("_table_status")
-                or ""
-            ).strip().upper()
-            if should_mark_dependent_stale_on_commit(
-                any(u in contract_changed_scopes for u in visited_anc),
-                dep_status == "VERIFIED"
-            ):
+            dep_status = str(dep_sc.get("status") or dep_sc.get("build_status") or attrs.get("status") or attrs.get("_table_status") or "").strip().upper()
+            if should_mark_dependent_stale_on_commit(any(u in contract_changed_scopes for u in visited_anc), dep_status == "VERIFIED"):
                 cascaded_stale_scopes.append(dep_sid)
     for dep_sid in cascaded_stale_scopes:
         dep_sc = scopes[dep_sid]
@@ -589,13 +452,9 @@ def sync_post_commit_to_lattice(
     stale_unflagged = sum(1 for sid in cascaded_stale_scopes if str(scopes[sid].get("status") or "").upper() != "STALE")
     _collect_and_index_turn_rules(whiteboard_graph, eff_turn, target_sids=modified_scopes)
     return PostCommitSyncResult({
-        "commit_sha": commit_sha,
-        "modified_scopes": modified_scopes,
-        "cascaded_stale_scopes": cascaded_stale_scopes,
-        "stale_unflagged_dependents": stale_unflagged,
-        "uri_sync_report": uri_sync_report,
-        "updated_artifacts": updated_artifacts,
-        "whiteboard_graph": whiteboard_graph
+        "commit_sha": commit_sha, "modified_scopes": modified_scopes, "cascaded_stale_scopes": cascaded_stale_scopes,
+        "stale_unflagged_dependents": stale_unflagged, "uri_sync_report": uri_sync_report,
+        "updated_artifacts": updated_artifacts, "whiteboard_graph": whiteboard_graph,
     })
 
 

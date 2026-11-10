@@ -244,45 +244,10 @@ def _ancestor_scopes(scopes: dict[str, Any], sid: str, max_hops: int = MAX_ANCES
     return ancestors
 
 
-def detect_frustration(
-    graph: dict[str, Any],
-    active_rule_ids: set[str] | list[str] | None = None,
+def _collect_rule_pair_conflicts(
+    scoped_rules: list[tuple[str, dict[str, Any]]],
+    ancestors_by_scope: dict[str, set[str]],
 ) -> list[dict[str, Any]]:
-    """Detects Spin-Glass Frustration (`CONFLICT`) across same-root-family and ancestor-descendant scopes (Spec 22B §2.2)."""
-    if not isinstance(graph, dict):
-        return []
-    scopes = graph.get("scopes")
-    if not isinstance(scopes, dict):
-        return []
-
-    filter_ids = set(active_rule_ids) if active_rule_ids is not None else None
-    ancestors_by_scope: dict[str, set[str]] = {
-        sid: _ancestor_scopes(scopes, sid, MAX_ANCESTOR_HOPS)
-        for sid, s in scopes.items()
-        if isinstance(s, dict)
-    }
-
-    scoped_rules: list[tuple[str, dict[str, Any]]] = []
-    for sid, scope in scopes.items():
-        if not isinstance(scope, dict):
-            continue
-        rules = scope.get("rules", [])
-        if not isinstance(rules, list):
-            continue
-        for r in rules:
-            if not isinstance(r, dict) or not r.get("id"):
-                continue
-            rid = str(r["id"])
-            raw_exceptions = r.get("exceptions", [])
-            if not isinstance(raw_exceptions, list):
-                raise ValueError(f"rule {rid!r} exceptions must be a list of dicts, got {raw_exceptions!r}")
-            for ex in raw_exceptions:
-                if isinstance(ex, str) or not isinstance(ex, dict):
-                    raise ValueError(f"rule {rid!r} exceptions entry must be a dict, got {ex!r}")
-            if filter_ids is not None and rid not in filter_ids:
-                continue
-            scoped_rules.append((sid, r))
-
     conflicts: list[dict[str, Any]] = []
     n = len(scoped_rules)
     for i in range(n):
@@ -296,13 +261,11 @@ def detect_frustration(
         ov_a = set(ra.get("overrides", []))
         ex_a = {ex.get("rule_id") for ex in ra.get("exceptions", []) if isinstance(ex, dict)}
         conds_a = set(ra.get("conditions", []))
-
         for j in range(i + 1, n):
             sid_b, rb = scoped_rules[j]
             rid_b = str(rb["id"])
             if rb.get("target_prop") != tp_a:
                 continue
-
             root_b = sid_b.split("::")[0]
             anc_b = ancestors_by_scope.get(sid_b, set())
             same_root = root_a == root_b
@@ -313,11 +276,9 @@ def detect_frustration(
             )
             if not (same_root or is_ancestor_pair):
                 continue
-
             conds_b = set(rb.get("conditions", []))
             if conds_a and conds_b and not _conditions_satisfiable(conds_a, conds_b):
                 continue
-
             ov_b = set(rb.get("overrides", []))
             ex_b = {ex.get("rule_id") for ex in rb.get("exceptions", []) if isinstance(ex, dict)}
             is_shielded = (
@@ -325,7 +286,6 @@ def detect_frustration(
                 or (rid_b in ex_a) or (rid_a in ex_b)
                 or (is_ancestor_pair and (bool(ra.get("is_exception")) or bool(rb.get("is_exception"))))
             )
-
             if _inherited_rules_clash(ra, rb, is_shielded):
                 pair_ids = sorted([rid_a, rid_b])
                 conflict_scope = sid_a if sid_a == sid_b else root_a
@@ -341,7 +301,16 @@ def detect_frustration(
                         f"on target_prop={tp_a!r} in scope={conflict_scope!r}"
                     ),
                 })
+    return conflicts
 
+
+def _collect_dependency_and_flow_conflicts(
+    graph: dict[str, Any],
+    scopes: dict[str, Any],
+    ancestors_by_scope: dict[str, set[str]],
+    filter_ids: set[str] | None,
+) -> list[dict[str, Any]]:
+    conflicts: list[dict[str, Any]] = []
     for sid, scope in scopes.items():
         if not isinstance(scope, dict):
             continue
@@ -389,14 +358,11 @@ def detect_frustration(
                 if (src and tgt)
                 else (False, None)
             )
-            is_self = bool(src and src == tgt)
-            if dependency_or_flow_clashes(has_prohib, False, is_self, False):
+            if dependency_or_flow_clashes(has_prohib, False, bool(src and src == tgt), False):
                 conflicts.append({
-                    "id": f"conflict_flow_{fid}",
-                    "type": "CONFLICT",
+                    "id": f"conflict_flow_{fid}", "type": "CONFLICT",
                     "scope": src.split("::")[0] if src else "global_defaults",
-                    "target_prop": "flow",
-                    "rule_ids": [fid],
+                    "target_prop": "flow", "rule_ids": [fid],
                     "text": f"Signal flow conflict on {fid}: {src} -> {tgt}.",
                 })
             if payload:
@@ -406,14 +372,55 @@ def detect_frustration(
                 tgt_ins = [str(x).strip() for x in tgt_sc.get("inputs", []) if str(x).strip()]
                 if flow_payload_clashes(bool(src_outs), payload in src_outs, bool(tgt_ins), payload in tgt_ins):
                     conflicts.append({
-                        "id": f"conflict_payload_{fid}",
-                        "type": "CONFLICT",
+                        "id": f"conflict_payload_{fid}", "type": "CONFLICT",
                         "scope": src.split("::")[0] if src else "global_defaults",
-                        "target_prop": "payload",
-                        "rule_ids": [fid],
+                        "target_prop": "payload", "rule_ids": [fid],
                         "text": f"Flow payload mismatch on {fid}: {src} --[{payload}]--> {tgt}.",
                     })
+    return conflicts
 
+
+def detect_frustration(
+    graph: dict[str, Any],
+    active_rule_ids: set[str] | list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Detects Spin-Glass Frustration (`CONFLICT`) across same-root-family and ancestor-descendant scopes (Spec 22B §2.2)."""
+    if not isinstance(graph, dict):
+        return []
+    scopes = graph.get("scopes")
+    if not isinstance(scopes, dict):
+        return []
+
+    filter_ids = set(active_rule_ids) if active_rule_ids is not None else None
+    ancestors_by_scope: dict[str, set[str]] = {
+        sid: _ancestor_scopes(scopes, sid, MAX_ANCESTOR_HOPS)
+        for sid, s in scopes.items()
+        if isinstance(s, dict)
+    }
+
+    scoped_rules: list[tuple[str, dict[str, Any]]] = []
+    for sid, scope in scopes.items():
+        if not isinstance(scope, dict):
+            continue
+        rules = scope.get("rules", [])
+        if not isinstance(rules, list):
+            continue
+        for r in rules:
+            if not isinstance(r, dict) or not r.get("id"):
+                continue
+            rid = str(r["id"])
+            raw_exceptions = r.get("exceptions", [])
+            if not isinstance(raw_exceptions, list):
+                raise ValueError(f"rule {rid!r} exceptions must be a list of dicts, got {raw_exceptions!r}")
+            for ex in raw_exceptions:
+                if isinstance(ex, str) or not isinstance(ex, dict):
+                    raise ValueError(f"rule {rid!r} exceptions entry must be a dict, got {ex!r}")
+            if filter_ids is not None and rid not in filter_ids:
+                continue
+            scoped_rules.append((sid, r))
+
+    conflicts = _collect_rule_pair_conflicts(scoped_rules, ancestors_by_scope)
+    conflicts.extend(_collect_dependency_and_flow_conflicts(graph, scopes, ancestors_by_scope, filter_ids))
     return conflicts
 
 
@@ -445,6 +452,62 @@ def _render_board_bend_proof(has_viol: bool, has_comp: bool, comp_ok: bool, flow
     )
 
 
+def _check_component_proof_gaps(
+    sid: str,
+    scopes: dict[str, Any],
+    flows: list[dict[str, Any]],
+    artifacts: list[dict[str, Any]],
+    total_owned: int,
+) -> list[dict[str, str]]:
+    gaps: list[dict[str, str]] = []
+    sc = scopes[sid]
+    anc_sids = _ancestor_scopes(scopes, sid, MAX_ANCESTOR_HOPS)
+    raw_ch = sc.get("children")
+    child_sids = {str(c).strip() for c in (raw_ch if isinstance(raw_ch, list) else []) if str(c).strip()} | {
+        k for k, v in scopes.items() if isinstance(v, dict) and str(v.get("parent") or "").strip() == sid
+    }
+    family_sids = {sid, *anc_sids, *child_sids}
+    owner = next(
+        (
+            str(scopes.get(s, {}).get("owner") or "").strip().lower()
+            for s in (sid, *anc_sids) if isinstance(scopes.get(s), dict)
+            and str(scopes.get(s, {}).get("owner") or "").strip()
+        ),
+        ""
+    )
+    if not owner:
+        gaps.append({"kind": "MISSING_OWNER", "scope": sid, "description": f"Component '{sid}' has no assigned division owner."})
+
+    has_law = any(a.get("kind") in ("LAW", "INTERFACE", "SCHEMA") and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids for a in artifacts) or any(
+        bool(scopes.get(s, {}).get("laws") or scopes.get(s, {}).get("files") or scopes.get(s, {}).get("rules"))
+        for s in family_sids if isinstance(scopes.get(s), dict)
+    )
+    if not has_law:
+        gaps.append({"kind": "MISSING_LAW", "scope": sid, "description": f"Component '{sid}' has no Bend 2 formal law (% LAW)."})
+
+    is_qa = sid.startswith(("test_", "tests/", "qa_")) or owner in ("qa", "q-division")
+    has_contract = (
+        any(a.get("kind") in ("SCHEMA", "INTERFACE") and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids for a in artifacts)
+        or any(
+            bool(scopes.get(s, {}).get("inputs") or scopes.get(s, {}).get("outputs") or scopes.get(s, {}).get("schemas") or scopes.get(s, {}).get("interfaces"))
+            for s in family_sids if isinstance(scopes.get(s), dict)
+        )
+        or any(
+            (str(f.get("source") or "").strip() in family_sids or str(f.get("target") or "").strip() in family_sids)
+            and bool(str(f.get("payload") or "").strip())
+            for f in flows
+        )
+        or (is_qa and any(bool(scopes.get(s, {}).get("rules") or scopes.get(s, {}).get("tasks")) for s in family_sids if isinstance(scopes.get(s), dict)))
+    )
+    if not has_contract:
+        gaps.append({"kind": "MISSING_CONTRACT", "scope": sid, "description": f"Component '{sid}' has no schema, interface, or typed flow payload."})
+
+    if not is_qa and total_owned > 1:
+        if not any(str(f.get("source") or "").strip() in family_sids or str(f.get("target") or "").strip() in family_sids for f in flows):
+            gaps.append({"kind": "UNWIRED_COMPONENT", "scope": sid, "description": f"Component '{sid}' is not connected to any > FLOW edge."})
+    return gaps
+
+
 def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
     """Evaluates continuous architectural consistency and completeness of `graph` governed by Bend 2 Law 9 (Spec 22B §2.3)."""
     if not isinstance(graph, dict):
@@ -466,66 +529,7 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
     ]
     open_gaps: list[dict[str, str]] = []
     for sid in owned_components:
-        sc = scopes[sid]
-        anc_sids = _ancestor_scopes(scopes, sid, MAX_ANCESTOR_HOPS)
-        raw_ch = sc.get("children")
-        child_sids = {str(c).strip() for c in (raw_ch if isinstance(raw_ch, list) else []) if str(c).strip()} | {
-            k for k, v in scopes.items() if isinstance(v, dict) and str(v.get("parent") or "").strip() == sid
-        }
-        family_sids = {sid, *anc_sids, *child_sids}
-        owner = next(
-            (
-                str(scopes.get(s, {}).get("owner") or "").strip().lower()
-                for s in (sid, *anc_sids) if isinstance(scopes.get(s), dict)
-                and str(scopes.get(s, {}).get("owner") or "").strip()
-            ),
-            ""
-        )
-        if not owner:
-            open_gaps.append({"kind": "MISSING_OWNER", "scope": sid, "description": f"Component '{sid}' has no assigned division owner."})
-
-        has_law = any(a.get("kind") in ("LAW", "INTERFACE", "SCHEMA") and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids for a in artifacts) or any(
-            bool(
-                scopes.get(s, {}).get("laws") or scopes.get(s, {}).get("files")
-                or scopes.get(s, {}).get("rules")
-            ) for s in family_sids if isinstance(scopes.get(s), dict)
-        )
-        if not has_law:
-            open_gaps.append({"kind": "MISSING_LAW", "scope": sid, "description": f"Component '{sid}' has no Bend 2 formal law (% LAW)."})
-
-        is_qa = sid.startswith(("test_", "tests/", "qa_")) or owner in ("qa", "q-division")
-        has_contract = (
-            any(
-                a.get("kind") in ("SCHEMA", "INTERFACE")
-                and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids
-                for a in artifacts
-            )
-            or any(
-                bool(
-                    scopes.get(s, {}).get("inputs") or scopes.get(s, {}).get("outputs")
-                    or scopes.get(s, {}).get("schemas")
-                    or scopes.get(s, {}).get("interfaces")
-                )
-                for s in family_sids if isinstance(scopes.get(s), dict)
-            )
-            or any(
-                (str(f.get("source") or "").strip() in family_sids or str(f.get("target") or "").strip() in family_sids)
-                and bool(str(f.get("payload") or "").strip())
-                for f in flows
-            )
-            or (is_qa and any(bool(scopes.get(s, {}).get("rules") or scopes.get(s, {}).get("tasks")) for s in family_sids if isinstance(scopes.get(s), dict)))
-        )
-        if not has_contract:
-            open_gaps.append({"kind": "MISSING_CONTRACT", "scope": sid, "description": f"Component '{sid}' has no schema, interface, or typed flow payload."})
-
-        if not is_qa:
-            flow_sids = family_sids
-            if not any(
-                str(f.get("source") or "").strip() in flow_sids
-                or str(f.get("target") or "").strip() in flow_sids
-                for f in flows
-            ):
-                open_gaps.append({"kind": "UNWIRED_COMPONENT", "scope": sid, "description": f"Component '{sid}' is not connected to any > FLOW edge."})
+        open_gaps.extend(_check_component_proof_gaps(sid, scopes, flows, artifacts, len(owned_components)))
 
     all_components_complete = not any(
         g["kind"] in ("MISSING_OWNER", "MISSING_LAW", "MISSING_CONTRACT")

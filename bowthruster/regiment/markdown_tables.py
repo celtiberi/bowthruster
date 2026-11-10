@@ -297,6 +297,114 @@ def extract_structured_table_rows(doc_tables: list[dict[str, Any]] | str) -> lis
     return structured_rows
 
 
+def _build_rule_mcu_from_row(
+    srow: dict[str, Any], next_id: int, scope: str,
+    owner: str | None, stage: str | None
+) -> dict[str, Any]:
+    raw_type = str(
+        srow.get("type") or srow.get("facet")
+        or ("BOUND" if (srow.get("op") or srow.get("bound_op") or srow.get("value") or srow.get("bound_val")) else "OBLIGATION")
+    ).strip().upper()
+    rtype = "FACT" if raw_type == "CONTEXT_FACTS" else (raw_type if raw_type in (
+        "BOUND", "PROHIBITION", "OBLIGATION", "FACT", "POLICY", "GOAL", "PROPOSAL", "ACTION"
+    ) else "BOUND")
+    prop_raw = str(srow.get("property") or srow.get("target_prop") or srow.get("prop") or "").strip()
+    op = str(srow.get("op") or srow.get("bound_op") or "").strip() or None
+    val = _parse_scalar_val(srow.get("value", srow.get("bound_val")))
+    expr_cell = srow.get("rule_spec") or srow.get("bound") or (srow.get("rule") if not prop_raw else None)
+    extra_c: list[str] = []
+    if (not prop_raw or val is None) and expr_cell:
+        d_prop, d_op, d_val, extra_c = _decompose_rule_expr(expr_cell, rtype)
+        prop_raw = prop_raw or (d_prop or "")
+        op = op or d_op
+        if val is None:
+            val = d_val
+    prop = _norm_col_key(prop_raw) if prop_raw else (str(srow.get("rule") or "").strip() or None)
+    op = op or ("==" if rtype in ("FACT", "OBLIGATION") else ("!=" if rtype == "PROHIBITION" else "<="))
+    raw_c = str(srow.get("condition") or srow.get("when") or "").strip()
+    cond_list = ([] if raw_c.lower() in ("", "none", "-", "—", "n/a", "null") else _split_list_cell(raw_c)) + [c for c in extra_c if c]
+    cond = cond_list[0] if cond_list else None
+    rid = str(srow.get("rule") or srow.get("id") or srow.get("name") or "").strip()
+    spec_txt = str(srow.get("spec") or srow.get("text") or srow.get("description") or "").strip()
+    txt = spec_txt or (
+        f"In `{scope}`, `{prop}` {op} {val}" + (f" when {', '.join(cond_list)}." if cond_list else ".")
+        if prop and val is not None else f"Rule {rid or next_id} on `{scope}`."
+    )
+    facet = (
+        "Numeric_Bounds" if rtype == "BOUND"
+        else ("prohibitions" if rtype == "PROHIBITION" else ("context_facts" if rtype == "FACT" else "obligations"))
+    )
+    is_exc = bool(cond and cond.lower().startswith(("unless", "except")))
+    return {
+        "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
+        "text": txt, "canonical_text": txt, "type": rtype, "facet": facet,
+        "primary_scope": scope, "secondary_refs": [],
+        "target_prop": prop, "bound_op": op if val is not None else None, "bound_val": val,
+        "conditions": cond_list, "is_exception": is_exc, "superseded_literals": [],
+        "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
+        "lattice_kind": "CONSTRAINT" if rtype in ("BOUND", "PROHIBITION", "OBLIGATION") else "FACT",
+        "lattice_payload": {k: v for k, v in (("id", rid), ("owner", owner), ("stage", stage)) if v},
+    }
+
+
+def _build_artifact_or_charter_mcu(
+    srow: dict[str, Any], next_id: int, t_kind: str, scope: str,
+    owner: str | None, stage: str | None
+) -> dict[str, Any]:
+    if t_kind == "CHARTER":
+        cname = str(srow.get("charter") or srow.get("project") or srow.get("board") or "project").strip()
+        csum = str(srow.get("summary") or srow.get("purpose") or srow.get("why") or "").strip()
+        cprin = str(srow.get("principles") or srow.get("non_goals") or "").strip()
+        txt = f"Charter [{cname}]: {csum}" + (f" | Principles: {cprin}" if cprin else "")
+        return {
+            "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
+            "text": txt, "canonical_text": txt, "type": "FACT", "facet": "context_facts",
+            "primary_scope": "global_defaults", "secondary_refs": [],
+            "target_prop": None, "bound_op": None, "bound_val": None,
+            "conditions": [], "is_exception": False, "superseded_literals": [],
+            "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
+            "lattice_kind": "CHARTER",
+            "lattice_payload": {"name": cname, "summary": csum, "principles": cprin},
+        }
+    if t_kind == "COMPONENT":
+        deps = _split_list_cell(srow.get("depends_on") or srow.get("dependencies") or srow.get("deps"))
+        files = _split_list_cell(srow.get("files") or srow.get("file") or srow.get("raw_scope"))
+        role = str(srow.get("role") or srow.get("description") or srow.get("purpose") or f"Component {scope}").strip()
+        why = str(srow.get("why") or srow.get("rationale") or "").strip() or None
+        return {
+            "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
+            "text": f"{scope}: {role}", "canonical_text": f"{scope}: {role}", "type": "FACT", "facet": "context_facts",
+            "primary_scope": scope, "secondary_refs": list(deps),
+            "target_prop": None, "bound_op": None, "bound_val": None,
+            "conditions": [], "is_exception": False, "superseded_literals": [],
+            "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
+            "lattice_kind": "COMPONENT",
+            "lattice_payload": {
+                "scope": scope, "role": role, "why": why,
+                "depends_on": deps, "files": files,
+                "owner": owner or "core", "stage": stage
+            },
+        }
+    name = str(srow.get(t_kind.lower()) or srow.get("name") or srow.get("id") or scope).strip()
+    spec_s = str(srow.get("spec") or srow.get("description") or srow.get("theorem") or f"{t_kind} {name} ({scope})").strip()
+    ins = _split_list_cell(srow.get("inputs") or srow.get("fields") or srow.get("args"))
+    outs = _split_list_cell(srow.get("outputs") or srow.get("output") or srow.get("returns"))
+    return {
+        "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
+        "text": spec_s, "canonical_text": spec_s, "type": "FACT", "facet": "context_facts",
+        "primary_scope": scope, "secondary_refs": [],
+        "target_prop": None, "bound_op": None, "bound_val": None,
+        "conditions": [], "is_exception": False, "superseded_literals": [],
+        "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
+        "lattice_kind": t_kind,
+        "lattice_payload": {
+            "id": name, "name": name, "scope": scope, "spec": spec_s,
+            "inputs": ins, "outputs": outs, "owner": owner, "stage": stage,
+            "file": str(srow.get("file") or "").strip() or None
+        },
+    }
+
+
 def build_mcus_from_tables_and_flows(
     structured_rows: list[dict[str, Any]],
     flow_sentences: list[dict[str, Any]] | None = None,
@@ -340,117 +448,10 @@ def build_mcus_from_tables_and_flows(
             })
             next_id += 1
         elif t_kind == "RULE":
-            raw_type = str(
-                srow.get("type") or srow.get("facet")
-                or ("BOUND" if (srow.get("op") or srow.get("bound_op") or srow.get("value") or srow.get("bound_val")) else "OBLIGATION")
-            ).strip().upper()
-            rtype = "FACT" if raw_type == "CONTEXT_FACTS" else (raw_type if raw_type in (
-                "BOUND", "PROHIBITION", "OBLIGATION",
-                "FACT", "POLICY", "GOAL",
-                "PROPOSAL", "ACTION"
-            ) else "BOUND")
-            prop_raw = str(srow.get("property") or srow.get("target_prop") or srow.get("prop") or "").strip()
-            op = str(srow.get("op") or srow.get("bound_op") or "").strip() or None
-            val = _parse_scalar_val(srow.get("value", srow.get("bound_val")))
-            expr_cell = srow.get("rule_spec") or srow.get("bound") or (srow.get("rule") if not prop_raw else None)
-            extra_c: list[str] = []
-            if (not prop_raw or val is None) and expr_cell:
-                d_prop, d_op, d_val, extra_c = _decompose_rule_expr(expr_cell, rtype)
-                prop_raw = prop_raw or (d_prop or "")
-                op = op or d_op
-                if val is None:
-                    val = d_val
-            prop = _norm_col_key(prop_raw) if prop_raw else (str(srow.get("rule") or "").strip() or None)
-            op = op or ("==" if rtype in ("FACT", "OBLIGATION") else ("!=" if rtype == "PROHIBITION" else "<="))
-            raw_c = str(srow.get("condition") or srow.get("when") or "").strip()
-            cond_list = ([] if raw_c.lower() in ("", "none", "-", "—", "n/a", "null") else _split_list_cell(raw_c)) + [c for c in extra_c if c]
-            cond = cond_list[0] if cond_list else None
-            rid = str(srow.get("rule") or srow.get("id") or srow.get("name") or "").strip()
-            spec_txt = str(srow.get("spec") or srow.get("text") or srow.get("description") or "").strip()
-            txt = spec_txt or (
-                f"In `{scope}`, `{prop}` {op} {val}" + (f" when {', '.join(cond_list)}." if cond_list else ".")
-                if prop and val is not None else f"Rule {rid or next_id} on `{scope}`."
-            )
-            facet = (
-                "Numeric_Bounds" if rtype == "BOUND"
-                else ("prohibitions" if rtype == "PROHIBITION" else ("context_facts" if rtype == "FACT" else "obligations"))
-            )
-            is_exc = bool(cond and cond.lower().startswith(("unless", "except")))
-            mcus.append({
-                "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
-                "text": txt, "canonical_text": txt, "type": rtype, "facet": facet,
-                "primary_scope": scope, "secondary_refs": [],
-                "target_prop": prop, "bound_op": op if val is not None else None, "bound_val": val,
-                "conditions": cond_list, "is_exception": is_exc, "superseded_literals": [],
-                "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
-                "lattice_kind": "CONSTRAINT" if rtype in ("BOUND", "PROHIBITION", "OBLIGATION") else "FACT",
-                "lattice_payload": {k: v for k, v in (("id", rid), ("owner", owner), ("stage", stage)) if v},
-            })
+            mcus.append(_build_rule_mcu_from_row(srow, next_id, scope, owner, stage))
             next_id += 1
-        elif t_kind == "CHARTER":
-            cname = str(srow.get("charter") or srow.get("project") or srow.get("board") or "project").strip()
-            csum = str(srow.get("summary") or srow.get("purpose") or srow.get("why") or "").strip()
-            cprin = str(srow.get("principles") or srow.get("non_goals") or "").strip()
-            txt = f"Charter [{cname}]: {csum}" + (f" | Principles: {cprin}" if cprin else "")
-            mcus.append({
-                "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
-                "text": txt, "canonical_text": txt, "type": "FACT", "facet": "context_facts",
-                "primary_scope": "global_defaults", "secondary_refs": [],
-                "target_prop": None, "bound_op": None, "bound_val": None,
-                "conditions": [], "is_exception": False, "superseded_literals": [],
-                "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
-                "lattice_kind": "CHARTER",
-                "lattice_payload": {"name": cname, "summary": csum, "principles": cprin},
-            })
-            next_id += 1
-        elif t_kind == "COMPONENT":
-            deps = _split_list_cell(srow.get("depends_on") or srow.get("dependencies") or srow.get("deps"))
-            raw_files_cell = srow.get("files") or srow.get("file") or srow.get("raw_scope")
-            files = _split_list_cell(raw_files_cell)
-            eff_owner = owner or "core"
-            role = str(
-                srow.get("role") or srow.get("description")
-                or srow.get("purpose") or f"Component {scope}"
-            ).strip()
-            why = str(srow.get("why") or srow.get("rationale") or "").strip() or None
-            mcus.append({
-                "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
-                "text": f"{scope}: {role}", "canonical_text": f"{scope}: {role}", "type": "FACT", "facet": "context_facts",
-                "primary_scope": scope, "secondary_refs": list(deps),
-                "target_prop": None, "bound_op": None, "bound_val": None,
-                "conditions": [], "is_exception": False, "superseded_literals": [],
-                "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
-                "lattice_kind": "COMPONENT",
-                "lattice_payload": {
-                    "scope": scope, "role": role, "why": why,
-                    "depends_on": deps, "files": files,
-                    "owner": eff_owner, "stage": stage
-                },
-            })
-            next_id += 1
-        elif t_kind in ("INTERFACE", "LAW", "SCHEMA"):
-            name = str(srow.get(t_kind.lower()) or srow.get("name") or srow.get("id") or scope).strip()
-            spec_s = str(
-                srow.get("spec") or srow.get("description")
-                or srow.get("theorem") or f"{t_kind} {name} ({scope})"
-            ).strip()
-            ins = _split_list_cell(srow.get("inputs") or srow.get("fields") or srow.get("args"))
-            outs = _split_list_cell(srow.get("outputs") or srow.get("output") or srow.get("returns"))
-            mcus.append({
-                "mcu_id": next_id, "head_id": next_id, "source_chunk_ids": [next_id],
-                "text": spec_s, "canonical_text": spec_s, "type": "FACT", "facet": "context_facts",
-                "primary_scope": scope, "secondary_refs": [],
-                "target_prop": None, "bound_op": None, "bound_val": None,
-                "conditions": [], "is_exception": False, "superseded_literals": [],
-                "meta_keys": [], "meta": {}, "unclear_spans": [], "grounding_status": "GROUNDED",
-                "lattice_kind": t_kind,
-                "lattice_payload": {
-                    "id": name, "name": name, "scope": scope,
-                    "spec": spec_s, "inputs": ins, "outputs": outs,
-                    "owner": owner, "stage": stage, "file": str(srow.get("file") or "").strip()
-                    or None
-                },
-            })
+        elif t_kind in ("CHARTER", "COMPONENT", "INTERFACE", "LAW", "SCHEMA"):
+            mcus.append(_build_artifact_or_charter_mcu(srow, next_id, t_kind, scope, owner, stage))
             next_id += 1
 
     for fl in (flow_sentences or []):

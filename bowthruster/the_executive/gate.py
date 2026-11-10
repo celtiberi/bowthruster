@@ -239,22 +239,15 @@ def is_verified_scope_protected(file_hash_changed: bool = False, scope_still_ver
 verified_scope_edit_guard_law = is_verified_scope_protected
 
 
-def evaluate_git_commit_gate(
-    whiteboard_graph: dict[str, Any] | None,
+def _extract_scope_rules_and_bounds(
+    wb: dict[str, Any],
     staged_diff_report: dict[str, Any],
-    *,
-    uri_sync_report: dict[str, Any] | None = None,
-) -> GateDecisionResult:
-    """Evaluates a staged git commit against the active Whiteboard Lattice (`whiteboard_graph`) without mutating it."""
-    wb, scopes, artifacts, staged_files = _unpack_lattice_and_files(whiteboard_graph, staged_diff_report)
-    eff_uri_sync = uri_sync_report if isinstance(uri_sync_report, dict) else (
-        staged_diff_report.get("uri_sync_report")
-        if isinstance(staged_diff_report.get("uri_sync_report"), dict) else None
-    )
-    violations: list[dict[str, Any]] = []
-    bounds_ok, contracts_ok, bend_proofs_ok, no_dangling_deletes = True, True, True, True
+    scopes: dict[str, Any],
+) -> tuple[int | None, dict[str, list[tuple[str, str, float, str]]], dict[str, set[str]]]:
     raw_mlb = wb.get("max_file_lines") if wb.get("max_file_lines") is not None else staged_diff_report.get("max_file_lines")
-    max_lines_bound: int | None = int(raw_mlb) if isinstance(raw_mlb, (int, float)) and not isinstance(raw_mlb, bool) and raw_mlb > 0 else None
+    max_lines_bound: int | None = (
+        int(raw_mlb) if isinstance(raw_mlb, (int, float)) and not isinstance(raw_mlb, bool) and raw_mlb > 0 else None
+    )
     scope_bounds: dict[str, list[tuple[str, str, float, str]]] = {}
     prohibited_by_scope: dict[str, set[str]] = {}
     for sid, sc in scopes.items():
@@ -262,14 +255,13 @@ def evaluate_git_commit_gate(
         for r in (sc.get("rules") if isinstance(sc, dict) and isinstance(sc.get("rules"), list) else []):
             if not isinstance(r, dict):
                 continue
-            rtype, rtext, prop = str(r.get("type") or "").upper(), str(r.get("text") or ""), str(r.get("target_prop") or "").strip()
+            rtype = str(r.get("type") or "").upper()
+            rtext = str(r.get("text") or "")
+            prop = str(r.get("target_prop") or "").strip()
             if (rtype == "BOUND" or r.get("bound_op") is not None) and r.get("bound_val") is not None and not isinstance(r.get("bound_val"), bool):
                 try:
                     bval, bop = float(r["bound_val"]), str(r.get("bound_op") or "<=").strip()
-                    if prop.lower() in (
-                        "max_file_lines", "file_lines", "line_count",
-                        "lines", "max_lines"
-                    ) or "max_file_lines" in rtext.lower():
+                    if prop.lower() in ("max_file_lines", "file_lines", "line_count", "lines", "max_lines") or "max_file_lines" in rtext.lower():
                         max_lines_bound = int(bval)
                     elif prop:
                         scope_bounds.setdefault(base_sid, []).append((prop, bop, bval, rtext or f"{prop} {bop} {bval}"))
@@ -277,89 +269,72 @@ def evaluate_git_commit_gate(
                     pass
             if rtype == "PROHIBITION":
                 prohibited_by_scope.setdefault(base_sid, set()).update(_extract_prohibited_tokens(r))
+    return max_lines_bound, scope_bounds, prohibited_by_scope
 
-    modified_scope_files: dict[str, list[dict[str, Any]]] = {}
-    deleted_paths: set[str] = {
-        str(p).strip() for p in (staged_diff_report.get("deleted_files") or [])
-        if str(p).strip()
-    }
-    for f in staged_files:
-        path, status = str(f.get("path") or f.get("file") or "").strip(), str(f.get("status") or "M").strip().upper()
-        if status.startswith("D") or bool(f.get("deleted")):
-            if path:
-                deleted_paths.add(path)
-            continue
-        src = f.get("source") if f.get("source") is not None else (f.get("content") if f.get("content") is not None else f.get("code"))
-        eff_imps = _populate_file_ast_metadata(f, src) if isinstance(src, str) and src.strip() else list(f.get("imports") or [])
-        f_scopes = _resolve_file_scopes(
-            path, str(f.get("scope") or f.get("component") or "").strip(),
-            scopes, artifacts
-        )
-        cur_hash, top_hashes = str(f.get("file_hash") or "").strip(), (wb.get("file_hashes") if isinstance(wb.get("file_hashes"), dict) else {})
-        for s in f_scopes:
-            modified_scope_files.setdefault(s, []).append(f)
-            sc = scopes.get(s) if isinstance(scopes.get(s), dict) else {}
-            sc_hashes = sc.get("file_hashes") if isinstance(sc.get("file_hashes"), dict) else top_hashes
-            base_h = next(
-                (str(v).strip() for k, v in sc_hashes.items() if _paths_match(k, path) and str(v).strip()),
-                ""
-            )
-            still_ver = str(sc.get("status") or sc.get("build_status") or "").strip().upper() == "VERIFIED"
-            hash_changed = bool(cur_hash and base_h and cur_hash != base_h)
-            if not (
-                is_verified_scope_protected(hash_changed, still_ver)
-                and verified_scope_edit_guard_law(hash_changed, still_ver)
-            ):
-                contracts_ok = False
+
+def _check_file_bounds_and_prohibitions(
+    f: dict[str, Any],
+    path: str,
+    f_scopes: list[str],
+    eff_imps: list[str],
+    max_lines_bound: int | None,
+    scope_bounds: dict[str, list[tuple[str, str, float, str]]],
+    prohibited_by_scope: dict[str, set[str]],
+    violations: list[dict[str, Any]],
+) -> bool:
+    bounds_ok = True
+    raw_lc = f.get("line_count") if f.get("line_count") is not None else f.get("lines")
+    line_cnt = len(raw_lc) if isinstance(raw_lc, list) else raw_lc
+    f_raw_mlb = f.get("max_file_lines") if f.get("max_file_lines") is not None else max_lines_bound
+    f_max_lines = int(f_raw_mlb) if isinstance(f_raw_mlb, (int, float)) and not isinstance(f_raw_mlb, bool) and f_raw_mlb > 0 else None
+    if f_max_lines is not None and isinstance(line_cnt, (int, float)) and not isinstance(line_cnt, bool) and line_cnt > f_max_lines:
+        bounds_ok = False
+        violations.append({
+            "kind": "BOUND_VIOLATION",
+            "scope": f_scopes[0] if f_scopes else "global_defaults",
+            "path": path,
+            "description": f"{path} line_count ({int(line_cnt)}) exceeds max_file_lines bound ({f_max_lines})",
+        })
+    raw_consts = f.get("ast_constants")
+    consts_map = {str(k).strip().lower(): v for k, v in raw_consts.items()} if isinstance(raw_consts, dict) else (
+        {str(c.get("name") or "").strip().lower(): c.get("value") for c in raw_consts if isinstance(c, dict) and c.get("name")}
+        if isinstance(raw_consts, list) else {}
+    )
+    active_prohibited: set[str] = set()
+    for check_sid in ("global_defaults", *f_scopes):
+        active_prohibited.update(prohibited_by_scope.get(check_sid, set()))
+        for b_prop, b_op, b_val, b_desc in scope_bounds.get(check_sid, []):
+            cand_val = consts_map.get(b_prop.lower(), f.get(b_prop))
+            if isinstance(cand_val, (int, float)) and not isinstance(cand_val, bool) and not _check_numeric_bound(float(cand_val), b_op, b_val):
+                bounds_ok = False
                 violations.append({
-                    "kind": "CONTRACT_VIOLATION",
-                    "scope": s, "path": path,
-                    "description": f"{path} modified (file_hash {cur_hash} != baseline {base_h}) while component '{s}' is still VERIFIED; run turn first to mark '{s}' STALE"
+                    "kind": "BOUND_VIOLATION",
+                    "scope": check_sid,
+                    "path": path,
+                    "description": f"{path} constant {b_prop}={cand_val} violates bound ({b_desc})",
                 })
-        raw_lc = f.get("line_count") if f.get("line_count") is not None else f.get("lines")
-        line_cnt = len(raw_lc) if isinstance(raw_lc, list) else raw_lc
-        f_raw_mlb = f.get("max_file_lines") if f.get("max_file_lines") is not None else max_lines_bound
-        f_max_lines = int(f_raw_mlb) if isinstance(f_raw_mlb, (int, float)) and not isinstance(f_raw_mlb, bool) and f_raw_mlb > 0 else None
-        if f_max_lines is not None and isinstance(line_cnt, (int, float)) and not isinstance(line_cnt, bool) and line_cnt > f_max_lines:
-            bounds_ok = False
-            violations.append({
-                "kind": "BOUND_VIOLATION",
-                "scope": f_scopes[0] if f_scopes else "global_defaults",
-                "path": path, "description": f"{path} line_count ({int(line_cnt)}) exceeds max_file_lines bound ({f_max_lines})"
-            })
-        raw_consts = f.get("ast_constants")
-        consts_map = {str(k).strip().lower(): v for k, v in raw_consts.items()} if isinstance(raw_consts, dict) else (
-            {
-                str(c.get("name") or "").strip().lower(): c.get("value")
-                for c in raw_consts if isinstance(c, dict)
-                and c.get("name")
-            }
-            if isinstance(raw_consts, list) else {}
-        )
-        active_prohibited: set[str] = set()
-        for check_sid in ("global_defaults", *f_scopes):
-            active_prohibited.update(prohibited_by_scope.get(check_sid, set()))
-            for b_prop, b_op, b_val, b_desc in scope_bounds.get(check_sid, []):
-                cand_val = consts_map.get(b_prop.lower(), f.get(b_prop))
-                if isinstance(cand_val, (int, float)) and not isinstance(cand_val, bool) and not _check_numeric_bound(float(cand_val), b_op, b_val):
-                    bounds_ok = False
-                    violations.append({
-                        "kind": "BOUND_VIOLATION",
-                        "scope": check_sid, "path": path,
-                        "description": f"{path} constant {b_prop}={cand_val} violates bound ({b_desc})"
-                    })
-        bad_imps = [str(x).strip() for x in (f.get("prohibited_imports") or []) if str(x).strip()] + [
-            str(imp).strip() for imp in eff_imps
-            if str(imp).strip().replace("import ", "").split(".")[0].strip().lower() in active_prohibited or str(imp).strip().lower() in active_prohibited
-        ]
-        if bad_imps:
-            bounds_ok = False
-            violations.append({
-                "kind": "PROHIBITION_VIOLATION",
-                "scope": f_scopes[0] if f_scopes else "global_defaults",
-                "path": path, "description": f"{path} contains prohibited imports: {', '.join(dict.fromkeys(bad_imps))}"
-            })
+    bad_imps = [str(x).strip() for x in (f.get("prohibited_imports") or []) if str(x).strip()] + [
+        str(imp).strip() for imp in eff_imps
+        if str(imp).strip().replace("import ", "").split(".")[0].strip().lower() in active_prohibited or str(imp).strip().lower() in active_prohibited
+    ]
+    if bad_imps:
+        bounds_ok = False
+        violations.append({
+            "kind": "PROHIBITION_VIOLATION",
+            "scope": f_scopes[0] if f_scopes else "global_defaults",
+            "path": path,
+            "description": f"{path} contains prohibited imports: {', '.join(dict.fromkeys(bad_imps))}",
+        })
+    return bounds_ok
 
+
+def _evaluate_scope_dependencies(
+    modified_scope_files: dict[str, list[dict[str, Any]]],
+    scopes: dict[str, Any],
+    artifacts: list[dict[str, Any]],
+    violations: list[dict[str, Any]],
+) -> bool:
+    contracts_ok = True
     for s, s_files in modified_scope_files.items():
         sc = scopes.get(s) if isinstance(scopes.get(s), dict) else {}
         if not any(f.get("file_hash") for f in s_files) or not sc.get("depends_on"):
@@ -374,63 +349,34 @@ def evaluate_git_commit_gate(
             if not dep_files:
                 continue
             dep_toks = {
-                dep, dep.split("::")[0],
+                dep,
+                dep.split("::")[0],
                 *(Path(fp).stem for fp in dep_files if Path(fp).stem != "__init__"),
-                *(
-                    Path(fp).parent.name for fp in dep_files
-                    if Path(fp).parent.name not in ("", ".", Path(dep_files[0]).parts[0])
-                ),
+                *(Path(fp).parent.name for fp in dep_files if Path(fp).parent.name not in ("", ".", Path(dep_files[0]).parts[0])),
                 *(
                     str(a.get("name") or a.get("id") or "").strip()
-                    for a in artifacts if str(a.get("scope") or "").strip() == dep
-                    and str(a.get("name") or a.get("id") or "").strip()
+                    for a in artifacts if str(a.get("scope") or "").strip() == dep and str(a.get("name") or a.get("id") or "").strip()
                 ),
             }
             if not any(tok and tok in s_srcs for tok in dep_toks):
                 contracts_ok = False
                 violations.append({
                     "kind": "CONTRACT_VIOLATION",
-                    "scope": s, "path": str(s_files[0].get("path") or ""),
-                    "description": f"Component '{s}' declares depends_on '{dep}' on the Lattice, but none of {s}'s files import or reference {sorted(dep_toks)}"
+                    "scope": s,
+                    "path": str(s_files[0].get("path") or ""),
+                    "description": f"Component '{s}' declares depends_on '{dep}' on the Lattice, but none of {s}'s files import or reference {sorted(dep_toks)}",
                 })
+    return contracts_ok
 
-    if staged_diff_report.get("bounds_ok") is False:
-        bounds_ok = False
-        if not any(v["kind"] in ("BOUND_VIOLATION", "PROHIBITION_VIOLATION") for v in violations):
-            violations.append({"kind": "BOUND_VIOLATION", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged bounds_ok=False"})
 
-    decl_syms = (
-        {
-            str(a.get("name") or a.get("id") or "").strip()
-            for a in artifacts if str(a.get("kind") or "").upper() in ("INTERFACE", "SCHEMA")
-        }
-        | {_extract_law_fn_name(a) for a in artifacts if str(a.get("kind") or "").upper() == "LAW"}
-        | {
-            str(a.get("name") or a.get("id") or "").strip()
-            for a in artifacts if str(a.get("kind") or "").upper() == "LAW"
-        }
-    )
-    unreg_syms = [
-        {"scope": s, "path": str(f.get("path") or ""), "symbol": sym}
-        for s, s_files in modified_scope_files.items()
-        if str(
-            (scopes.get(s) or {}).get("status")
-            or (scopes.get(s) or {}).get("build_status")
-            or ""
-        ).strip().upper() != "VERIFIED" or any(not f.get("file_hash") for f in s_files)
-        for f in s_files
-        for sym in sorted(_normalize_symbol_map(f.get("ast_functions"))[0] | _normalize_symbol_map(f.get("ast_classes") if "ast_classes" in f else f.get("ast_schemas"))[0])
-        if sym and not sym.startswith("_") and sym != "main" and sym not in decl_syms
-    ]
-    flow_schemas = [
-        str(fl.get("payload") or "").strip() for fl in (wb.get("flows") or [])
-        if isinstance(fl, dict) and any(
-            str(a.get("kind") or "").upper() == "SCHEMA"
-            and str(a.get("name") or a.get("id") or "").lower() == str(fl.get("payload") or "").strip().lower()
-            for a in artifacts
-        )
-    ]
-
+def _evaluate_artifact_contracts(
+    artifacts: list[dict[str, Any]],
+    scopes: dict[str, Any],
+    staged_files: list[dict[str, Any]],
+    modified_scope_files: dict[str, list[dict[str, Any]]],
+    violations: list[dict[str, Any]],
+) -> bool:
+    contracts_ok = True
     for art in (a for a in artifacts if str(a.get("kind") or "").upper() in ("INTERFACE", "SCHEMA")):
         akind, asid = str(art.get("kind") or "").upper(), str(art.get("scope") or "").strip()
         aname, afile = str(art.get("name") or art.get("id") or "").strip(), str(art.get("file") or "").strip()
@@ -451,8 +397,9 @@ def evaluate_git_commit_gate(
                 contracts_ok = False
                 violations.append({
                     "kind": "CONTRACT_VIOLATION",
-                    "scope": asid, "path": cpath,
-                    "description": f"Required {akind} '{aname}' was removed from {cpath}"
+                    "scope": asid,
+                    "path": cpath,
+                    "description": f"Required {akind} '{aname}' was removed from {cpath}",
                 })
             has_fn_ast = "ast_functions" in cf and cf["ast_functions"] is not None
             has_cls_ast = ("ast_classes" in cf and cf["ast_classes"] is not None) or ("ast_schemas" in cf and cf["ast_schemas"] is not None)
@@ -468,8 +415,9 @@ def evaluate_git_commit_gate(
                     contracts_ok = False
                     violations.append({
                         "kind": "CONTRACT_VIOLATION",
-                        "scope": asid, "path": cpath,
-                        "description": f"Required {akind} '{aname}' missing from {cpath}"
+                        "scope": asid,
+                        "path": cpath,
+                        "description": f"Required {akind} '{aname}' missing from {cpath}",
                     })
                 elif (
                     akind == "INTERFACE" and req_inputs
@@ -479,47 +427,30 @@ def evaluate_git_commit_gate(
                     contracts_ok = False
                     violations.append({
                         "kind": "CONTRACT_VIOLATION",
-                        "scope": asid, "path": cpath,
-                        "description": f"INTERFACE '{aname}' in {cpath} missing required inputs: {missing_in}"
+                        "scope": asid,
+                        "path": cpath,
+                        "description": f"INTERFACE '{aname}' in {cpath} missing required inputs: {missing_in}",
                     })
                 elif akind == "SCHEMA" and req_inputs and aname in cls_fields and (missing_f := [fld for fld in req_inputs if fld not in cls_fields[aname]]):
                     contracts_ok = False
                     violations.append({
                         "kind": "CONTRACT_VIOLATION",
-                        "scope": asid, "path": cpath,
-                        "description": f"SCHEMA '{aname}' in {cpath} missing required fields: {missing_f}"
+                        "scope": asid,
+                        "path": cpath,
+                        "description": f"SCHEMA '{aname}' in {cpath} missing required fields: {missing_f}",
                     })
+    return contracts_ok
 
-    if not (is_verified_scope_protected(False, False) and verified_scope_edit_guard_law(False, False)):
-        contracts_ok = False
-    has_direct_contract_err = not contracts_ok
-    cg_report = verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report)
-    if not cg_report["is_valid"]:
-        contracts_ok = False
-        violations.extend(cg_report["violations"])
-    if staged_diff_report.get("contracts_ok") is False:
-        contracts_ok = False
-        if not any(v["kind"] == "CONTRACT_VIOLATION" for v in violations):
-            violations.append({
-                "kind": "CONTRACT_VIOLATION",
-                "scope": "global_defaults",
-                "path": "", "description": "Staged diff report flagged contracts_ok=False"
-            })
 
-    import bowthruster.nlp as _nlp_mod
-    nlp_mod = importlib.reload(_nlp_mod) if not hasattr(_nlp_mod, "verify_python_ast_laws_with_bend") else _nlp_mod
-    ast_law_rep = nlp_mod.verify_python_ast_laws_with_bend(artifacts, staged_files, scopes)
-    failed_laws = list(dict.fromkeys([*(staged_diff_report.get("failed_laws") or staged_diff_report.get("bend_failures") or []), *ast_law_rep["failed_laws"]]))
-    raw_bend_ok = staged_diff_report.get("bend_proofs_ok", True)
-    if raw_bend_ok is False or ast_law_rep["bend_proofs_ok"] is False or failed_laws:
-        bend_proofs_ok = False
-        violations.append({
-            "kind": "BEND_PROOF_FAILURE",
-            "scope": "global_defaults",
-            "path": "", "description": f"Bend 2 proof verification failed: {failed_laws or 'bend_proofs_ok=False'}"
-        })
-    bend_not_checked = bend_proofs_ok and (raw_bend_ok == "not_checked" or ast_law_rep.get("bend_proofs_ok") == "not_checked")
-
+def _evaluate_dangling_deleted_uris(
+    eff_uri_sync: dict[str, Any] | None,
+    deleted_paths: set[str],
+    scopes: dict[str, Any],
+    artifacts: list[dict[str, Any]],
+    staged_diff_report: dict[str, Any],
+    violations: list[dict[str, Any]],
+) -> bool:
+    no_dangling_deletes = True
     healed_old_paths: set[str] = {
         str(ren["old_uri"]).strip() for ren in (
             (eff_uri_sync.get("renamed_uris") or eff_uri_sync.get("healed_renames") or [])
@@ -540,7 +471,8 @@ def evaluate_git_commit_gate(
             violations.append({
                 "kind": "DANGLING_DELETED_URI",
                 "scope": "global_defaults",
-                "path": d_str, "description": f"URI sync report detected dangling deleted URI: {d_str or 'has_dangling_deleted_uri=True'}"
+                "path": d_str,
+                "description": f"URI sync report detected dangling deleted URI: {d_str or 'has_dangling_deleted_uri=True'}",
             })
     for dpath in (dp for dp in sorted(deleted_paths) if not any(_paths_match(dp, hp) for hp in healed_old_paths)):
         for sid, sc in scopes.items():
@@ -548,8 +480,9 @@ def evaluate_git_commit_gate(
                 no_dangling_deletes = False
                 violations.append({
                     "kind": "DANGLING_DELETED_URI",
-                    "scope": sid, "path": dpath,
-                    "description": f"Deleted file '{dpath}' is still referenced by active scope '{sid}'"
+                    "scope": sid,
+                    "path": dpath,
+                    "description": f"Deleted file '{dpath}' is still referenced by active scope '{sid}'",
                 })
         for art in artifacts:
             if art.get("file") and _paths_match(dpath, str(art["file"])):
@@ -557,7 +490,8 @@ def evaluate_git_commit_gate(
                 violations.append({
                     "kind": "DANGLING_DELETED_URI",
                     "scope": str(art.get("scope") or "global_defaults"),
-                    "path": dpath, "description": f"Deleted file '{dpath}' is still referenced by lattice artifact '{art.get('name') or art.get('id')}'"
+                    "path": dpath,
+                    "description": f"Deleted file '{dpath}' is still referenced by lattice artifact '{art.get('name') or art.get('id')}'",
                 })
     if staged_diff_report.get("no_dangling_deletes") is False:
         no_dangling_deletes = False
@@ -565,39 +499,134 @@ def evaluate_git_commit_gate(
             violations.append({
                 "kind": "DANGLING_DELETED_URI",
                 "scope": "global_defaults",
-                "path": "", "description": "Staged diff report flagged no_dangling_deletes=False"
+                "path": "",
+                "description": "Staged diff report flagged no_dangling_deletes=False",
             })
+    return no_dangling_deletes
 
-    allowed = should_allow_git_commit(bounds_ok, contracts_ok, bend_proofs_ok, no_dangling_deletes)
-    non_del_contract_err = has_direct_contract_err or bool(cg_report["disconnected_laws"]) or staged_diff_report.get("contracts_ok") is False or (
-        bool(cg_report["dangling_imports"])
-        and no_dangling_deletes
+
+def _collect_unregistered_symbols_and_flow_schemas(
+    wb: dict[str, Any],
+    scopes: dict[str, Any],
+    artifacts: list[dict[str, Any]],
+    modified_scope_files: dict[str, list[dict[str, Any]]],
+) -> tuple[list[dict[str, str]], list[str]]:
+    decl_syms = (
+        {str(a.get("name") or a.get("id") or "").strip() for a in artifacts if str(a.get("kind") or "").upper() in ("INTERFACE", "SCHEMA")}
+        | {_extract_law_fn_name(a) for a in artifacts if str(a.get("kind") or "").upper() == "LAW"}
+        | {str(a.get("name") or a.get("id") or "").strip() for a in artifacts if str(a.get("kind") or "").upper() == "LAW"}
     )
-    bounce_reason = (
-        BOUNCE_NONE if allowed else (
-            BOUNCE_RULE_CONFLICT if (not bounds_ok or non_del_contract_err) else (
-                BOUNCE_BEND_PROOF_FAILURE if bend_proofs_ok is False else BOUNCE_DANGLING_DELETED_URI
-            )
+    unreg_syms = [
+        {"scope": s, "path": str(f.get("path") or ""), "symbol": sym}
+        for s, s_files in modified_scope_files.items()
+        if str((scopes.get(s) or {}).get("status") or (scopes.get(s) or {}).get("build_status") or "").strip().upper() != "VERIFIED"
+        or any(not f.get("file_hash") for f in s_files)
+        for f in s_files
+        for sym in sorted(_normalize_symbol_map(f.get("ast_functions"))[0] | _normalize_symbol_map(f.get("ast_classes") if "ast_classes" in f else f.get("ast_schemas"))[0])
+        if sym and not sym.startswith("_") and sym != "main" and sym not in decl_syms
+    ]
+    flow_schemas = [
+        str(fl.get("payload") or "").strip() for fl in (wb.get("flows") or [])
+        if isinstance(fl, dict) and any(
+            str(a.get("kind") or "").upper() == "SCHEMA"
+            and str(a.get("name") or a.get("id") or "").lower() == str(fl.get("payload") or "").strip().lower()
+            for a in artifacts
         )
+    ]
+    return unreg_syms, flow_schemas
+
+
+def evaluate_git_commit_gate(
+    whiteboard_graph: dict[str, Any] | None,
+    staged_diff_report: dict[str, Any],
+    *,
+    uri_sync_report: dict[str, Any] | None = None,
+) -> GateDecisionResult:
+    """Evaluates a staged git commit against the active Whiteboard Lattice (`whiteboard_graph`) without mutating it."""
+    wb, scopes, artifacts, staged_files = _unpack_lattice_and_files(whiteboard_graph, staged_diff_report)
+    eff_uri_sync = uri_sync_report if isinstance(uri_sync_report, dict) else (
+        staged_diff_report.get("uri_sync_report") if isinstance(staged_diff_report.get("uri_sync_report"), dict) else None
+    )
+    violations: list[dict[str, Any]] = []
+    bounds_ok, contracts_ok, bend_proofs_ok = True, True, True
+    max_lines_bound, scope_bounds, prohibited_by_scope = _extract_scope_rules_and_bounds(wb, staged_diff_report, scopes)
+    modified_scope_files: dict[str, list[dict[str, Any]]] = {}
+    deleted_paths: set[str] = {str(p).strip() for p in (staged_diff_report.get("deleted_files") or []) if str(p).strip()}
+    top_hashes = wb.get("file_hashes") if isinstance(wb.get("file_hashes"), dict) else {}
+    for f in staged_files:
+        path, status = str(f.get("path") or f.get("file") or "").strip(), str(f.get("status") or "M").strip().upper()
+        if status.startswith("D") or bool(f.get("deleted")):
+            if path:
+                deleted_paths.add(path)
+            continue
+        src = f.get("source") if f.get("source") is not None else (f.get("content") if f.get("content") is not None else f.get("code"))
+        eff_imps = _populate_file_ast_metadata(f, src) if isinstance(src, str) and src.strip() else list(f.get("imports") or [])
+        f_scopes = _resolve_file_scopes(path, str(f.get("scope") or f.get("component") or "").strip(), scopes, artifacts)
+        cur_hash = str(f.get("file_hash") or "").strip()
+        for s in f_scopes:
+            modified_scope_files.setdefault(s, []).append(f)
+            sc = scopes.get(s) if isinstance(scopes.get(s), dict) else {}
+            sc_hashes = sc.get("file_hashes") if isinstance(sc.get("file_hashes"), dict) else top_hashes
+            base_h = next((str(v).strip() for k, v in sc_hashes.items() if _paths_match(k, path) and str(v).strip()), "")
+            still_ver = str(sc.get("status") or sc.get("build_status") or "").strip().upper() == "VERIFIED"
+            hash_changed = bool(cur_hash and base_h and cur_hash != base_h)
+            if not (is_verified_scope_protected(hash_changed, still_ver) and verified_scope_edit_guard_law(hash_changed, still_ver)):
+                contracts_ok = False
+                violations.append({
+                    "kind": "CONTRACT_VIOLATION",
+                    "scope": s,
+                    "path": path,
+                    "description": f"{path} modified (file_hash {cur_hash} != baseline {base_h}) while component '{s}' is still VERIFIED; run turn first to mark '{s}' STALE",
+                })
+        if not _check_file_bounds_and_prohibitions(f, path, f_scopes, eff_imps, max_lines_bound, scope_bounds, prohibited_by_scope, violations):
+            bounds_ok = False
+
+    if not _evaluate_scope_dependencies(modified_scope_files, scopes, artifacts, violations):
+        contracts_ok = False
+    if staged_diff_report.get("bounds_ok") is False:
+        bounds_ok = False
+        if not any(v["kind"] in ("BOUND_VIOLATION", "PROHIBITION_VIOLATION") for v in violations):
+            violations.append({"kind": "BOUND_VIOLATION", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged bounds_ok=False"})
+    unreg_syms, flow_schemas = _collect_unregistered_symbols_and_flow_schemas(wb, scopes, artifacts, modified_scope_files)
+    if not _evaluate_artifact_contracts(artifacts, scopes, staged_files, modified_scope_files, violations):
+        contracts_ok = False
+    has_direct_contract_err = not contracts_ok
+    cg_report = verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report)
+    if not cg_report["is_valid"]:
+        contracts_ok = False
+        violations.extend(cg_report["violations"])
+    if staged_diff_report.get("contracts_ok") is False:
+        contracts_ok = False
+        if not any(v["kind"] == "CONTRACT_VIOLATION" for v in violations):
+            violations.append({"kind": "CONTRACT_VIOLATION", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged contracts_ok=False"})
+    import bowthruster.nlp as _nlp_mod
+    nlp_mod = importlib.reload(_nlp_mod) if not hasattr(_nlp_mod, "verify_python_ast_laws_with_bend") else _nlp_mod
+    ast_law_rep = nlp_mod.verify_python_ast_laws_with_bend(artifacts, staged_files, scopes)
+    failed_laws = list(dict.fromkeys([*(staged_diff_report.get("failed_laws") or staged_diff_report.get("bend_failures") or []), *ast_law_rep["failed_laws"]]))
+    raw_bend_ok = staged_diff_report.get("bend_proofs_ok", True)
+    if raw_bend_ok is False or ast_law_rep["bend_proofs_ok"] is False or failed_laws:
+        bend_proofs_ok = False
+        violations.append({"kind": "BEND_PROOF_FAILURE", "scope": "global_defaults", "path": "", "description": f"Bend 2 proof verification failed: {failed_laws or 'bend_proofs_ok=False'}"})
+    bend_not_checked = bend_proofs_ok and (raw_bend_ok == "not_checked" or ast_law_rep.get("bend_proofs_ok") == "not_checked")
+    no_dangling_deletes = _evaluate_dangling_deleted_uris(eff_uri_sync, deleted_paths, scopes, artifacts, staged_diff_report, violations)
+    allowed = should_allow_git_commit(bounds_ok, contracts_ok, bend_proofs_ok, no_dangling_deletes)
+    non_del_contract_err = (
+        has_direct_contract_err or bool(cg_report["disconnected_laws"])
+        or staged_diff_report.get("contracts_ok") is False or (bool(cg_report["dangling_imports"]) and no_dangling_deletes)
+    )
+    bounce_reason = BOUNCE_NONE if allowed else (
+        BOUNCE_RULE_CONFLICT if (not bounds_ok or non_del_contract_err) else (BOUNCE_BEND_PROOF_FAILURE if bend_proofs_ok is False else BOUNCE_DANGLING_DELETED_URI)
     )
     return GateDecisionResult({
-        "allowed": allowed,
-        "decision": DECISION_ALLOW_COMMIT if allowed else DECISION_REJECT_COMMIT,
-        "bounce_reason": bounce_reason,
-        "bounds_ok": bounds_ok,
-        "contracts_ok": contracts_ok,
+        "allowed": allowed, "decision": DECISION_ALLOW_COMMIT if allowed else DECISION_REJECT_COMMIT,
+        "bounce_reason": bounce_reason, "bounds_ok": bounds_ok, "contracts_ok": contracts_ok,
         "bend_proofs_ok": "not_checked" if bend_not_checked else bend_proofs_ok,
         "bend_proof_status": str(ast_law_rep.get("bend_proof_status") or "NO_LAWS"),
         "bend_binary_checked": bool(ast_law_rep.get("bend_binary_checked", False)),
         "truth_table_checked": bool(ast_law_rep.get("truth_table_checked", True)),
-        "no_dangling_deletes": no_dangling_deletes,
-        "failed_laws": failed_laws,
-        "checked_laws": ast_law_rep["checked_laws"],
-        "call_graph_report": cg_report,
-        "dangling_imports": cg_report["dangling_imports"],
+        "no_dangling_deletes": no_dangling_deletes, "failed_laws": failed_laws, "checked_laws": ast_law_rep["checked_laws"],
+        "call_graph_report": cg_report, "dangling_imports": cg_report["dangling_imports"],
         "disconnected_law_functions": cg_report["disconnected_law_functions"],
-        "unregistered_public_symbols": unreg_syms,
-        "flow_schema_checked": flow_schemas,
-        "unverified_bound_violations": 0 if allowed else len(violations),
-        "violations": violations,
+        "unregistered_public_symbols": unreg_syms, "flow_schema_checked": flow_schemas,
+        "unverified_bound_violations": 0 if allowed else len(violations), "violations": violations,
     })

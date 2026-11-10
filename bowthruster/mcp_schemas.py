@@ -258,8 +258,8 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
                 },
                 "mode": {
                     "type": "string",
-                    "enum": ["pre", "post", "baseline", "drift"],
-                    "description": "Sync mode: pre, post, baseline, or drift",
+                    "enum": ["pre", "post", "baseline", "drift", "install_hook"],
+                    "description": "Sync mode: pre, post, baseline, drift, or install_hook",
                 },
                 "mark_verified": {
                     "type": "boolean",

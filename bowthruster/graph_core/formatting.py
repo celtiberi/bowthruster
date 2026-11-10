@@ -6,7 +6,7 @@ import copy
 import math
 from typing import Any
 
-from bowthruster.nlp import _get_spacy_nlp, restore_ascii_dots
+from bowthruster.nlp import _get_tokenizer_nlp, restore_ascii_dots
 
 DEFAULT_K_CAP = 5
 DEFAULT_MAX_RING = 10
@@ -35,7 +35,7 @@ def tokenize_content_words(text: str) -> list[str]:
     if not isinstance(text, str) or not text.strip():
         return []
     clean = restore_ascii_dots(text).strip()
-    doc = _get_spacy_nlp()(clean)
+    doc = _get_tokenizer_nlp()(clean)
     out: list[str] = []
     for t in doc:
         if t.is_space or t.is_punct:
@@ -286,15 +286,7 @@ def _format_artifact_line(art: dict[str, Any]) -> str:
     return f"{sigil} {kind} [{name}]{tags_s}" + (f": {spec_or_text}" if spec_or_text else "")
 
 
-def format_compact_view(
-    view: dict[str, Any],
-    *,
-    max_lines: int = 35,
-    token_budget: int = 400,
-    scope_headers: list[str] | None = None,
-) -> str:
-    """Formats a scan/propagate/expand view dict into a compact multi-line representation within line and token caps,
-    reserving capacity for all LOD 1 primary lines before admitting inline LOD 2 metadata/link lines (Spec 21 §1.2)."""
+def _collect_pre_rule_lines(view: dict[str, Any], scope_headers: list[str] | None) -> list[str]:
     pre_rule_lines: list[str] = []
     status = view.get("status", "OK")
     temp = view.get("temperature")
@@ -364,7 +356,19 @@ def format_compact_view(
                 pre_rule_lines.append(f"+ TASK {t.get('id', '')} [{t.get('scope', '')}] ({', '.join(t_tags)}): {t.get('text', '')}")
             else:
                 pre_rule_lines.append(f"+ TASK {t.get('id', '')} [{t.get('scope', '')}]: {t.get('text', '')}")
+    return pre_rule_lines
 
+
+def format_compact_view(
+    view: dict[str, Any],
+    *,
+    max_lines: int = 35,
+    token_budget: int = 400,
+    scope_headers: list[str] | None = None,
+) -> str:
+    """Formats a scan/propagate/expand view dict into a compact multi-line representation within line and token caps,
+    reserving capacity for all LOD 1 primary lines before admitting inline LOD 2 metadata/link lines (Spec 21 §1.2)."""
+    pre_rule_lines = _collect_pre_rule_lines(view, scope_headers)
     lod2 = view.get("lod2_meta", {}) if isinstance(view.get("lod2_meta"), dict) else {}
     rule_blocks: list[tuple[str, list[str]]] = []
     for r in view.get("active_rules", []):
@@ -387,11 +391,10 @@ def format_compact_view(
                     meta_lines.append(f"  -> link[{lk.get('kind', 'reference')}]: {lk['uri']}{sum_s}")
         rule_blocks.append((r_line, meta_lines))
 
-    note_lines: list[str] = []
-    for n in view.get("ambient_notes", []):
-        if isinstance(n, dict) and n.get("text"):
-            note_lines.append(f"~ NOTE {n.get('id', '')}: {n.get('text', '')}")
-
+    note_lines = [
+        f"~ NOTE {n.get('id', '')}: {n.get('text', '')}"
+        for n in view.get("ambient_notes", []) if isinstance(n, dict) and n.get("text")
+    ]
     admitted_pre: list[str] = []
     for ln in pre_rule_lines:
         if len(admitted_pre) >= max_lines:
@@ -422,13 +425,7 @@ def format_compact_view(
         for m_ln in meta_lines:
             trial_lines = [
                 *admitted_pre,
-                *(
-                    ln
-                    for i, (rl, _) in enumerate(admitted_rules)
-                    for ln in (
-                        [rl, *accepted_meta[i], m_ln] if i == idx else [rl, *accepted_meta[i]]
-                    )
-                ),
+                *(ln for i, (rl, _) in enumerate(admitted_rules) for ln in ([rl, *accepted_meta[i], m_ln] if i == idx else [rl, *accepted_meta[i]])),
             ]
             if len(trial_lines) <= max_lines and token_cost("\n".join(trial_lines)) <= token_budget:
                 accepted_meta[idx].append(m_ln)

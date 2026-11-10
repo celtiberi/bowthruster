@@ -273,12 +273,9 @@ def _normalize_atlas_boards(
     raise ValueError(f"whiteboard_boards must be a dict or list of board dicts, got {type(whiteboard_boards).__name__}")
 
 
-def _collect_atlas_topology(
+def _collect_atlas_flows_and_gaps(
     boards: list[tuple[str, dict[str, Any]]],
-) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-    """Two-pass topology collector: Pass 1 gathers flows, artifact refs, and explicit proof metrics across all boards;
-    Pass 2 merges component scopes across all boards and computes `atlas_metrics` (`s25a-spec-laws-2`)."""
-    components: dict[str, dict[str, Any]] = {}
+) -> tuple[list[dict[str, Any]], dict[str, str], int, bool, set[str]]:
     flows: list[dict[str, Any]] = []
     seen_flows: set[tuple[str, str, str]] = set()
     ref_sids: dict[str, str] = {}
@@ -326,6 +323,16 @@ def _collect_atlas_topology(
             if isinstance(blk, dict) and str(blk.get("status") or "").upper() != "RESOLVED":
                 saw_explicit_gaps = True
                 explicit_gaps += 1
+    return flows, ref_sids, explicit_gaps, saw_explicit_gaps, explicit_hubs
+
+
+def _collect_atlas_topology(
+    boards: list[tuple[str, dict[str, Any]]],
+) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """Two-pass topology collector: Pass 1 gathers flows, artifact refs, and explicit proof metrics across all boards;
+    Pass 2 merges component scopes across all boards and computes `atlas_metrics` (`s25a-spec-laws-2`)."""
+    components: dict[str, dict[str, Any]] = {}
+    flows, ref_sids, explicit_gaps, saw_explicit_gaps, explicit_hubs = _collect_atlas_flows_and_gaps(boards)
 
     _has_comp = lambda s_id, s_d: bool(
         str(s_d.get("role") or "").strip() or str(s_d.get("owner") or "").strip() or str(s_d.get("stage") or "").strip()
@@ -337,18 +344,15 @@ def _collect_atlas_topology(
     for bname, board in boards:
         scopes = board.get("scopes") if isinstance(board.get("scopes"), dict) else {}
         board_has_sbf_comps = bool(ref_sids) or any(
-            _has_comp(str(k).strip(), v) for k,
-            v in scopes.items() if str(k).strip()
-            and str(k).strip() != "global_defaults"
-            and isinstance(v, dict)
+            _has_comp(str(k).strip(), v) for k, v in scopes.items()
+            if str(k).strip() and str(k).strip() != "global_defaults" and isinstance(v, dict)
         )
         for raw_sid, sc in scopes.items():
             sid = str(raw_sid).strip()
             if not sid or sid == "global_defaults" or sid.startswith("global_defaults::") or not isinstance(sc, dict):
                 continue
             st = "STALE" if "STALE" in (str(sc.get("status") or "").strip().upper(), str(sc.get("build_status") or "").strip().upper()) else (
-                str(sc.get("status") if sc.get("status") not in (None, "", "DRAFT") else (sc.get("build_status") or "DRAFT")).strip().upper()
-                or "DRAFT"
+                str(sc.get("status") if sc.get("status") not in (None, "", "DRAFT") else (sc.get("build_status") or "DRAFT")).strip().upper() or "DRAFT"
             )
             sc_attrs = sc.get("attributes") if isinstance(sc.get("attributes"), dict) else {}
             owner = str(sc.get("owner") or sc_attrs.get("owner") or "").strip() or None
@@ -356,15 +360,10 @@ def _collect_atlas_topology(
             stage = str(sc.get("stage") or sc_attrs.get("stage") or "").strip() or None
             why = str(sc.get("why") or sc_attrs.get("why") or sc_attrs.get("rationale") or "").strip() or None
             raw_files = sc.get("files") or sc_attrs.get("files") or []
-            files = [
-                str(f).strip() for f in (raw_files.split(",") if isinstance(raw_files, str) else raw_files)
-                if str(f).strip()
-            ]
+            files = [str(f).strip() for f in (raw_files.split(",") if isinstance(raw_files, str) else raw_files) if str(f).strip()]
             deps = [str(d).strip() for d in (sc.get("depends_on") or []) if str(d).strip() and str(d).strip() != sid]
             has_comp_attrs_or_refs = _has_comp(sid, sc)
-            if not (has_comp_attrs_or_refs or not board_has_sbf_comps):
-                continue
-            if not (has_comp_attrs_or_refs or sc.get("build_status") or sc.get("status")):
+            if not (has_comp_attrs_or_refs or not board_has_sbf_comps) or not (has_comp_attrs_or_refs or sc.get("build_status") or sc.get("status")):
                 continue
             if sid not in components:
                 components[sid] = {
@@ -396,23 +395,13 @@ def _collect_atlas_topology(
         for dep in c["depends_on"]:
             dependents_map.setdefault(dep, set()).add(sid)
 
-    # Spec 25A (`s25a-spec-laws-2`): `hub_bottlenecks` = scopes imported by >= 3 dependents
-    hub_bottlenecks = sorted(
-        explicit_hubs | {sid for sid, imps in dependents_map.items() if len(imps) >= 3}
-    )
-    inferred_gaps = sum(
-        1 for c in components.values()
-        if not c["owner"] or c["build_status"] in ("FAILED", "BLOCKED_BY_DEP")
-    )
-    open_gaps = explicit_gaps if saw_explicit_gaps else inferred_gaps
-    total_components = len(components)
-    verified_components = sum(1 for c in components.values() if c["build_status"] == "VERIFIED")
-    total_flows = len(flows)
+    hub_bottlenecks = sorted(explicit_hubs | {sid for sid, imps in dependents_map.items() if len(imps) >= 3})
+    inferred_gaps = sum(1 for c in components.values() if not c["owner"] or c["build_status"] in ("FAILED", "BLOCKED_BY_DEP"))
     metrics: dict[str, Any] = {
-        "total_components": total_components,
-        "verified_components": verified_components,
-        "total_flows": total_flows,
-        "open_gaps": open_gaps,
+        "total_components": len(components),
+        "verified_components": sum(1 for c in components.values() if c["build_status"] == "VERIFIED"),
+        "total_flows": len(flows),
+        "open_gaps": explicit_gaps if saw_explicit_gaps else inferred_gaps,
         "hub_bottlenecks": hub_bottlenecks,
     }
     return components, flows, metrics

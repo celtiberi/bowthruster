@@ -348,17 +348,9 @@ def create_empty_graph(
 create_empty_lattice = create_empty_graph
 
 
-def validate_context_graph(
-    graph: dict[str, Any], *, k_cap: int = DEFAULT_K_CAP, max_ring: int = DEFAULT_MAX_RING,
-) -> list[str]:
-    """Validates all Spec 22A §2.1 structural, nD Lattice, and thermodynamic invariants on `graph`."""
-    if not isinstance(graph, dict):
-        return [f"graph must be a dict, got {type(graph).__name__}"]
-    scopes = graph.get("scopes")
-    if not isinstance(scopes, dict):
-        return ["graph['scopes'] must be a dict"]
-
-    errors: list[str] = []
+def _validate_scope_rules_and_meta(
+    scopes: dict[str, Any], k_cap: int, errors: list[str]
+) -> dict[str, tuple[str, dict[str, Any]]]:
     all_rules: dict[str, tuple[str, dict[str, Any]]] = {}
     for sid, scope in scopes.items():
         if not isinstance(scope, dict):
@@ -406,6 +398,21 @@ def validate_context_graph(
                         errors.append(f"rule {rid!r} _meta[{mk!r}] has {w_cnt} words, exceeding {MAX_META_SLOT_WORDS}")
                 if total_w > MAX_META_TOTAL_WORDS:
                     errors.append(f"rule {rid!r} _meta has {total_w} total words, exceeding {MAX_META_TOTAL_WORDS}")
+    return all_rules
+
+
+def validate_context_graph(
+    graph: dict[str, Any], *, k_cap: int = DEFAULT_K_CAP, max_ring: int = DEFAULT_MAX_RING,
+) -> list[str]:
+    """Validates all Spec 22A §2.1 structural, nD Lattice, and thermodynamic invariants on `graph`."""
+    if not isinstance(graph, dict):
+        return [f"graph must be a dict, got {type(graph).__name__}"]
+    scopes = graph.get("scopes")
+    if not isinstance(scopes, dict):
+        return ["graph['scopes'] must be a dict"]
+
+    errors: list[str] = []
+    all_rules = _validate_scope_rules_and_meta(scopes, k_cap, errors)
 
     for rid, (sid, r) in all_rules.items():
         for target_scope in r.get("refs", []):
@@ -416,10 +423,7 @@ def validate_context_graph(
         for ov_id in r.get("overrides", []):
             if ov_id not in all_rules:
                 errors.append(f"rule {rid!r} overrides nonexistent rule {ov_id!r}")
-            elif not any(
-                isinstance(ex, dict) and ex.get("rule_id") == rid
-                for ex in all_rules[ov_id][1].get("exceptions", [])
-            ):
+            elif not any(isinstance(ex, dict) and ex.get("rule_id") == rid for ex in all_rules[ov_id][1].get("exceptions", [])):
                 errors.append(f"rule {rid!r} overrides {ov_id!r}, but {ov_id!r}.exceptions lacks rule_id={rid!r}")
         for ex in r.get("exceptions", []):
             if isinstance(ex, dict):
@@ -476,10 +480,7 @@ def validate_context_graph(
         for idx, note in enumerate(ambient):
             if not isinstance(note, dict):
                 errors.append(f"ambient_notes[{idx}] must be a dict")
-            elif not isinstance(aturns := note.get("access_turns"), list) or not aturns or not all(
-                isinstance(t, int) and not isinstance(t, bool)
-                for t in aturns
-            ):
+            elif not isinstance(aturns := note.get("access_turns"), list) or not aturns or not all(isinstance(t, int) and not isinstance(t, bool) for t in aturns):
                 errors.append(f"ambient_notes[{idx}] must contain non-empty access_turns: list[int]")
 
     return errors

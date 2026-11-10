@@ -110,25 +110,29 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "8e02f7327e03950266248c3c48481cdc3dd47f20",
+  "last_commit_sha": "1cba95a10ca19b7390156f3431ac458b4bf0f7bd",
   "lattice_artifacts": [
     {
       "calls": [
-        "_format_tool_result#L142-L160",
-        "_hot_reload_if_changed#L601-L663",
-        "_read_doc_resource#L84-L118",
-        "_resolve_project_root#L121-L139"
+        "_format_tool_result#L141-L159",
+        "_hot_reload_if_changed#L424-L486",
+        "_resolve_project_root#L120-L138",
+        "_tool_atlas#L191-L216",
+        "_tool_git_sync_or_status#L323-L364",
+        "_tool_packets_or_turn#L277-L320",
+        "_tool_readme_or_logs#L162-L188",
+        "_tool_slice#L219-L274"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L163-L592",
+        "file": "bowthruster/mcp_server.py#L367-L415",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L163-L592",
+      "file": "bowthruster/mcp_server.py#L367-L415",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -150,19 +154,19 @@
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L601-L663",
-        "_read_doc_resource#L84-L118"
+        "_hot_reload_if_changed#L424-L486",
+        "_read_doc_resource#L83-L117"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "bowthruster/mcp_server.py#L666-L718",
+        "file": "bowthruster/mcp_server.py#L489-L541",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "bowthruster/mcp_server.py#L666-L718",
+      "file": "bowthruster/mcp_server.py#L489-L541",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -182,6 +186,7 @@
       "updated_turn": 15
     },
     {
+      "calls": [],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
@@ -242,10 +247,10 @@
       "dimensions": {
         "description": "JSON-RPC 2.0 MCP request envelope",
         "fields": "jsonrpc, id, method, params",
-        "file": "bowthruster/mcp_server.py#L54-L58",
+        "file": "bowthruster/mcp_server.py#L53-L57",
         "schema": "McpJsonRpcRequest"
       },
-      "file": "bowthruster/mcp_server.py#L54-L58",
+      "file": "bowthruster/mcp_server.py#L53-L57",
       "id": "schema_mcp_server_mcpjsonrpcrequest",
       "inputs": [],
       "kind": "SCHEMA",
@@ -382,6 +387,9 @@
         "owner": "core",
         "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
         "stage": 28,
+        "tests": [
+          "tests/test_git_lattice_sync.py"
+        ],
         "updated_turn": 10,
         "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
       },
@@ -406,7 +414,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "8e02f7327e03950266248c3c48481cdc3dd47f20",
+      "last_commit_sha": "1cba95a10ca19b7390156f3431ac458b4bf0f7bd",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -414,6 +422,9 @@
       "rules": [],
       "stage": "28",
       "status": "VERIFIED",
+      "tests": [
+        "tests/test_git_lattice_sync.py"
+      ],
       "updated_turn": 1,
       "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
     },
@@ -432,8 +443,8 @@
         "fields": "content, isError, structuredContent",
         "file": "bowthruster/mcp_server.py",
         "file_hashes": {
-          "bowthruster/mcp_schemas.py": "3e417df645a87474",
-          "bowthruster/mcp_server.py": "1b222ad7afa6501a"
+          "bowthruster/mcp_schemas.py": "417297c003bec099",
+          "bowthruster/mcp_server.py": "ca8991fb7ba0d337"
         },
         "files": [
           "bowthruster/mcp_server.py",
@@ -444,6 +455,9 @@
         "role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
         "schema": "McpToolCallResult",
         "stage": 28,
+        "tests": [
+          "tests/test_git_lattice_sync.py"
+        ],
         "updated_turn": 10,
         "why": "Gives AI coding agents direct <50ms access to architecture memory, focused AST code slices, living specs, and pre-commit verification over stdio JSON-RPC 2.0."
       },
@@ -455,8 +469,8 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/mcp_schemas.py": "3e417df645a87474",
-        "bowthruster/mcp_server.py": "1b222ad7afa6501a"
+        "bowthruster/mcp_schemas.py": "417297c003bec099",
+        "bowthruster/mcp_server.py": "ca8991fb7ba0d337"
       },
       "files": [
         "bowthruster/mcp_server.py",
@@ -468,7 +482,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "8e02f7327e03950266248c3c48481cdc3dd47f20",
+      "last_commit_sha": "1cba95a10ca19b7390156f3431ac458b4bf0f7bd",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -500,6 +514,9 @@
       ],
       "stage": "28",
       "status": "VERIFIED",
+      "tests": [
+        "tests/test_git_lattice_sync.py"
+      ],
       "updated_turn": 1,
       "why": "Gives AI coding agents direct <50ms access to architecture memory, focused AST code slices, living specs, and pre-commit verification over stdio JSON-RPC 2.0."
     }

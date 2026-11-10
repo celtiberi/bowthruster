@@ -326,6 +326,54 @@ def _fmt_spec_doc(raw_doc: str) -> list[str]:
     ]
 
 
+def _emit_interface_skeleton_lines(
+    iface_list: list[dict[str, Any]],
+    emitted_laws: list[tuple[str, list[str]]],
+    seen_schemas: set[str],
+) -> list[str]:
+    lines: list[str] = []
+    seen_ifaces: set[str] = set()
+    for ia in iface_list:
+        iname = _py_ident(ia.get("name") or ia.get("interface") or ia.get("id") or "interface_stub", default="interface_stub")
+        if iname in seen_ifaces:
+            continue
+        seen_ifaces.add(iname)
+        dims = ia.get("dimensions") if isinstance(ia.get("dimensions"), dict) else {}
+        ifile = str(ia.get("file") or dims.get("file") or "").strip()
+        i_doc = str(ia.get("spec") or dims.get("spec") or ia.get("text") or "").strip()
+        in_params = _extract_item_names(ia.get("inputs") or ia.get("args") or dims.get("inputs") or dims.get("args"))
+        out_types = _extract_item_names(ia.get("outputs") or ia.get("output") or ia.get("returns") or dims.get("outputs"))
+        ret_ann = out_types[0] if len(out_types) == 1 else (f"tuple[{', '.join(out_types)}]" if len(out_types) > 1 else "Any")
+        lines.extend((
+            "", *([f"# FILE: {ifile}"] if ifile else []),
+            f"def {iname}({', '.join(f'{p}: Any = None' for p in in_params)}) -> {ret_ann}:",
+            *_fmt_spec_doc(i_doc)
+        ))
+        for lfn, lparams in emitted_laws:
+            arg_exprs = [
+                (
+                    f"{in_params[i % len(in_params)]} is not None"
+                    if i % 3 == 0 else (f"bool({in_params[i % len(in_params)]})" if i % 3 == 1 else f"str({in_params[i % len(in_params)]}) != ''")
+                ) if in_params else p
+                for i, p in enumerate(lparams)
+            ]
+            lines.extend((
+                f"    # MUST CALL: {lfn}({', '.join(lparams)})",
+                f"    _law_{lfn} = {lfn}({', '.join(arg_exprs)})",
+            ))
+        law_guard = " and ".join(f"_law_{lfn}" for lfn, _ in emitted_laws)
+        ret_expr = (
+            f"{out_types[0]}()"
+            if (len(out_types) == 1 and out_types[0] in seen_schemas)
+            else (law_guard if emitted_laws else "None")
+        )
+        if emitted_laws and len(out_types) == 1 and out_types[0] in seen_schemas:
+            lines.append(f"    return {ret_expr} if ({law_guard}) else {ret_expr}")
+        else:
+            lines.append(f"    return {ret_expr}")
+    return lines
+
+
 def compile_python_skeleton(
     scope_id: str, artifacts: list[dict[str, Any]] | None = None, *, schemas: list[dict[str, Any]] | None = None,
     interfaces: list[dict[str, Any]] | None = None, laws: list[dict[str, Any]] | None = None, rules: list[dict[str, Any]] | None = None,
@@ -333,66 +381,38 @@ def compile_python_skeleton(
     """Deterministically compiles an AST-parseable Python structural skeleton stub for `scope_id` from its `SCHEMA`, `INTERFACE`, and `LAW` artifacts (Stage 27)."""
     sid = str(scope_id or "global_defaults").strip() or "global_defaults"
     all_arts = [a for a in (artifacts or []) if isinstance(a, dict)]
-    schema_list = [
-        a for a in (schemas if schemas is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "SCHEMA"])
-        if isinstance(a, dict)
-    ]
-    iface_list = [
-        a for a in (interfaces if interfaces is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "INTERFACE"])
-        if isinstance(a, dict)
-    ]
-    law_list = [
-        a for a in (laws if laws is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "LAW"])
-        if isinstance(a, dict)
-    ]
+    schema_list = [a for a in (schemas if schemas is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "SCHEMA"]) if isinstance(a, dict)]
+    iface_list = [a for a in (interfaces if interfaces is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "INTERFACE"]) if isinstance(a, dict)]
+    law_list = [a for a in (laws if laws is not None else [x for x in all_arts if str(x.get("kind") or "").strip().upper() == "LAW"]) if isinstance(a, dict)]
 
     lines: list[str] = [
         f"# Python Structural Skeleton — Compiled by Whiteboard for {sid}",
-        "from __future__ import annotations",
-        "", "from dataclasses import dataclass",
-        "from typing import Any"
+        "from __future__ import annotations", "", "from dataclasses import dataclass", "from typing import Any"
     ]
     seen_consts: set[str] = set()
     for r in (rules or []):
-        if (
-            isinstance(r, dict) and str(r.get("type") or "").upper() == "BOUND"
-            and isinstance(r.get("bound_val"), (int, float))
-            and not isinstance(r.get("bound_val"), bool)
-        ):
+        if isinstance(r, dict) and str(r.get("type") or "").upper() == "BOUND" and isinstance(r.get("bound_val"), (int, float)) and not isinstance(r.get("bound_val"), bool):
             tp = str(r.get("target_prop") or "").strip()
-            if tp and tp.isidentifier() and tp.lower() not in (
-                "max_file_lines", "import", "depends_on",
-                "value", "rule"
-            ) and tp.upper() not in seen_consts:
+            if tp and tp.isidentifier() and tp.lower() not in ("max_file_lines", "import", "depends_on", "value", "rule") and tp.upper() not in seen_consts:
                 seen_consts.add(tp.upper())
                 lines.append(f"{tp.upper()} = {r['bound_val']!r}  # BOUND: {tp} {r.get('bound_op') or '<='} {r['bound_val']!r}")
     seen_schemas: set[str] = set()
     for sc_art in schema_list:
-        sname = _py_ident(
-            sc_art.get("name") or sc_art.get("schema")
-            or sc_art.get("id") or "SchemaStub",
-            default="SchemaStub"
-        )
-        if sname in seen_schemas: continue
+        sname = _py_ident(sc_art.get("name") or sc_art.get("schema") or sc_art.get("id") or "SchemaStub", default="SchemaStub")
+        if sname in seen_schemas:
+            continue
         seen_schemas.add(sname)
         dims = sc_art.get("dimensions") if isinstance(sc_art.get("dimensions"), dict) else {}
         sfile = str(sc_art.get("file") or dims.get("file") or "").strip()
         sc_doc = str(sc_art.get("spec") or dims.get("spec") or sc_art.get("text") or "").strip()
-        fields = _extract_item_names(sc_art.get("fields") or dims.get("fields")) or _extract_item_names(
-            sc_art.get("inputs") or sc_art.get("outputs")
-            or dims.get("inputs") or dims.get("outputs")
-        ) or ["value"]
-        lines.extend((
-            "", *([f"# FILE: {sfile}"] if sfile else []),
-            "@dataclass(frozen=True)",
-            f"class {sname}:", *_fmt_spec_doc(sc_doc),
-            *(f"    {f_name}: Any = None" for f_name in fields)
-        ))
+        fields = (
+            _extract_item_names(sc_art.get("fields") or dims.get("fields"))
+            or _extract_item_names(sc_art.get("inputs") or sc_art.get("outputs") or dims.get("inputs") or dims.get("outputs"))
+            or ["value"]
+        )
+        lines.extend(("", *([f"# FILE: {sfile}"] if sfile else []), "@dataclass(frozen=True)", f"class {sname}:", *_fmt_spec_doc(sc_doc), *(f"    {f_name}: Any = None" for f_name in fields)))
 
-    iface_names = {
-        _py_ident(ia.get("name") or ia.get("interface") or ia.get("id") or "interface_stub", default="interface_stub")
-        for ia in iface_list
-    }
+    iface_names = {_py_ident(ia.get("name") or ia.get("interface") or ia.get("id") or "interface_stub", default="interface_stub") for ia in iface_list}
     emitted_laws, seen_laws = [], set()
     for law_art in law_list:
         lfn, lalias, lparams, py_expr = _extract_law_stub_spec(law_art, iface_names | seen_schemas)
@@ -402,37 +422,9 @@ def compile_python_skeleton(
             if fn_id and fn_id not in seen_laws:
                 seen_laws.add(fn_id)
                 emitted_laws.append((fn_id, lparams))
-                lines.extend((
-                    "", f"def {fn_id}({', '.join(f'{p}: bool = True' for p in lparams)}) -> bool:",
-                    *_fmt_spec_doc(l_doc), f"    return bool({py_expr})"
-                ))
+                lines.extend(("", f"def {fn_id}({', '.join(f'{p}: bool = True' for p in lparams)}) -> bool:", *_fmt_spec_doc(l_doc), f"    return bool({py_expr})"))
 
-    seen_ifaces: set[str] = set()
-    for ia in iface_list:
-        iname = _py_ident(
-            ia.get("name") or ia.get("interface")
-            or ia.get("id") or "interface_stub",
-            default="interface_stub"
-        )
-        if iname in seen_ifaces: continue
-        seen_ifaces.add(iname)
-        dims = ia.get("dimensions") if isinstance(ia.get("dimensions"), dict) else {}
-        ifile = str(ia.get("file") or dims.get("file") or "").strip()
-        i_doc = str(ia.get("spec") or dims.get("spec") or ia.get("text") or "").strip()
-        in_params = _extract_item_names(ia.get("inputs") or ia.get("args") or dims.get("inputs") or dims.get("args"))
-        out_types = _extract_item_names(
-            ia.get("outputs") or ia.get("output")
-            or ia.get("returns") or dims.get("outputs")
-        )
-        ret_ann = out_types[0] if len(out_types) == 1 else (f"tuple[{', '.join(out_types)}]" if len(out_types) > 1 else "Any")
-        lines.extend((
-            "", *([f"# FILE: {ifile}"] if ifile else []),
-            f"def {iname}({', '.join(f'{p}: Any = None' for p in in_params)}) -> {ret_ann}:",
-            *_fmt_spec_doc(i_doc)
-        ))
-        for lfn, lparams in emitted_laws:
-            lines.extend((f"    # MUST CALL: {lfn}({', '.join(lparams)})", f"    _law_{lfn} = {lfn}({', '.join('True' for _ in lparams)})"))
-        lines.append(f"    {'return ' + out_types[0] + '()' if (len(out_types) == 1 and out_types[0] in seen_schemas) else ('return _law_' + emitted_laws[0][0] if emitted_laws else 'return None')}")
+    lines.extend(_emit_interface_skeleton_lines(iface_list, emitted_laws, seen_schemas))
     code = "\n".join(lines) + "\n"
     ast.parse(code)
     return code

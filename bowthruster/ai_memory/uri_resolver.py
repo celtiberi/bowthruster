@@ -272,14 +272,9 @@ def _parse_ast_symbols(raw_ast: Any) -> dict[str, tuple[int, int]]:
     return out
 
 
-def _parse_git_diff_manifest(
-    manifest: dict[str, Any] | list[dict[str, Any]],
-) -> tuple[
-    str | None, list[tuple[str, str, dict[str, tuple[int, int]]]],
-    list[tuple[str, dict[str, tuple[int, int]]]],
-    list[str], dict[str, tuple[str | None, dict[str, tuple[int, int]]]],
-    dict[str, str], bool
-]:
+def _extract_raw_manifest_entries(
+    manifest: dict[str, Any] | list[dict[str, Any]]
+) -> tuple[str | None, list[dict[str, Any]]]:
     commit_sha, raw_entries = None, []
     if isinstance(manifest, list):
         raw_entries.extend(x for x in manifest if isinstance(x, dict))
@@ -290,90 +285,55 @@ def _parse_git_diff_manifest(
             if isinstance(val := manifest.get(list_key), list):
                 raw_entries.extend(x for x in val if isinstance(x, dict))
             elif isinstance(val, dict):
-                raw_entries.extend(
-                    {"path": p, **(spec if isinstance(spec, dict) else {"status": str(spec)})}
-                    for p, spec in val.items()
-                )
+                raw_entries.extend({"path": p, **(spec if isinstance(spec, dict) else {"status": str(spec)})} for p, spec in val.items())
         if isinstance(manifest.get("file_hashes"), dict):
-            raw_entries.extend(
-                {"status": "A", "path": p, **(v if isinstance(v, dict) else {"file_hash": str(v)})}
-                for p, v in manifest["file_hashes"].items()
-            )
+            raw_entries.extend({"status": "A", "path": p, **(v if isinstance(v, dict) else {"file_hash": str(v)})} for p, v in manifest["file_hashes"].items())
         for ren_k in ("renames", "renamed_files"):
             if isinstance(manifest.get(ren_k), dict):
-                raw_entries.extend(
-                    {"status": "R", "old_path": op, **(np if isinstance(np, dict) else {"new_path": np})}
-                    for op, np in manifest[ren_k].items()
-                )
+                raw_entries.extend({"status": "R", "old_path": op, **(np if isinstance(np, dict) else {"new_path": np})} for op, np in manifest[ren_k].items())
             elif isinstance(manifest.get(ren_k), list):
                 raw_entries.extend(
-                    {"status": "R", **item} if isinstance(item, dict) else (
-                        {"status": "R", "old_path": item[0], "new_path": item[1]}
-                        if isinstance(item, (tuple, list))
-                        and len(item) >= 2 else {}
-                    )
+                    {"status": "R", **item} if isinstance(item, dict) else ({"status": "R", "old_path": item[0], "new_path": item[1]} if isinstance(item, (tuple, list)) and len(item) >= 2 else {})
                     for item in manifest[ren_k]
                 )
         for del_key in ("deletes", "deleted", "removed"):
             if isinstance(manifest.get(del_key), (list, tuple, set)):
-                raw_entries.extend(
-                    {"status": "D", **item} if isinstance(item, dict) else {
-                        "status": "D", "old_path": str(item),
-                        "path": str(item)
-                    }
-                    for item in manifest[del_key]
-                )
+                raw_entries.extend({"status": "D", **item} if isinstance(item, dict) else {"status": "D", "old_path": str(item), "path": str(item)} for item in manifest[del_key])
         for mod_key in ("modified", "added"):
             if isinstance(manifest.get(mod_key), dict):
-                raw_entries.extend(
-                    {"status": "M", "path": p, **(s if isinstance(s, dict) and "ast_symbols" in s else {"ast_symbols": s})}
-                    for p, s in manifest[mod_key].items()
-                )
+                raw_entries.extend({"status": "M", "path": p, **(s if isinstance(s, dict) and "ast_symbols" in s else {"ast_symbols": s})} for p, s in manifest[mod_key].items())
             elif isinstance(manifest.get(mod_key), list):
-                raw_entries.extend(
-                    {"status": "M", **item} if isinstance(item, dict) else {"status": "M", "path": str(item)}
-                    for item in manifest[mod_key]
-                )
+                raw_entries.extend({"status": "M", **item} if isinstance(item, dict) else {"status": "M", "path": str(item)} for item in manifest[mod_key])
         if isinstance(manifest.get("ast_symbols_by_file"), dict):
-            raw_entries.extend(
-                {"status": "M", "path": p, "ast_symbols": s}
-                for p, s in manifest["ast_symbols_by_file"].items()
-                if s
-            )
+            raw_entries.extend({"status": "M", "path": p, "ast_symbols": s} for p, s in manifest["ast_symbols_by_file"].items() if s)
         if any(k in manifest for k in ("status", "old_path", "from_path", "new_path", "to_path", "path")):
             raw_entries.append(manifest)
     else:
         raise ValueError(f"git_diff_manifest must be a dict or list, got {type(manifest).__name__}")
+    return commit_sha, raw_entries
+
+
+def _parse_git_diff_manifest(
+    manifest: dict[str, Any] | list[dict[str, Any]],
+) -> tuple[
+    str | None, list[tuple[str, str, dict[str, tuple[int, int]]]],
+    list[tuple[str, dict[str, tuple[int, int]]]],
+    list[str], dict[str, tuple[str | None, dict[str, tuple[int, int]]]],
+    dict[str, str], dict[str, int], bool
+]:
+    commit_sha, raw_entries = _extract_raw_manifest_entries(manifest)
     renames, ast_updates, deletes, candidates, manifest_hashes, all_renames_well_formed = [], [], [], {}, {}, True
     line_shifts = {
-        str(k): int(v) for k, v in (
-            (manifest.get("line_shifts") or manifest.get("line_deltas") or {})
-            if isinstance(manifest, dict) else {}
-        ).items()
+        str(k): int(v) for k, v in ((manifest.get("line_shifts") or manifest.get("line_deltas") or {}) if isinstance(manifest, dict) else {}).items()
         if isinstance(v, int)
     }
     for entry in (e for e in raw_entries if e):
         st_raw = str(entry.get("status") or entry.get("change_type") or entry.get("action") or "").strip().upper()
-        old_p = str(
-            entry.get("old_path") or entry.get("from_path")
-            or entry.get("source_path") or entry.get("old_file")
-            or entry.get("old_uri") or ""
-        ).strip()
-        new_p = str(
-            entry.get("new_path") or entry.get("to_path")
-            or entry.get("target_path") or entry.get("new_file")
-            or entry.get("new_uri") or entry.get("path")
-            or entry.get("file") or ""
-        ).strip()
-        if isinstance(
-            sh := entry.get("line_shift", entry.get("line_delta")),
-            int
-        ) and (tp := (new_p or old_p)): line_shifts[tp] = int(sh)
-        f_hash = str(
-            entry.get("file_hash") or entry.get("sha256")
-            or entry.get("hash") or entry.get("content_hash")
-            or ""
-        ).strip() or None
+        old_p = str(entry.get("old_path") or entry.get("from_path") or entry.get("source_path") or entry.get("old_file") or entry.get("old_uri") or "").strip()
+        new_p = str(entry.get("new_path") or entry.get("to_path") or entry.get("target_path") or entry.get("new_file") or entry.get("new_uri") or entry.get("path") or entry.get("file") or "").strip()
+        if isinstance(sh := entry.get("line_shift", entry.get("line_delta")), int) and (tp := (new_p or old_p)):
+            line_shifts[tp] = int(sh)
+        f_hash = str(entry.get("file_hash") or entry.get("sha256") or entry.get("hash") or entry.get("content_hash") or "").strip() or None
         syms = _parse_ast_symbols(entry.get("ast_symbols") or entry.get("symbols") or entry.get("line_ranges"))
         st_raw = st_raw or ("R" if (old_p and new_p and old_p != new_p) else ("D" if entry.get("deleted") else "M"))
         if st_raw.startswith("R"):
@@ -612,8 +572,9 @@ def sync_git_diff_uris(
             if calls_by_file and (af_clean := norm_file_path(str(art.get("file") or ""))) and (f_calls := next(
                 (v for k, v in calls_by_file.items() if paths_match(af_clean, k) and isinstance(v, dict)),
                 None
-            )):
-                if asym in f_calls and f_calls[asym]: art["calls"] = list(f_calls[asym])
+            )) is not None:
+                if asym in f_calls:
+                    art["calls"] = list(f_calls[asym])
             if (af := str(art.get("file") or "").strip()) and "#" in af and acid and acid != "global_defaults":
                 if not isinstance(graph.get("external_links"), dict): graph["external_links"] = {}
                 full_u, base_u = (af if af.startswith("uri://") else f"uri://file/{af.lstrip('./')}"), (af if af.startswith("uri://") else f"uri://file/{af.lstrip('./')}").split("#", 1)[0]

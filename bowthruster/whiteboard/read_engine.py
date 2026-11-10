@@ -283,6 +283,72 @@ def _scope_chain_values(scopes: dict[str, Any], start_sid: str | None, field_nam
     return out
 
 
+def _node_coord_overlap(
+    node: dict[str, Any],
+    scope_obj: dict[str, Any],
+    scopes: dict[str, Any],
+    alias_idx: dict[str, str],
+    sid: str | None,
+    *,
+    component: str | None,
+    division: str | None,
+    stage: str | None,
+    schema: str | None,
+) -> tuple[bool, bool, bool, bool]:
+    comp_ov = False
+    if component and str(component).strip():
+        c_low = str(component).strip().lower()
+        c_res = str(alias_idx.get(c_low, c_low)).lower()
+        comp_cands = [str(node[k]).strip().lower() for k in ("scope", "scope_id", "id", "parent", "source", "target") if node.get(k)]
+        for list_k in ("depends_on", "children", "refs", "aliases"):
+            comp_cands.extend(str(item).strip().lower() for item in (node.get(list_k) or []) if str(item).strip())
+        if isinstance(scope_obj, dict) and scope_obj:
+            comp_cands.extend(str(scope_obj[k]).strip().lower() for k in ("id", "parent") if scope_obj.get(k))
+            comp_cands.extend(str(al).strip().lower() for al in (scope_obj.get("aliases") or []) if str(al).strip())
+        comp_ov = any(v in (c_low, c_res) or v.startswith(f"{c_low}::") or v.startswith(f"{c_res}::") for v in comp_cands)
+
+    div_ov = False
+    if division and str(division).strip():
+        d_low = str(division).strip().lower()
+        dims_d = node.get("dimensions") if isinstance(node.get("dimensions"), dict) else {}
+        attrs_d = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
+        div_cands = [
+            str(v).strip().lower()
+            for v in (node.get("owner"), node.get("division"), dims_d.get("owner"), dims_d.get("division"), attrs_d.get("owner"), attrs_d.get("division"))
+            if v is not None and str(v).strip()
+        ]
+        for chain_sid in (sid, node.get("source"), node.get("target")):
+            div_cands.extend(_scope_chain_values(scopes, chain_sid, "owner"))
+            div_cands.extend(_scope_chain_values(scopes, chain_sid, "division"))
+        div_ov = any(d_low == v or d_low in v for v in div_cands)
+
+    stg_ov = False
+    if stage and str(stage).strip():
+        s_low = str(stage).strip().lower()
+        dims_s = node.get("dimensions") if isinstance(node.get("dimensions"), dict) else {}
+        attrs_s = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
+        stg_cands = [
+            str(v).strip().lower()
+            for v in (node.get("stage"), dims_s.get("stage"), attrs_s.get("stage"))
+            if v is not None and str(v).strip()
+        ]
+        for chain_sid in (sid, node.get("source"), node.get("target")):
+            stg_cands.extend(_scope_chain_values(scopes, chain_sid, "stage"))
+        stg_ov = any(s_low == v or s_low in v for v in stg_cands)
+
+    sch_ov = False
+    if schema and str(schema).strip():
+        sch_low = str(schema).strip().lower()
+        sch_cands = [str(v).strip().lower() for v in (node.get("payload"), node.get("name"), node.get("target_prop")) if v is not None and str(v).strip()]
+        for list_k in ("inputs", "outputs"):
+            sch_cands.extend(str(item).strip().lower() for item in (node.get(list_k) or []) if str(item).strip())
+            if isinstance(scope_obj, dict):
+                sch_cands.extend(str(item).strip().lower() for item in (scope_obj.get(list_k) or []) if str(item).strip())
+        sch_ov = any(sch_low == v or sch_low in v for v in sch_cands)
+
+    return comp_ov, div_ov, stg_ov, sch_ov
+
+
 def _node_matches_slice_dims(
     node: dict[str, Any],
     node_kinds: set[str],
@@ -300,93 +366,21 @@ def _node_matches_slice_dims(
 ) -> bool:
     """Evaluates whether `node` satisfies all 5 nD coordinates via `matches_nd_slice` plus `query` overlap (Spec 22C §2.1)."""
     scope_obj = scopes.get(sid, {}) if (sid and isinstance(scopes.get(sid), dict)) else {}
-
-    comp_unc = not bool(component and str(component).strip())
-    comp_ov = False
-    if not comp_unc:
-        c_low = str(component).strip().lower()
-        c_res = str(alias_idx.get(c_low, c_low)).lower()
-        comp_cands = [
-            str(node[k]).strip().lower() for k in ("scope", "scope_id", "id", "parent", "source", "target")
-            if node.get(k)
-        ]
-        for list_k in ("depends_on", "children", "refs", "aliases"):
-            comp_cands.extend(str(item).strip().lower() for item in (node.get(list_k) or []) if str(item).strip())
-        if isinstance(scope_obj, dict) and scope_obj:
-            comp_cands.extend(str(scope_obj[k]).strip().lower() for k in ("id", "parent") if scope_obj.get(k))
-            comp_cands.extend(str(al).strip().lower() for al in (scope_obj.get("aliases") or []) if str(al).strip())
-        comp_ov = any(
-            v in (c_low, c_res) or v.startswith(f"{c_low}::")
-            or v.startswith(f"{c_res}::") for v in comp_cands
-        )
-    if not matches_nd_slice(comp_unc, comp_ov):
+    comp_ov, div_ov, stg_ov, sch_ov = _node_coord_overlap(
+        node, scope_obj, scopes, alias_idx, sid,
+        component=component, division=division, stage=stage, schema=schema
+    )
+    if not matches_nd_slice(not bool(component and str(component).strip()), comp_ov):
         return False
-
-    div_unc = not bool(division and str(division).strip())
-    div_ov = False
-    if not div_unc:
-        d_low = str(division).strip().lower()
-        dims_d = node.get("dimensions") if isinstance(node.get("dimensions"), dict) else {}
-        attrs_d = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
-        div_cands = [
-            str(v).strip().lower()
-            for v in (
-                node.get("owner"), node.get("division"),
-                dims_d.get("owner"), dims_d.get("division"),
-                attrs_d.get("owner"), attrs_d.get("division")
-            )
-            if v is not None and str(v).strip()
-        ]
-        for chain_sid in (sid, node.get("source"), node.get("target")):
-            div_cands.extend(_scope_chain_values(scopes, chain_sid, "owner"))
-            div_cands.extend(_scope_chain_values(scopes, chain_sid, "division"))
-        div_ov = any(d_low == v or d_low in v for v in div_cands)
-    if not matches_nd_slice(div_unc, div_ov):
+    if not matches_nd_slice(not bool(division and str(division).strip()), div_ov):
         return False
-
-    stg_unc = not bool(stage and str(stage).strip())
-    stg_ov = False
-    if not stg_unc:
-        s_low = str(stage).strip().lower()
-        dims_s = node.get("dimensions") if isinstance(node.get("dimensions"), dict) else {}
-        attrs_s = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
-        stg_cands = [
-            str(v).strip().lower()
-            for v in (node.get("stage"), dims_s.get("stage"), attrs_s.get("stage"))
-            if v is not None and str(v).strip()
-        ]
-        for chain_sid in (sid, node.get("source"), node.get("target")):
-            stg_cands.extend(_scope_chain_values(scopes, chain_sid, "stage"))
-        stg_ov = any(s_low == v or s_low in v for v in stg_cands)
-    if not matches_nd_slice(stg_unc, stg_ov):
+    if not matches_nd_slice(not bool(stage and str(stage).strip()), stg_ov):
         return False
-
-    sch_unc = not bool(schema and str(schema).strip())
-    sch_ov = False
-    if not sch_unc:
-        sch_low = str(schema).strip().lower()
-        sch_cands = [
-            str(v).strip().lower()
-            for v in (node.get("payload"), node.get("name"), node.get("target_prop"))
-            if v is not None and str(v).strip()
-        ]
-        for list_k in ("inputs", "outputs"):
-            for item in node.get(list_k) or []:
-                if str(item).strip():
-                    sch_cands.append(str(item).strip().lower())
-            if isinstance(scope_obj, dict):
-                for item in scope_obj.get(list_k) or []:
-                    if str(item).strip():
-                        sch_cands.append(str(item).strip().lower())
-        sch_ov = any(sch_low == v or sch_low in v for v in sch_cands)
-    if not matches_nd_slice(sch_unc, sch_ov):
+    if not matches_nd_slice(not bool(schema and str(schema).strip()), sch_ov):
         return False
-
     knd_unc = not bool(kind and str(kind).strip())
-    knd_ov = (str(kind).strip().upper() in node_kinds) if not knd_unc else False
-    if not matches_nd_slice(knd_unc, knd_ov):
+    if not matches_nd_slice(knd_unc, (str(kind).strip().upper() in node_kinds) if not knd_unc else False):
         return False
-
     if raw_query_low:
         blob = " ".join(
             str(v)
@@ -402,7 +396,6 @@ def _node_matches_slice_dims(
         node_toks = set(tokenize_content_words(blob))
         if not (raw_query_low in blob.lower() or (q_tokens and bool(q_tokens & node_toks))):
             return False
-
     return True
 
 
@@ -424,168 +417,188 @@ def _format_code_window(src_lines: list[str], s: int, e: int, q_sub: list[str]) 
     return "\n".join([*head, f"# ... [LANDMARKS #L{s + 60}-L{e} — pass query='<symbol> <keyword>' or '<symbol> <start>-<end>' for exact window]:", *lms])
 
 
-_AST_SPAN_CACHE: dict[str, tuple[int, list[tuple[str, int, int]], list[str]]] = {}
+_AST_SPAN_CACHE: dict[str, tuple[int, list[tuple[str, int, int]], list[str], dict[str, list[str]]]] = {}
+
+
+def _resolve_slice_file(cp: str) -> Path:
+    lat_home = Path(__file__).resolve().parents[2]
+    env_root = os.environ.get("BOWTHRUSTER_PROJECT_ROOT")
+    root = Path(env_root).resolve() if env_root else (Path.cwd().resolve() if (Path.cwd() / ".whiteboard").is_dir() else lat_home)
+    cands = (root / cp, Path.cwd().resolve() / cp, lat_home / cp, lat_home.parent / cp)
+    return next((c for c in cands if c.is_file()), root / cp)
+
+
+def _load_cached_file_ast(fp: Path, cp: str) -> tuple[list[tuple[str, int, int]], list[str], dict[str, list[str]]]:
+    ckey = str(fp)
+    mt = fp.stat().st_mtime_ns
+    cached = _AST_SPAN_CACHE.get(ckey)
+    if cached is not None and cached[0] == mt:
+        return cached[1], cached[2], cached[3]
+    src = fp.read_text(encoding="utf-8", errors="ignore")
+    src_lines = src.splitlines()
+    sym_spans: list[tuple[str, int, int]] = []
+    calls_map: dict[str, list[str]] = {}
+    if cp.endswith(".py"):
+        try:
+            tree = ast.parse(src)
+            nodes = list(ast.walk(tree))
+            sym_spans = [
+                (n.name, int(n.lineno), int(getattr(n, "end_lineno", None) or n.lineno))
+                for n in nodes
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and getattr(n, "lineno", 0) > 0
+            ]
+            sym_dict = {nm: (s, e) for nm, s, e in sym_spans}
+            for fn in nodes:
+                if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    calls_map[fn.name] = sorted({
+                        f"{c}#L{sym_dict[c][0]}-L{sym_dict[c][1]}"
+                        for s in ast.walk(fn)
+                        if isinstance(s, ast.Call) and isinstance(s.func, ast.Name)
+                        and (c := s.func.id) in sym_dict and c != fn.name and c.startswith("_")
+                    })
+        except SyntaxError:
+            pass
+    else:
+        from bowthruster.nlp import _extract_generic_source_symbols
+
+        raw_syms, calls_map = _extract_generic_source_symbols(fp)
+        sym_spans = [(nm, s, e) for nm, (s, e) in raw_syms.items()]
+    _AST_SPAN_CACHE[ckey] = (mt, sym_spans, src_lines, calls_map)
+    return sym_spans, src_lines, calls_map
+
+
+def _refresh_artifacts_from_disk(active_artifacts: list[dict[str, Any]]) -> None:
+    for art in active_artifacts:
+        if not isinstance(art, dict):
+            continue
+        af = str(art.get("file") or "").strip()
+        if not af:
+            continue
+        cp = af.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
+        fp = _resolve_slice_file(cp)
+        if not fp.is_file():
+            continue
+        sym_spans, _, calls_map = _load_cached_file_ast(fp, cp)
+        sym_dict = {nm: (s, e) for nm, s, e in sym_spans}
+        asym = str(art.get("name") or art.get("id") or "").strip()
+        if asym in sym_dict:
+            s, e = sym_dict[asym]
+            art["file"] = f"{cp}#L{s}-L{e}"
+        if asym in calls_map:
+            art["calls"] = list(calls_map[asym])
+
+
 def _scan_ast_symbols_on_disk(
     scopes: dict[str, Any], raw_query_low: str,
     component: str | None, active_artifacts: list[dict[str, Any]],
     include_code: bool
 ) -> list[dict[str, Any]]:
-    if not raw_query_low and not include_code: return []
-    lat_home = Path(__file__).resolve().parents[2]
-    root = Path(os.environ["LATTICE_PROJECT_ROOT"]).resolve() if os.environ.get("LATTICE_PROJECT_ROOT") else lat_home
-    res_fp = lambda cp: next((c for c in (root / cp, lat_home / cp, lat_home.parent / cp) if c.is_file()), root / cp)
-    matched, seen = [], set()
+    _refresh_artifacts_from_disk(active_artifacts)
+    if not raw_query_low and not include_code:
+        return []
+    matched: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
     if raw_query_low:
         q_parts = [p for p in raw_query_low.replace("#l", " ").replace(":", " ").split() if p]
         q_clean, q_sub = (q_parts[0] if q_parts else raw_query_low.strip()), q_parts[1:]
         for tok_filter in ([q_clean], ([t for t in q_clean.split("_") if len(t) >= 3] if "_" in q_clean else [])):
-            if not tok_filter or matched: break
+            if not tok_filter or matched:
+                break
             for sid, sc in scopes.items():
-                if not isinstance(sc, dict) or (component and sid.lower() != str(component).strip().lower()): continue
+                if not isinstance(sc, dict) or (component and sid.lower() != str(component).strip().lower()):
+                    continue
                 for f_raw in _norm_files_list(sc.get("files") or (sc.get("attributes") or {}).get("files")):
                     cp = f_raw.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
-                    if (fp := res_fp(cp)).is_file():
-                        if _AST_SPAN_CACHE.get(ckey := str(fp), (0, [], []))[0] == (mt := fp.stat().st_mtime_ns): _, sym_spans, src_lines = _AST_SPAN_CACHE[ckey]
-                        else:
-                            src_low = (src := fp.read_text(encoding="utf-8", errors="ignore")).lower()
-                            if not (
-                                any(
-                                    ("def " in ln or "class " in ln) and all(t in f"{cp.lower()} {ln}" for t in tok_filter)
-                                    for ln in src_low.splitlines()
-                                )
-                                if cp.endswith(".py") else all(t in f"{cp.lower()}\n{src_low}" for t in tok_filter)
-                            ): continue
-                            src_lines, sym_spans = src.splitlines(), []
-                            if cp.endswith(".py"):
-                                try: sym_spans = [
-                                    (n.name, int(n.lineno), int(getattr(n, "end_lineno", None) or n.lineno))
-                                    for n in ast.walk(ast.parse(src)) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
-                                    and getattr(n, "lineno", 0) > 0
-                                ]
-                                except SyntaxError: pass
-                            else:
-                                from bowthruster.nlp import _extract_generic_source_symbols
-                                sym_spans = [(nm, s, e) for nm, (s, e) in _extract_generic_source_symbols(fp)[0].items()]
-                            _AST_SPAN_CACHE[ckey] = (mt, sym_spans, src_lines)
-                        for sym_name, s, e in sym_spans:
-                            nl = sym_name.lower()
-                            if (cp, sym_name) not in seen and (
-                                (nl == q_clean or (len(q_clean) >= 4 and q_clean in nl))
-                                if len(tok_filter) == 1 else all(t in f"{cp.lower()} {nl}" for t in tok_filter)
-                            ):
-                                seen.add((cp, sym_name))
-                                matched.append({
-                                    "symbol": sym_name, "scope": sid,
-                                    "file": f"{cp}#L{s}-L{e}",
-                                    "start_line": s, "end_line": e,
-                                    "exact": nl == q_clean or len(tok_filter) > 1,
-                                    **({"code": _format_code_window(src_lines, s, e, q_sub)} if include_code else {})
-                                })
-                                if len(tok_filter) > 1: break
-                if len(tok_filter) > 1 and matched: break
+                    fp = _resolve_slice_file(cp)
+                    if not fp.is_file():
+                        continue
+                    sym_spans, src_lines, _ = _load_cached_file_ast(fp, cp)
+                    for sym_name, s, e in sym_spans:
+                        nl = sym_name.lower()
+                        is_hit = (
+                            (nl == q_clean or (len(q_clean) >= 4 and q_clean in nl))
+                            if len(tok_filter) == 1
+                            else all(t in f"{cp.lower()} {nl}" for t in tok_filter)
+                        )
+                        if (cp, sym_name) not in seen and is_hit:
+                            seen.add((cp, sym_name))
+                            matched.append({
+                                "symbol": sym_name, "scope": sid,
+                                "file": f"{cp}#L{s}-L{e}",
+                                "start_line": s, "end_line": e,
+                                "exact": nl == q_clean or len(tok_filter) > 1,
+                                **({"code": _format_code_window(src_lines, s, e, q_sub)} if include_code else {})
+                            })
+                            if len(tok_filter) > 1:
+                                break
+                if len(tok_filter) > 1 and matched:
+                    break
         if any(m.get("exact") for m in matched):
             matched = [m for m in matched if m.get("exact")]
     if include_code and not matched:
         for art in active_artifacts:
-            if isinstance(art, dict) and (af := str(art.get("file") or "").strip()) and "#L" in af:
-                cp, rng = af.split("#L", 1)
-                if "-" in rng and all(p.lstrip("Ll").isdigit() for p in rng.split("-", 1)) and (fp := res_fp(cp)).is_file():
+            if not isinstance(art, dict):
+                continue
+            af = str(art.get("file") or "").strip()
+            if not af:
+                continue
+            cp = af.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
+            fp = _resolve_slice_file(cp)
+            if not fp.is_file():
+                continue
+            sym_spans, src_lines, _ = _load_cached_file_ast(fp, cp)
+            sym_dict = {nm: (s, e) for nm, s, e in sym_spans}
+            sym = str(art.get("name") or art.get("id") or "")
+            s, e = 1, len(src_lines)
+            if sym in sym_dict:
+                s, e = sym_dict[sym]
+            elif "#L" in af:
+                rng = af.split("#L", 1)[1]
+                if "-" in rng and all(p.lstrip("Ll").isdigit() for p in rng.split("-", 1)):
                     s, e = (int(p.lstrip("Ll")) for p in rng.split("-", 1))
-                    sym = str(art.get("name") or art.get("id") or "")
-                    if (cp, sym) not in seen:
-                        seen.add((cp, sym))
-                        matched.append({
-                            "symbol": sym, "scope": str(art.get("scope_id") or art.get("scope") or ""),
-                            "file": af, "start_line": s,
-                            "end_line": e, "code": _format_code_window(fp.read_text(encoding="utf-8", errors="ignore").splitlines(), s, e, [])
-                        })
+            if (cp, sym) not in seen and src_lines:
+                seen.add((cp, sym))
+                matched.append({
+                    "symbol": sym or cp,
+                    "scope": str(art.get("scope_id") or art.get("scope") or ""),
+                    "file": f"{cp}#L{s}-L{e}",
+                    "start_line": s,
+                    "end_line": e,
+                    "code": _format_code_window(src_lines, s, e, []),
+                })
+        if not matched:
+            for sid, sc in scopes.items():
+                if not isinstance(sc, dict) or sid == "global_defaults" or (component and sid.lower() != str(component).strip().lower()):
+                    continue
+                for f_raw in _norm_files_list(sc.get("files") or (sc.get("attributes") or {}).get("files")):
+                    cp = f_raw.removeprefix("uri://file/").removeprefix("file://").removeprefix("./").split("#", 1)[0].split(":", 1)[0].strip()
+                    fp = _resolve_slice_file(cp)
+                    if fp.is_file():
+                        sym_spans, src_lines, _ = _load_cached_file_ast(fp, cp)
+                        for sym_name, s, e in (sym_spans or [(Path(cp).stem, 1, len(src_lines))]):
+                            if (cp, sym_name) not in seen and src_lines:
+                                seen.add((cp, sym_name))
+                                matched.append({
+                                    "symbol": sym_name,
+                                    "scope": sid,
+                                    "file": f"{cp}#L{s}-L{e}",
+                                    "start_line": s,
+                                    "end_line": e,
+                                    "code": _format_code_window(src_lines, s, e, []),
+                                })
     return matched
 
 
-def slice_lattice(
-    graph: dict[str, Any], query: str = "", *, component: str | None = None, scope: str | None = None,
-    division: str | None = None, stage: str | None = None, schema: str | None = None,
-    kind: str | None = None, token_budget: int = 2400, max_lines: int = 120, include_code: bool = False,
-) -> dict[str, Any]:
-    """Computes an nD Hyperplane Slice over `graph` governed by Spec 21 Law 10 (`matches_nd_slice`, Spec 22C §2.1)."""
-    if not isinstance(graph, dict):
-        raise ValueError("graph must be a dict")
-    if component is None and scope is not None:
-        component = scope
-
-    conflicts = detect_frustration(graph)
-    annotate_active_tasks(graph, conflicts)
-    scopes = graph.get("scopes", {}) if isinstance(graph.get("scopes"), dict) else {}
-    if component and component not in scopes:
-        component = next(
-            (
-                s for s in scopes if s != "global_defaults"
-                and (s.lower() in component.lower() or component.lower() in s.lower())
-            ),
-            None if query else component
-        )
-    alias_idx = graph.get("alias_index", {}) if isinstance(graph.get("alias_index"), dict) else {}
-    raw_query_low = str(query or "").strip().lower()
-    q_tokens = set(tokenize_content_words(query)) if raw_query_low else set()
-    dim_kw = {
-        "component": component, "division": division, "stage": stage,
-        "schema": schema, "kind": kind, "q_tokens": q_tokens, "raw_query_low": raw_query_low,
-    }
-
-    component_specs: list[dict[str, Any]] = []
-    active_rules: list[dict[str, Any]] = []
-    for sid, sc in scopes.items():
-        if not isinstance(sc, dict):
-            continue
-        is_sbf_comp = sid != "global_defaults" and not str(sid).startswith("global_defaults::") and (
-            str(sc.get("kind") or "").strip().upper() == "COMPONENT"
-            or bool(
-                sc.get("role") or sc.get("owner") or sc.get("stage") or sc.get("depends_on")
-                or sc.get("children") or sc.get("parent") or sc.get("inputs") or sc.get("outputs") or sc.get("files")
-            )
-        )
-        if (sid != "global_defaults" and not str(sid).startswith("global_defaults::")) or is_sbf_comp or len(scopes) == 1:
-            sc_kinds = {"COMPONENT", "SCOPE"} if is_sbf_comp else {"SCOPE"}
-            if sc.get("kind"):
-                sc_kinds.add(str(sc["kind"]).strip().upper())
-            if _node_matches_slice_dims(sc, sc_kinds, scopes, alias_idx, sid=sid, **dim_kw):
-                component_specs.append(copy.deepcopy(sc))
-        for r in sc.get("rules", []):
-            if isinstance(r, dict):
-                rtype = str(r.get("type") or "OBLIGATION").strip().upper()
-                r_kinds = {rtype, "FACT"} if rtype in ("FACT", "GOAL", "PROPOSAL") else {rtype, "CONSTRAINT", "RULE"}
-                if _node_matches_slice_dims(r, r_kinds, scopes, alias_idx, sid=str(r.get("scope") or sid), **dim_kw):
-                    active_rules.append(copy.deepcopy(r))
-
-    raw_flows = [
-        copy.deepcopy(fl) for fl in graph.get("flows", [])
-        if isinstance(fl, dict) and _node_matches_slice_dims(
-            fl, {"FLOW", str(fl.get("kind") or "FLOW").strip().upper()},
-            scopes, alias_idx, sid=str(fl.get("source") or ""),
-            **dim_kw
-        )
-    ]
-    active_flows = list({(
-        str(fl.get("source") or ""),
-        str(fl.get("target") or ""),
-        str(fl.get("payload") or fl.get("condition") or "")
-    ): fl for fl in raw_flows}.values())
-    active_artifacts = [
-        copy.deepcopy(art) for art in graph.get("lattice_artifacts", [])
-        if isinstance(art, dict) and _node_matches_slice_dims(
-            art, {str(art.get("kind") or "SCHEMA").strip().upper(), "ARTIFACT"},
-            scopes, alias_idx, sid=str(art.get("scope_id") or art.get("scope") or ""),
-            **dim_kw
-        )
-    ]
-    active_tasks = [
-        copy.deepcopy(t) for t in graph.get("active_tasks", [])
-        if isinstance(t, dict) and _node_matches_slice_dims(
-            t, {"TASK", "ACTION"}, scopes, alias_idx,
-            sid=str(t.get("scope") or ""), **dim_kw
-        )
-    ]
-    matched_symbols = _scan_ast_symbols_on_disk(scopes, raw_query_low, component, active_artifacts, include_code)
+def _merge_matched_symbol_context(
+    graph: dict[str, Any],
+    scopes: dict[str, Any],
+    matched_symbols: list[dict[str, Any]],
+    component_specs: list[dict[str, Any]],
+    active_flows: list[dict[str, Any]],
+    active_artifacts: list[dict[str, Any]],
+    active_rules: list[dict[str, Any]],
+    include_code: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     if any(m.get("exact") for m in matched_symbols):
         exact_sids = {str(m.get("scope") or "") for m in matched_symbols if m.get("exact")}
         exact_syms = {str(m.get("symbol") or "").lower() for m in matched_symbols if m.get("exact")}
@@ -598,6 +611,7 @@ def slice_lattice(
             copy.deepcopy(a) for a in graph.get("lattice_artifacts", [])
             if isinstance(a, dict) and str(a.get("scope_id") or a.get("scope") or "") in exact_sids
         ]
+        _refresh_artifacts_from_disk(sc_arts)
         active_artifacts = (
             [a for a in sc_arts if str(a.get("name") or a.get("id") or "").lower() in exact_syms]
             or [a for a in sc_arts if any(any(es in str(c).lower() for es in exact_syms) for c in (a.get("calls") or []))]
@@ -628,10 +642,83 @@ def slice_lattice(
                     copy.deepcopy(r) for r in (scopes[msid].get("rules") or [])
                     if isinstance(r, dict) and r not in active_rules
                 )
-    open_blockers = [
-        copy.deepcopy(b) for b in graph.get("open_blockers", [])
-        if isinstance(b, dict) and b.get("status") != "RESOLVED"
+        _refresh_artifacts_from_disk(active_artifacts)
+    return component_specs, active_flows, active_artifacts, active_rules
+
+
+def slice_lattice(
+    graph: dict[str, Any], query: str = "", *, component: str | None = None, scope: str | None = None,
+    division: str | None = None, stage: str | None = None, schema: str | None = None,
+    kind: str | None = None, token_budget: int = 2400, max_lines: int = 120, include_code: bool = False,
+) -> dict[str, Any]:
+    """Computes an nD Hyperplane Slice over `graph` governed by Spec 21 Law 10 (`matches_nd_slice`, Spec 22C §2.1)."""
+    if not isinstance(graph, dict):
+        raise ValueError("graph must be a dict")
+    if component is None and scope is not None:
+        component = scope
+
+    conflicts = detect_frustration(graph)
+    annotate_active_tasks(graph, conflicts)
+    scopes = graph.get("scopes", {}) if isinstance(graph.get("scopes"), dict) else {}
+    if component and component not in scopes:
+        component = next(
+            (s for s in scopes if s != "global_defaults" and (s.lower() in component.lower() or component.lower() in s.lower())),
+            None if query else component
+        )
+    alias_idx = graph.get("alias_index", {}) if isinstance(graph.get("alias_index"), dict) else {}
+    raw_query_low = str(query or "").strip().lower()
+    q_tokens = set(tokenize_content_words(query)) if raw_query_low else set()
+    dim_kw = {
+        "component": component, "division": division, "stage": stage,
+        "schema": schema, "kind": kind, "q_tokens": q_tokens, "raw_query_low": raw_query_low,
+    }
+
+    component_specs: list[dict[str, Any]] = []
+    active_rules: list[dict[str, Any]] = []
+    for sid, sc in scopes.items():
+        if not isinstance(sc, dict):
+            continue
+        is_sbf_comp = sid != "global_defaults" and not str(sid).startswith("global_defaults::") and (
+            str(sc.get("kind") or "").strip().upper() == "COMPONENT"
+            or bool(sc.get("role") or sc.get("owner") or sc.get("stage") or sc.get("depends_on") or sc.get("children") or sc.get("parent") or sc.get("inputs") or sc.get("outputs") or sc.get("files"))
+        )
+        if (sid != "global_defaults" and not str(sid).startswith("global_defaults::")) or is_sbf_comp or len(scopes) == 1:
+            sc_kinds = {"COMPONENT", "SCOPE"} if is_sbf_comp else {"SCOPE"}
+            if sc.get("kind"):
+                sc_kinds.add(str(sc["kind"]).strip().upper())
+            if _node_matches_slice_dims(sc, sc_kinds, scopes, alias_idx, sid=sid, **dim_kw):
+                component_specs.append(copy.deepcopy(sc))
+        for r in sc.get("rules", []):
+            if isinstance(r, dict):
+                rtype = str(r.get("type") or "OBLIGATION").strip().upper()
+                r_kinds = {rtype, "FACT"} if rtype in ("FACT", "GOAL", "PROPOSAL") else {rtype, "CONSTRAINT", "RULE"}
+                if _node_matches_slice_dims(r, r_kinds, scopes, alias_idx, sid=str(r.get("scope") or sid), **dim_kw):
+                    active_rules.append(copy.deepcopy(r))
+
+    raw_flows = [
+        copy.deepcopy(fl) for fl in graph.get("flows", [])
+        if isinstance(fl, dict) and _node_matches_slice_dims(
+            fl, {"FLOW", str(fl.get("kind") or "FLOW").strip().upper()},
+            scopes, alias_idx, sid=str(fl.get("source") or ""), **dim_kw
+        )
     ]
+    active_flows = list({(str(fl.get("source") or ""), str(fl.get("target") or ""), str(fl.get("payload") or fl.get("condition") or "")): fl for fl in raw_flows}.values())
+    active_artifacts = [
+        copy.deepcopy(art) for art in graph.get("lattice_artifacts", [])
+        if isinstance(art, dict) and _node_matches_slice_dims(
+            art, {str(art.get("kind") or "SCHEMA").strip().upper(), "ARTIFACT"},
+            scopes, alias_idx, sid=str(art.get("scope_id") or art.get("scope") or ""), **dim_kw
+        )
+    ]
+    active_tasks = [
+        copy.deepcopy(t) for t in graph.get("active_tasks", [])
+        if isinstance(t, dict) and _node_matches_slice_dims(t, {"TASK", "ACTION"}, scopes, alias_idx, sid=str(t.get("scope") or ""), **dim_kw)
+    ]
+    matched_symbols = _scan_ast_symbols_on_disk(scopes, raw_query_low, component, active_artifacts, include_code)
+    component_specs, active_flows, active_artifacts, active_rules = _merge_matched_symbol_context(
+        graph, scopes, matched_symbols, component_specs, active_flows, active_artifacts, active_rules, include_code
+    )
+    open_blockers = [copy.deepcopy(b) for b in graph.get("open_blockers", []) if isinstance(b, dict) and b.get("status") != "RESOLVED"]
     all_blockers = list(conflicts) + [b for b in open_blockers if b.get("type") != "CONFLICT"]
 
     status = "CONFLICT" if conflicts else ("BLOCKED" if open_blockers else "OK")
@@ -640,16 +727,8 @@ def slice_lattice(
         "active_flows": active_flows, "active_artifacts": active_artifacts,
         "active_rules": active_rules, "active_tasks": active_tasks,
         "matched_symbols": matched_symbols,
-        "blockers": all_blockers, "conflicts": conflicts,
-        "open_blockers": open_blockers
+        "blockers": all_blockers, "conflicts": conflicts, "open_blockers": open_blockers
     }
     compact_str = format_compact_view(view, max_lines=max_lines, token_budget=token_budget)
-    view.update({
-        "compact_view": compact_str,
-        "text": compact_str, "token_count": token_cost(compact_str),
-        "line_count": len(compact_str.splitlines()) if compact_str else 0
-    })
-    return _enrich_view_compact_lines(
-        graph, view, eff_budget=max(token_budget, 2400)
-        if (include_code or matched_symbols) else token_budget
-    )
+    view.update({"compact_view": compact_str, "text": compact_str, "token_count": token_cost(compact_str), "line_count": len(compact_str.splitlines()) if compact_str else 0})
+    return _enrich_view_compact_lines(graph, view, eff_budget=max(token_budget, 2400) if (include_code or matched_symbols) else token_budget)

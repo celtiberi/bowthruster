@@ -142,6 +142,64 @@ def _score_single_rule(
     return r_score, rule_anchors_scope
 
 
+def _score_scope_initial(
+    graph: dict[str, Any], sid: str, scope: dict[str, Any],
+    q_clean: str, q_tokens: set[str]
+) -> tuple[float, set[str]]:
+    sid_low = sid.lower()
+    base_sid = sid_low.split("::")[0]
+    initial_scope_score = 0.0
+    if sid_low in q_clean or (base_sid and base_sid != "global_defaults" and base_sid in q_clean):
+        initial_scope_score = max(initial_scope_score, 0.85)
+    for alias in scope.get("aliases", []):
+        al_low = str(alias).lower().strip()
+        if al_low and al_low in q_clean:
+            initial_scope_score = max(initial_scope_score, 0.85)
+
+    s_tokens = set(tokenize_content_words(sid))
+    for alias in scope.get("aliases", []):
+        s_tokens.update(tokenize_content_words(str(alias)))
+    for ak, av in scope.get("attributes", {}).items():
+        s_tokens.update(tokenize_content_words(f"{ak} {av}"))
+    if overlap_s := (q_tokens & s_tokens):
+        denom = max(1, min(len(q_tokens), len(s_tokens)))
+        initial_scope_score = max(initial_scope_score, min(0.90, 0.50 * (len(overlap_s) / denom)))
+
+    sbf_tokens: set[str] = set()
+    for k_sbf in ("role", "owner", "stage", "kind", "status"):
+        if scope.get(k_sbf):
+            val_s = str(scope[k_sbf]).strip()
+            sbf_tokens.update(tokenize_content_words(val_s))
+            if k_sbf in ("owner", "stage") and val_s.lower() in q_clean:
+                initial_scope_score = max(initial_scope_score, 0.85)
+    for k_list in ("inputs", "outputs", "depends_on"):
+        for item in scope.get(k_list, []):
+            it_s = str(item).strip()
+            sbf_tokens.update(tokenize_content_words(it_s))
+            if it_s and it_s.lower() in q_clean:
+                initial_scope_score = max(initial_scope_score, 0.80)
+    for fl in graph.get("flows", []):
+        if isinstance(fl, dict) and (fl.get("source") == sid or fl.get("target") == sid):
+            for fk in ("payload", "action", "condition", "text", "summary"):
+                if fl.get(fk):
+                    sbf_tokens.update(tokenize_content_words(str(fl[fk])))
+            if fl.get("payload") and str(fl["payload"]).lower() in q_clean:
+                initial_scope_score = max(initial_scope_score, 0.80)
+    for art in graph.get("lattice_artifacts", []):
+        if isinstance(art, dict) and (art.get("scope_id") == sid or art.get("scope") == sid):
+            for ak in ("name", "kind", "spec", "text", "summary", "owner", "stage"):
+                if art.get(ak):
+                    sbf_tokens.update(tokenize_content_words(str(art[ak])))
+            for io_x in list(art.get("inputs", [])) + list(art.get("outputs", [])):
+                sbf_tokens.update(tokenize_content_words(str(io_x)))
+            if art.get("name") and str(art["name"]).lower() in q_clean:
+                initial_scope_score = max(initial_scope_score, 0.85)
+    if overlap_sbf := (q_tokens & sbf_tokens):
+        denom_sbf = max(1, min(len(q_tokens), len(sbf_tokens)))
+        initial_scope_score = max(initial_scope_score, min(0.90, 0.75 * (len(overlap_sbf) / denom_sbf)))
+    return initial_scope_score, s_tokens
+
+
 def compute_seed_activations(graph: dict[str, Any], query: str) -> tuple[dict[str, float], set[str]]:
     """Computes initial seed activations $A^{(0)}$ across scopes, rules, `meta_tokens`, and `active_tasks`,
     returning `(seed_activations, seed_scopes)` (Spec 21 §1.3)."""
@@ -159,59 +217,7 @@ def compute_seed_activations(graph: dict[str, Any], query: str) -> tuple[dict[st
     for sid, scope in scopes.items():
         if not isinstance(scope, dict):
             continue
-        sid_low = sid.lower()
-        base_sid = sid_low.split("::")[0]
-        initial_scope_score = 0.0
-        if sid_low in q_clean or (base_sid and base_sid != "global_defaults" and base_sid in q_clean):
-            initial_scope_score = max(initial_scope_score, 0.85)
-        for alias in scope.get("aliases", []):
-            al_low = str(alias).lower().strip()
-            if al_low and al_low in q_clean:
-                initial_scope_score = max(initial_scope_score, 0.85)
-
-        s_tokens = set(tokenize_content_words(sid))
-        for alias in scope.get("aliases", []):
-            s_tokens.update(tokenize_content_words(str(alias)))
-        for ak, av in scope.get("attributes", {}).items():
-            s_tokens.update(tokenize_content_words(f"{ak} {av}"))
-        overlap_s = q_tokens & s_tokens
-        if overlap_s:
-            denom = max(1, min(len(q_tokens), len(s_tokens)))
-            initial_scope_score = max(initial_scope_score, min(0.90, 0.50 * (len(overlap_s) / denom)))
-
-        sbf_tokens: set[str] = set()
-        for k_sbf in ("role", "owner", "stage", "kind", "status"):
-            if scope.get(k_sbf):
-                val_s = str(scope[k_sbf]).strip()
-                sbf_tokens.update(tokenize_content_words(val_s))
-                if k_sbf in ("owner", "stage") and val_s.lower() in q_clean:
-                    initial_scope_score = max(initial_scope_score, 0.85)
-        for k_list in ("inputs", "outputs", "depends_on"):
-            for item in scope.get(k_list, []):
-                it_s = str(item).strip()
-                sbf_tokens.update(tokenize_content_words(it_s))
-                if it_s and it_s.lower() in q_clean:
-                    initial_scope_score = max(initial_scope_score, 0.80)
-        for fl in graph.get("flows", []):
-            if isinstance(fl, dict) and (fl.get("source") == sid or fl.get("target") == sid):
-                for fk in ("payload", "action", "condition", "text", "summary"):
-                    if fl.get(fk):
-                        sbf_tokens.update(tokenize_content_words(str(fl[fk])))
-                if fl.get("payload") and str(fl["payload"]).lower() in q_clean:
-                    initial_scope_score = max(initial_scope_score, 0.80)
-        for art in graph.get("lattice_artifacts", []):
-            if isinstance(art, dict) and (art.get("scope_id") == sid or art.get("scope") == sid):
-                for ak in ("name", "kind", "spec", "text", "summary", "owner", "stage"):
-                    if art.get(ak):
-                        sbf_tokens.update(tokenize_content_words(str(art[ak])))
-                for io_x in list(art.get("inputs", [])) + list(art.get("outputs", [])):
-                    sbf_tokens.update(tokenize_content_words(str(io_x)))
-                if art.get("name") and str(art["name"]).lower() in q_clean:
-                    initial_scope_score = max(initial_scope_score, 0.85)
-        if overlap_sbf := (q_tokens & sbf_tokens):
-            denom_sbf = max(1, min(len(q_tokens), len(sbf_tokens)))
-            initial_scope_score = max(initial_scope_score, min(0.90, 0.75 * (len(overlap_sbf) / denom_sbf)))
-
+        initial_scope_score, s_tokens = _score_scope_initial(graph, sid, scope, q_clean, q_tokens)
         rules_list = [r for r in scope.get("rules", []) if isinstance(r, dict) and r.get("id")]
         scope_anchored = initial_scope_score > 0.0 or any(
             _rule_matches_target_or_refs(r, q_clean, q_tokens) for r in rules_list

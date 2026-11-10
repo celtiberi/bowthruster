@@ -147,17 +147,30 @@ def _extract_law_fn_name(art: dict[str, Any]) -> str:
     return ""
 
 
-def _is_valid_law_call_args(
-    call_node: ast.Call, is_skeleton_stub: bool = False,
-    const_vars: set[str] | None = None
-) -> bool:
-    if is_skeleton_stub:
-        return True
+_BUILTIN_CONST_NAMES: frozenset[str] = frozenset({
+    "True", "False", "None", "bool", "int", "str", "float", "len", "tuple", "list", "dict", "set"
+})
+
+
+def _has_dynamic_name(expr: ast.AST, const_vars: set[str]) -> bool:
+    return any(
+        isinstance(n, ast.Name) and n.id not in _BUILTIN_CONST_NAMES and n.id not in const_vars
+        for n in ast.walk(expr)
+    )
+
+
+def _is_tautological_assert(node: ast.Assert, const_vars: set[str]) -> bool:
+    if isinstance(node.test, ast.BoolOp) and isinstance(node.test.op, ast.Or):
+        return any(not _has_dynamic_name(v, const_vars) for v in node.test.values)
+    return not _has_dynamic_name(node.test, const_vars)
+
+
+def _is_valid_law_call_args(call_node: ast.Call, const_vars: set[str] | None = None) -> bool:
     args = [*call_node.args, *(kw.value for kw in call_node.keywords)]
     if not args:
         return True
     c_vars = const_vars or set()
-    if any(isinstance(a, ast.Constant) or (isinstance(a, ast.Name) and a.id in c_vars) for a in args):
+    if any(not _has_dynamic_name(a, c_vars) for a in args):
         return False
     return len({ast.dump(a) for a in args}) == len(args)
 
@@ -172,36 +185,45 @@ def _collect_fn_calls(
     node: ast.AST, law_fns: set[str], loaded_names: set[str] | None = None,
     const_vars: set[str] | None = None
 ) -> set[str]:
-    if loaded_names is None:
-        loaded_names = {n.id for n in ast.walk(node) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
     if const_vars is None:
-        const_vars = {
-            t.id for n in ast.walk(node)
-            if isinstance(n, ast.Assign) and isinstance(n.value, ast.Constant)
-            for t in n.targets if isinstance(t, ast.Name)
+        const_vars = set()
+        for n in ast.walk(node):
+            if isinstance(n, ast.Assign) and not _has_dynamic_name(n.value, const_vars):
+                for t in n.targets:
+                    if isinstance(t, ast.Name):
+                        const_vars.add(t.id)
+    if loaded_names is None:
+        taut_nodes = {
+            sub
+            for ch in ast.walk(node)
+            if isinstance(ch, ast.Assert) and _is_tautological_assert(ch, const_vars)
+            for sub in ast.walk(ch)
+        }
+        loaded_names = {
+            n.id
+            for n in ast.walk(node)
+            if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load) and n not in taut_nodes
         }
     calls: set[str] = set()
     for ch in ast.iter_child_nodes(node):
         if isinstance(ch, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        if isinstance(ch, ast.Assert) and _is_tautological_assert(ch, const_vars):
             continue
         if isinstance(ch, ast.Assign):
             targets = [
                 t for e in ch.targets for t in (e.elts if isinstance(e, (ast.Tuple, ast.List)) else [e])
                 if isinstance(t, ast.Name)
             ]
-            if targets and all(
-                t.id == "_" or (t.id not in loaded_names and not t.id.startswith("_law_"))
-                for t in targets
-            ):
+            if targets and all(t.id == "_" or t.id not in loaded_names for t in targets):
                 continue
-            is_stub = bool(targets) and all(t.id.startswith("_law_") for t in targets)
             for s in ast.walk(ch.value):
                 if isinstance(s, ast.Call) and (fn := _call_name(s)):
-                    if fn not in law_fns or _is_valid_law_call_args(s, is_skeleton_stub=is_stub, const_vars=const_vars):
+                    if fn not in law_fns or _is_valid_law_call_args(s, const_vars=const_vars):
                         calls.add(fn)
             continue
         if isinstance(ch, ast.AnnAssign) and isinstance(ch.target, ast.Name):
-            if ch.target.id == "_" or (ch.target.id not in loaded_names and not ch.target.id.startswith("_law_")):
+            if ch.target.id == "_" or ch.target.id not in loaded_names:
                 continue
         if isinstance(ch, ast.Expr):
             for s in ast.walk(ch.value):
@@ -211,11 +233,11 @@ def _collect_fn_calls(
                         or fn.endswith("_law")
                     ):
                         continue
-                    if fn not in law_fns or _is_valid_law_call_args(s, is_skeleton_stub=False, const_vars=const_vars):
+                    if fn not in law_fns or _is_valid_law_call_args(s, const_vars=const_vars):
                         calls.add(fn)
             continue
         if isinstance(ch, ast.Call) and (fn := _call_name(ch)):
-            if fn not in law_fns or _is_valid_law_call_args(ch, is_skeleton_stub=False, const_vars=const_vars):
+            if fn not in law_fns or _is_valid_law_call_args(ch, const_vars=const_vars):
                 calls.add(fn)
         calls.update(_collect_fn_calls(ch, law_fns, loaded_names, const_vars))
     return calls
@@ -353,17 +375,14 @@ def _populate_file_ast_metadata(f: dict[str, Any], src: str) -> list[str]:
     return eff_imps
 
 
-def _collect_dangling_imports(
+def _prepare_dangling_import_context(
     scopes: dict[str, Any],
     artifacts: list[dict[str, Any]],
     staged_files: list[dict[str, Any]],
     staged_diff_report: dict[str, Any],
-) -> list[dict[str, str]]:
+) -> tuple[set[str], list[dict[str, Any]], set[str], set[str], set[str]]:
     del_paths = {
-        str(p).strip() for p in (
-            *(staged_diff_report.get("deleted_files") or []),
-            *(staged_diff_report.get("removed_files") or [])
-        )
+        str(p).strip() for p in (*(staged_diff_report.get("deleted_files") or []), *(staged_diff_report.get("removed_files") or []))
         if str(p).strip()
     }
     rem_files: list[dict[str, Any]] = []
@@ -386,24 +405,27 @@ def _collect_dangling_imports(
                     if (sp := str(sib)) not in seen_p and not any(_paths_match(sp, d) for d in del_paths):
                         seen_p.add(sp)
                         rem_files.append({"path": sp})
-    explicit_known = {
-        str(f.get("path") or f.get("file") or "").strip()
-        for f in rem_files if str(f.get("path") or f.get("file") or "").strip()
-    }
+    explicit_known = {str(f.get("path") or f.get("file") or "").strip() for f in rem_files if str(f.get("path") or f.get("file") or "").strip()}
     for ep in (*(staged_diff_report.get("existing_files") or []), *(staged_diff_report.get("package_files") or [])):
         if (eps := str(ep).strip()) and not any(_paths_match(eps, d) for d in del_paths):
             explicit_known.add(eps)
     lattice_known = set(explicit_known)
-    for ep in (
-        *(fp for sc in scopes.values() if isinstance(sc, dict) for fp in _extract_scope_files(sc)),
-        *(str(a.get("file") or "") for a in artifacts)
-    ):
+    for ep in (*(fp for sc in scopes.values() if isinstance(sc, dict) for fp in _extract_scope_files(sc)), *(str(a.get("file") or "") for a in artifacts)):
         if (eps := str(ep).strip()) and not any(_paths_match(eps, d) for d in del_paths):
             lattice_known.add(eps)
-    missing_mods = {
-        str(m).strip().lstrip(".") for m in (staged_diff_report.get("missing_modules") or [])
-        if str(m).strip()
-    }
+    missing_mods = {str(m).strip().lstrip(".") for m in (staged_diff_report.get("missing_modules") or []) if str(m).strip()}
+    return del_paths, rem_files, explicit_known, lattice_known, missing_mods
+
+
+def _collect_dangling_imports(
+    scopes: dict[str, Any],
+    artifacts: list[dict[str, Any]],
+    staged_files: list[dict[str, Any]],
+    staged_diff_report: dict[str, Any],
+) -> list[dict[str, str]]:
+    del_paths, rem_files, explicit_known, lattice_known, missing_mods = _prepare_dangling_import_context(
+        scopes, artifacts, staged_files, staged_diff_report
+    )
     out, seen_reasons = [], set()
 
     def _add(fpath: str, mod_str: str, raw_mod: str = "") -> None:
@@ -412,17 +434,13 @@ def _collect_dangling_imports(
             f_sc = _resolve_file_scopes(fpath, "", scopes, artifacts)
             alt = f" (dangling_import:{fpath}:{raw_mod})" if raw_mod and raw_mod != m else ""
             out.append({
-                "kind": "CONTRACT_VIOLATION",
-                "scope": f_sc[0] if f_sc else "global_defaults",
-                "path": fpath, "file": fpath,
-                "module": m, "reason": reason,
-                "description": f"{reason}{alt}"
+                "kind": "CONTRACT_VIOLATION", "scope": f_sc[0] if f_sc else "global_defaults",
+                "path": fpath, "file": fpath, "module": m, "reason": reason, "description": f"{reason}{alt}"
             })
 
     raw_top = staged_diff_report.get("dangling_imports")
     top_items = [
-        (k, x) for k, v in raw_top.items()
-        for x in (v if isinstance(v, (list, tuple, set)) else [v])
+        (k, x) for k, v in raw_top.items() for x in (v if isinstance(v, (list, tuple, set)) else [v])
     ] if isinstance(raw_top, dict) else [(None, x) for x in (raw_top if isinstance(raw_top, list) else [])]
     for def_fp, item in [*top_items, *((str(f.get("path") or f.get("file") or "").strip(), x) for f in rem_files for x in (f.get("dangling_imports") or []))]:
         if isinstance(item, dict):
@@ -432,11 +450,7 @@ def _collect_dangling_imports(
         elif isinstance(item, str) and item.strip():
             s = item.strip().removeprefix("dangling_import:")
             fp, mod = s.split(":", 1) if (":" in s and def_fp is None) else (
-                str(
-                    def_fp or (rem_files[0].get("path") or rem_files[0].get("file") if rem_files else "")
-                    or ""
-                ).strip(),
-                s
+                str(def_fp or (rem_files[0].get("path") or rem_files[0].get("file") if rem_files else "") or "").strip(), s
             )
             _add(fp, mod, mod.lstrip("."))
 
@@ -475,22 +489,10 @@ def _collect_dangling_imports(
                 if clean in missing_mods or raw_mod in missing_mods:
                     hit_miss = True
                 elif lvl == 1 and clean != "__init__":
-                    proj_root = Path(
-                        os.environ.get("BOWTHRUSTER_PROJECT_ROOT")
-                        or os.environ.get("LATTICE_PROJECT_ROOT")
-                        or "."
-                    )
+                    proj_root = Path(os.environ.get("BOWTHRUSTER_PROJECT_ROOT") or ".")
                     active_known = explicit_known if (str(base) not in ("", ".") and (base.is_dir() or (proj_root / base).is_dir())) else lattice_known
-                    in_known = any(
-                        _paths_match(kp, c_py) or _paths_match(kp, c_init)
-                        or _paths_match(kp, m_py) or _paths_match(kp, m_init)
-                        or Path(kp).stem == clean for kp in active_known
-                    )
-                    on_disk = str(base) not in ("", ".") and (
-                        (base / m_py).exists() or (base / m_init).exists()
-                        or (proj_root / base / m_py).exists()
-                        or (proj_root / base / m_init).exists()
-                    )
+                    in_known = any(_paths_match(kp, c_py) or _paths_match(kp, c_init) or _paths_match(kp, m_py) or _paths_match(kp, m_init) or Path(kp).stem == clean for kp in active_known)
+                    on_disk = str(base) not in ("", ".") and ((base / m_py).exists() or (base / m_init).exists() or (proj_root / base / m_py).exists() or (proj_root / base / m_init).exists())
                     hit_miss = not (in_known or on_disk)
             if hit_del or hit_miss:
                 _add(fpath, clean, raw_mod)
@@ -506,6 +508,35 @@ def _reachable_from_roots(roots: list[str], merged_cg: dict[str, set[str]]) -> s
                 visited.add(callee)
                 queue.append(callee)
     return reachable
+
+
+def _collect_scope_call_graph_files(
+    sid: str,
+    ifaces: list[dict[str, Any]],
+    law_fn_set: set[str],
+    staged_files: list[dict[str, Any]],
+    scopes: dict[str, Any],
+    artifacts: list[dict[str, Any]],
+    single_iface_scope: bool,
+) -> tuple[list[dict[str, Any]], set[str]]:
+    iface_files = {str(a.get("file") or "").strip() for a in ifaces if str(a.get("file") or "").strip()}
+    cand_files = [
+        f for f in staged_files
+        if sid in _resolve_file_scopes(str(f.get("path") or f.get("file") or "").strip(), str(f.get("scope") or f.get("component") or "").strip(), scopes, artifacts)
+        or any(_paths_match(str(f.get("path") or f.get("file") or ""), af) for af in iface_files)
+        or (not f.get("path") and not f.get("file") and single_iface_scope)
+    ]
+    cg_files = [f for f in cand_files if _parse_file_call_graph(f, law_fn_set)[0]]
+    if not cg_files:
+        return [], iface_files
+    proj_root = Path(os.environ.get("BOWTHRUSTER_PROJECT_ROOT") or ".")
+    for raw_sfp in (*_extract_scope_files(scopes.get(sid) or {}), *sorted(iface_files)):
+        sfp = _clean_path(raw_sfp)
+        if sfp.endswith(".py") and not any(_paths_match(str(cf.get("path") or cf.get("file") or ""), sfp) for cf in cg_files):
+            dp = (proj_root / sfp) if (proj_root / sfp).is_file() else (Path(sfp) if Path(sfp).is_file() else None)
+            if dp is not None:
+                cg_files.append({"path": sfp, "source": dp.read_text(encoding="utf-8", errors="ignore")})
+    return cg_files, iface_files
 
 
 def verify_ast_call_graph_skeleton(
@@ -531,35 +562,14 @@ def verify_ast_call_graph_skeleton(
     for sid in sorted(set(scope_ifaces.keys()) & set(scope_laws.keys())):
         ifaces, laws = scope_ifaces[sid], scope_laws[sid]
         law_fn_set = {lfn for _, lfn in laws} | {str(a.get("name") or a.get("id") or "").strip() for a, _ in laws}
-        iface_files = {str(a.get("file") or "").strip() for a in ifaces if str(a.get("file") or "").strip()}
-        cand_files = [
-            f for f in staged_files
-            if sid in _resolve_file_scopes(
-                str(f.get("path") or f.get("file") or "").strip(),
-                str(f.get("scope") or f.get("component") or "").strip(),
-                scopes, artifacts
-            )
-            or any(_paths_match(str(f.get("path") or f.get("file") or ""), af) for af in iface_files)
-            or (not f.get("path") and not f.get("file") and len(scope_ifaces) == 1)
-        ]
-        cg_files = [f for f in cand_files if _parse_file_call_graph(f, law_fn_set)[0]]
+        cg_files, iface_files = _collect_scope_call_graph_files(
+            sid, ifaces, law_fn_set, staged_files, scopes, artifacts, len(scope_ifaces) == 1
+        )
         if not cg_files:
             continue
-        proj_root = Path(os.environ.get("BOWTHRUSTER_PROJECT_ROOT") or os.environ.get("LATTICE_PROJECT_ROOT") or ".")
-        for raw_sfp in (*_extract_scope_files(scopes.get(sid) or {}), *sorted(iface_files)):
-            sfp = _clean_path(raw_sfp)
-            if sfp.endswith(".py") and not any(
-                _paths_match(str(cf.get("path") or cf.get("file") or ""), sfp)
-                for cf in cg_files
-            ):
-                dp = (proj_root / sfp) if (proj_root / sfp).is_file() else (Path(sfp) if Path(sfp).is_file() else None)
-                if dp is not None:
-                    cg_files.append({"path": sfp, "source": dp.read_text(encoding="utf-8", errors="ignore")})
         checked_scopes.append(sid)
-        iface_names, sc_fcnt = [
-            str(a.get("name") or a.get("id") or "").strip()
-            for a in ifaces
-        ], len(_extract_scope_files(scopes.get(sid) or {}))
+        iface_names = [str(a.get("name") or a.get("id") or "").strip() for a in ifaces]
+        sc_fcnt = len(_extract_scope_files(scopes.get(sid) or {}))
         defined_fns, merged_cg, sib_roots, file_dfns_list = set(), {}, set(), []
         cpath = str(cg_files[0].get("path") or cg_files[0].get("file") or next(iter(iface_files), "")).strip()
         for cf in cg_files:
@@ -574,8 +584,7 @@ def verify_ast_call_graph_skeleton(
         reachable = _reachable_from_roots(active_ifaces + sorted(sib_roots), merged_cg)
         reach_by_iface = {ifn: _reachable_from_roots([ifn], merged_cg) for ifn in active_ifaces}
         iface_def = bool(iface_names) and (
-            all(fn in defined_fns for fn in iface_names)
-            or bool(sib_roots) or (sc_fcnt > 1 and any(fn in defined_fns for fn in iface_names))
+            all(fn in defined_fns for fn in iface_names) or bool(sib_roots) or (sc_fcnt > 1 and any(fn in defined_fns for fn in iface_names))
         )
         unwired_iface_in_law_file = sc_fcnt <= 1 and any(
             bool(dfns & law_fn_set) and len(f_ifaces := [ifn for ifn in active_ifaces if ifn in dfns]) > 1
@@ -588,15 +597,11 @@ def verify_ast_call_graph_skeleton(
             if not is_call_graph_skeleton_valid(iface_def, lfn_def, calls_law):
                 is_valid = False
                 disconnected_laws.append({
-                    "scope": sid, "law_id": law_id,
-                    "law_fn": lfn, "interfaces": iface_names,
-                    "path": cpath, "interface_defined": iface_def,
-                    "law_fn_defined": lfn_def,
-                    "interface_calls_law": calls_law
+                    "scope": sid, "law_id": law_id, "law_fn": lfn, "interfaces": iface_names,
+                    "path": cpath, "interface_defined": iface_def, "law_fn_defined": lfn_def, "interface_calls_law": calls_law
                 })
                 violations.append({
-                    "kind": "CONTRACT_VIOLATION",
-                    "scope": sid, "path": cpath,
+                    "kind": "CONTRACT_VIOLATION", "scope": sid, "path": cpath,
                     "description": f"LAW function '{lfn}' ({law_id}) in scope '{sid}' is not defined or not invoked by INTERFACE {iface_names} in {cpath}"
                 })
 
@@ -604,22 +609,12 @@ def verify_ast_call_graph_skeleton(
         is_valid = False
         if not disconnected_laws and not dangling_imports:
             disconnected_laws.append({
-                "scope": "global_defaults",
-                "law_id": "call_graph_ok",
-                "law_fn": "", "interfaces": [],
-                "path": "", "interface_defined": True,
-                "law_fn_defined": True, "interface_calls_law": False
+                "scope": "global_defaults", "law_id": "call_graph_ok", "law_fn": "", "interfaces": [],
+                "path": "", "interface_defined": True, "law_fn_defined": True, "interface_calls_law": False
             })
-            violations.append({
-                "kind": "CONTRACT_VIOLATION",
-                "scope": "global_defaults",
-                "path": "", "description": "Staged diff report flagged call_graph_ok=False"
-            })
+            violations.append({"kind": "CONTRACT_VIOLATION", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged call_graph_ok=False"})
     return {
-        "is_valid": is_valid,
-        "disconnected_law_functions": len(disconnected_laws),
-        "disconnected_laws": disconnected_laws,
-        "dangling_imports": dangling_imports,
-        "checked_scopes": checked_scopes,
-        "violations": violations,
+        "is_valid": is_valid, "disconnected_law_functions": len(disconnected_laws),
+        "disconnected_laws": disconnected_laws, "dangling_imports": dangling_imports,
+        "checked_scopes": checked_scopes, "violations": violations,
     }

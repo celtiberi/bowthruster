@@ -462,43 +462,98 @@ def _record_forage_action(
     if sid:
         slot_ids.append(sid)
 
+def _escalate_or_admit_foraged_slot(
+    d: dict[str, Any], action: str, is_escalate: bool, req: bool, steps_under_max: bool,
+    explicit_budget_ok: bool, raw_cid: str, raw_sid: str, match_idx: int | None,
+    working_slots: list[TableSlot], whiteboard_graph: dict[str, Any] | None, store: Any,
+    current_turn: int, steps_executed: int, eff_max_slots: int, eff_max_tokens: int,
+    eff_max_pinned: int, max_summary_words: int, foraging_actions_applied: list[dict[str, Any]],
+    history_list: list[dict[str, Any]], foraged_slot_ids: list[str],
+) -> tuple[list[TableSlot], int]:
+    if (
+        match_idx is None and is_escalate and (raw_cid or raw_sid)
+        and isinstance(whiteboard_graph, dict) and (raw_cid in (whiteboard_graph.get("scopes") or {}))
+    ):
+        seed_slot = _build_candidate_slot({"concept_id": raw_cid, "slot_id": raw_sid or f"slot_{raw_cid}", "lod_tier": LOD_1}, raw_cid, current_turn, max_summary_words)
+        sim_slots = _evict_until_fits(working_slots, 1, int(seed_slot["token_cost"]), eff_max_slots, eff_max_tokens, eff_max_pinned)
+        if should_admit_table_slot((len(sim_slots) + 1) <= eff_max_slots, (sum(int(s["token_cost"]) for s in sim_slots) + int(seed_slot["token_cost"])) <= eff_max_tokens):
+            working_slots = sim_slots + [seed_slot]
+            match_idx = len(working_slots) - 1
+    if match_idx is not None:
+        cur_slot = working_slots[match_idx]
+        cur_lod = _norm_lod(cur_slot.get("lod_tier") or LOD_0)
+        raw_tgt = d.get("target_lod") or d.get("new_lod") or d.get("lod_tier") or d.get("lod")
+        tgt_lod = _norm_lod(raw_tgt) if raw_tgt is not None else (TableLOD.TLOD2 if is_escalate else (TableLOD.TLOD1 if cur_lod == TableLOD.TLOD0 else TableLOD.TLOD2))
+        clamped_sum, enriched_links, words_within_50 = _enrich_slot_from_graph_and_links(cur_slot["concept_id"], cur_slot, d, whiteboard_graph, store, max_summary_words)
+        raw_cost = d.get("token_cost", d.get("cost"))
+        cand_cost = int(raw_cost) if (isinstance(raw_cost, int) and not isinstance(raw_cost, bool) and raw_cost > 0) else max(1, token_cost(clamped_sum or cur_slot["concept_id"]))
+        other_tokens = sum(int(s["token_cost"]) for i, s in enumerate(working_slots) if i != match_idx)
+        budget_ok = explicit_budget_ok and ((other_tokens + cand_cost) <= eff_max_tokens)
+        if should_execute_foraging_step(req, steps_under_max, budget_ok):
+            next_lod = cur_lod
+            if _LOD_RANK[tgt_lod] > _LOD_RANK[cur_lod]:
+                while _LOD_RANK[next_lod] < _LOD_RANK[tgt_lod]:
+                    stepped = step_slot_lod_escalation(next_lod, True, words_within_50, budget_ok)
+                    if stepped == next_lod:
+                        break
+                    next_lod = stepped
+            else:
+                next_lod = step_slot_lod_escalation(cur_lod, False, words_within_50, budget_ok)
+            if next_lod != cur_lod or words_within_50:
+                cur_slot["lod_tier"] = next_lod.value
+                if words_within_50:
+                    cur_slot["summary"] = cur_slot["lod1_synopsis"] = clamped_sum
+                    cur_slot["token_cost"] = cand_cost
+                cur_slot["external_links"] = enriched_links
+                if "pinned" in d:
+                    other_pinned = sum(1 for i, s in enumerate(working_slots) if i != match_idx and bool(s.get("pinned")))
+                    if not bool(d["pinned"]) or other_pinned < eff_max_pinned:
+                        cur_slot["pinned"] = bool(d["pinned"])
+                cur_slot["updated_turn"] = int(d.get("updated_turn", current_turn) or current_turn)
+                working_slots[match_idx] = TableSlot(cur_slot, max_summary_words=max_summary_words)
+            steps_executed += 1
+            rec = {
+                "action": action or "ESCALATE_LOD", "slot_id": working_slots[match_idx]["slot_id"],
+                "concept_id": working_slots[match_idx]["concept_id"], "lod_tier": working_slots[match_idx]["lod_tier"],
+                "turn": int(current_turn), **({"target_uri": str(d.get("target_uri") or d.get("uri"))} if (d.get("target_uri") or d.get("uri")) else {}),
+            }
+            _record_forage_action(rec, foraging_actions_applied, history_list, foraged_slot_ids, working_slots[match_idx]["slot_id"])
+        return working_slots, steps_executed
+    cand_slot = _build_candidate_slot(d, f"concept_{steps_executed + 1}", current_turn, max_summary_words)
+    if cand_slot["pinned"] and sum(1 for s in working_slots if bool(s.get("pinned"))) >= eff_max_pinned:
+        cand_slot["pinned"] = False
+    cand_cost = int(cand_slot["token_cost"])
+    sim_slots = _evict_until_fits(working_slots, 1, cand_cost, eff_max_slots, eff_max_tokens, eff_max_pinned)
+    budget_ok = explicit_budget_ok and should_admit_table_slot((len(sim_slots) + 1) <= eff_max_slots, (sum(int(s["token_cost"]) for s in sim_slots) + cand_cost) <= eff_max_tokens)
+    if should_execute_foraging_step(req, steps_under_max, budget_ok):
+        working_slots = sim_slots + [cand_slot]
+        steps_executed += 1
+        rec = {"action": action or "FORAGE_SLOT", "slot_id": cand_slot["slot_id"], "concept_id": cand_slot["concept_id"], "lod_tier": cand_slot["lod_tier"], "turn": int(current_turn)}
+        _record_forage_action(rec, foraging_actions_applied, history_list, foraged_slot_ids, cand_slot["slot_id"])
+    return working_slots, steps_executed
+
+
 def forage_table_context(
-    table_state: dict[str, Any] | list[Any] | None = None,
-    foraging_directives: list[Any] | dict[str, Any] | str | None = None,
-    *, whiteboard_graph: dict[str, Any] | None = None, store: Any = None, current_turn: int = 1,
-    max_foraging_steps: int = 4, max_table_slots: int = MAX_TABLE_SLOTS,
-    max_table_tokens: int = MAX_TABLE_TOKENS, max_pinned_slots: int = MAX_PINNED_SLOTS,
-    max_summary_words: int = MAX_SLOT_SUMMARY_WORDS, memory_index: Any | None = None,
-    concept_lookup: dict[str, Any] | None = None,
+    table_state: dict[str, Any] | list[Any] | None = None, foraging_directives: list[Any] | dict[str, Any] | str | None = None,
+    *, whiteboard_graph: dict[str, Any] | None = None, store: Any = None, current_turn: int = 1, max_foraging_steps: int = 4,
+    max_table_slots: int = MAX_TABLE_SLOTS, max_table_tokens: int = MAX_TABLE_TOKENS, max_pinned_slots: int = MAX_PINNED_SLOTS,
+    max_summary_words: int = MAX_SLOT_SUMMARY_WORDS, memory_index: Any | None = None, concept_lookup: dict[str, Any] | None = None,
 ) -> TableView:
-    """Stage 2 Active Prefrontal Foraging (`forage_table_context`, Bend 2 Law 2 `stage2_foraging_budget_law`):
-    Executes bounded, budget-gated foraging directives (`ESCALATE_LOD`/`INSPECT_URI`, `EXPAND_NEIGHBORS`,
-    `PIN_SLOT`, `UNPIN_SLOT`, `EVICT_SLOT`) via `should_execute_foraging_step` and `step_slot_lod_escalation`,
-    returning the updated `TableView` with `foraging_actions_applied` and `table_state`."""
+    """Stage 2 Active Prefrontal Foraging (`forage_table_context`, Bend 2 Law 2 `stage2_foraging_budget_law`)."""
     _validate_caps(max_table_slots, max_table_tokens, max_pinned_slots, max_summary_words)
     _validate_int_bound(max_foraging_steps, 0, MAX_FORAGING_STEPS, "max_foraging_steps")
     directives, dir_step_cap = _normalize_foraging_directives(foraging_directives)
     if dir_step_cap is not None:
         max_foraging_steps = min(max_foraging_steps, _validate_int_bound(dir_step_cap, 0, MAX_FORAGING_STEPS, "max_foraging_steps"))
     if table_state is None:
-        state = create_empty_table_state(
-            max_table_slots=max_table_slots, max_table_tokens=max_table_tokens,
-            max_pinned_slots=max_pinned_slots,
-            turn_index=current_turn
-        )
+        state = create_empty_table_state(max_table_slots=max_table_slots, max_table_tokens=max_table_tokens, max_pinned_slots=max_pinned_slots, turn_index=current_turn)
         raw_list: list[dict[str, Any]] = []
     else:
         state, raw_list = _extract_raw_slots(table_state)
     if "max_foraging_steps" in state and state["max_foraging_steps"] is not None:
         max_foraging_steps = min(max_foraging_steps, _validate_int_bound(state["max_foraging_steps"], 0, MAX_FORAGING_STEPS, "max_foraging_steps"))
-    eff_max_slots = min(
-        int(state.get("max_table_slots", state.get("max_slots", max_table_slots)) or max_table_slots),
-        max_table_slots
-    )
-    eff_max_tokens = min(
-        int(state.get("max_table_tokens", state.get("max_tokens", max_table_tokens)) or max_table_tokens),
-        max_table_tokens
-    )
+    eff_max_slots = min(int(state.get("max_table_slots", state.get("max_slots", max_table_slots)) or max_table_slots), max_table_slots)
+    eff_max_tokens = min(int(state.get("max_table_tokens", state.get("max_tokens", max_table_tokens)) or max_table_tokens), max_table_tokens)
     eff_max_pinned = min(int(state.get("max_pinned_slots", max_pinned_slots) or max_pinned_slots), max_pinned_slots)
     working_slots: list[TableSlot] = [TableSlot(s, max_summary_words=max_summary_words) for s in raw_list]
     state["slots"] = state["active_slots"] = working_slots
@@ -507,216 +562,68 @@ def forage_table_context(
     steps_executed = 0
     foraged_slot_ids: list[str] = []
     foraging_actions_applied: list[dict[str, Any]] = []
-
     for d in directives:
         action = str(d.get("action") or d.get("op") or d.get("type") or d.get("directive") or "").strip().upper()
-        req = (
-            bool(d.get("foraging_requested", d.get("requested", d.get("enabled", True))))
-            and not (bool(d.get("skip", False)) or action in ("NONE", "NOOP", "SKIP"))
-        )
+        req = bool(d.get("foraging_requested", d.get("requested", d.get("enabled", True)))) and not (bool(d.get("skip", False)) or action in ("NONE", "NOOP", "SKIP"))
         steps_under_max = steps_executed < max_foraging_steps
         explicit_budget_ok = bool(d.get("budget_ok", state.get("budget_ok", True)))
         raw_sid = str(d.get("slot_id") or "").strip()
-        raw_cid = str(
-            d.get("concept_id") or d.get("target_id")
-            or d.get("id") or d.get("query") or (raw_sid[5:] if raw_sid.startswith("slot_") else raw_sid)
-        ).strip()
+        raw_cid = str(d.get("concept_id") or d.get("target_id") or d.get("id") or d.get("query") or (raw_sid[5:] if raw_sid.startswith("slot_") else raw_sid)).strip()
         if isinstance(concept_lookup, dict) and raw_cid in concept_lookup and isinstance(concept_lookup[raw_cid], dict):
             d = {**concept_lookup[raw_cid], **d}
-        elif memory_index is not None and callable(getattr(memory_index, "get_concept", None)) and raw_cid:
-            if isinstance(found := memory_index.get_concept(raw_cid), dict):
-                d = {**found, **d}
+        elif memory_index is not None and callable(getattr(memory_index, "get_concept", None)) and raw_cid and isinstance(found := memory_index.get_concept(raw_cid), dict):
+            d = {**found, **d}
         match_idx = _find_slot_index(working_slots, raw_sid or raw_cid)
-
         if action == "EXPAND_NEIGHBORS":
             neighbors = _expand_neighbors_for_concept(raw_cid or raw_sid, whiteboard_graph, store or memory_index)
             if should_execute_foraging_step(req, steps_under_max, explicit_budget_ok and bool(neighbors)):
                 state["slots"] = state["active_slots"] = working_slots
                 sync_memory_to_table(
-                    state, neighbors, current_turn=current_turn,
-                    max_table_slots=eff_max_slots, max_table_tokens=eff_max_tokens,
-                    max_pinned_slots=eff_max_pinned, max_summary_words=max_summary_words
+                    state, neighbors, current_turn=current_turn, max_table_slots=eff_max_slots,
+                    max_table_tokens=eff_max_tokens, max_pinned_slots=eff_max_pinned, max_summary_words=max_summary_words,
                 )
                 working_slots = list(state.get("slots", []))
                 steps_executed += 1
                 _record_forage_action(
-                    {
-                        "action": "EXPAND_NEIGHBORS", "concept_id": raw_cid
-                        or raw_sid, "expanded_count": len(neighbors),
-                        "turn": int(current_turn)
-                    },
-                    foraging_actions_applied, history_list,
-                    foraged_slot_ids
+                    {"action": "EXPAND_NEIGHBORS", "concept_id": raw_cid or raw_sid, "expanded_count": len(neighbors), "turn": int(current_turn)},
+                    foraging_actions_applied, history_list, foraged_slot_ids,
                 )
-                for nb in neighbors:
-                    if isinstance(nb, dict) and nb.get("concept_id"):
-                        foraged_slot_ids.append(f"slot_{nb['concept_id']}")
-            continue
-
-        if action in ("PIN", "PIN_SLOT", "UNPIN", "UNPIN_SLOT"):
+                foraged_slot_ids.extend(f"slot_{nb['concept_id']}" for nb in neighbors if isinstance(nb, dict) and nb.get("concept_id"))
+        elif action in ("PIN", "PIN_SLOT", "UNPIN", "UNPIN_SLOT"):
             want_pin = action in ("PIN", "PIN_SLOT")
             other_pinned = sum(1 for i, s in enumerate(working_slots) if i != match_idx and bool(s.get("pinned")))
             pin_ok = (other_pinned < eff_max_pinned) if want_pin else True
-            if should_execute_foraging_step(
-                req, steps_under_max, explicit_budget_ok
-                and (match_idx is not None) and pin_ok
-            ) and match_idx is not None:
+            if should_execute_foraging_step(req, steps_under_max, explicit_budget_ok and (match_idx is not None) and pin_ok) and match_idx is not None:
                 state["slots"] = state["active_slots"] = working_slots
-                updated = _set_slot_pinned(
-                    state, working_slots[match_idx]["slot_id"],
-                    want_pin, max_pinned_slots=eff_max_pinned
-                )
+                updated = _set_slot_pinned(state, working_slots[match_idx]["slot_id"], want_pin, max_pinned_slots=eff_max_pinned)
                 working_slots = list(state["slots"])
                 steps_executed += 1
                 _record_forage_action(
-                    {
-                        "action": "PIN_SLOT" if want_pin else "UNPIN_SLOT",
-                        "slot_id": updated["slot_id"], "concept_id": updated["concept_id"],
-                        "turn": int(current_turn)
-                    },
-                    foraging_actions_applied, history_list,
-                    foraged_slot_ids, updated["slot_id"]
+                    {"action": "PIN_SLOT" if want_pin else "UNPIN_SLOT", "slot_id": updated["slot_id"], "concept_id": updated["concept_id"], "turn": int(current_turn)},
+                    foraging_actions_applied, history_list, foraged_slot_ids, updated["slot_id"],
                 )
-            continue
-
-        if action in ("EVICT", "EVICT_SLOT", "DROP", "REMOVE"):
+        elif action in ("EVICT", "EVICT_SLOT", "DROP", "REMOVE"):
             pinned_cnt = sum(1 for s in working_slots if bool(s.get("pinned")))
-            evictable = match_idx is not None and can_evict_table_slot(
-                bool(working_slots[match_idx].get("pinned")),
-                True, pinned_cnt <= eff_max_pinned
-            )
-            if should_execute_foraging_step(
-                req, steps_under_max, explicit_budget_ok
-                and evictable
-            ) and match_idx is not None:
+            evictable = match_idx is not None and can_evict_table_slot(bool(working_slots[match_idx].get("pinned")), True, pinned_cnt <= eff_max_pinned)
+            if should_execute_foraging_step(req, steps_under_max, explicit_budget_ok and evictable) and match_idx is not None:
                 evicted = working_slots.pop(match_idx)
                 steps_executed += 1
                 _record_forage_action(
-                    {
-                        "action": "EVICT_SLOT", "slot_id": evicted["slot_id"],
-                        "concept_id": evicted["concept_id"],
-                        "turn": int(current_turn)
-                    },
-                    foraging_actions_applied, history_list,
-                    foraged_slot_ids, evicted["slot_id"]
-                )
-            continue
-
-        is_escalate = action in ("ESCALATE_LOD", "INSPECT_URI", "UPGRADE_LOD", "EXPAND_LOD", "UPGRADE", "ESCALATE")
-        if (
-            match_idx is None and is_escalate and (raw_cid or raw_sid)
-            and isinstance(whiteboard_graph, dict)
-            and (raw_cid in (whiteboard_graph.get("scopes") or {}))
-        ):
-            seed_slot = _build_candidate_slot(
-                {"concept_id": raw_cid, "slot_id": raw_sid or f"slot_{raw_cid}", "lod_tier": LOD_1},
-                raw_cid, current_turn, max_summary_words
-            )
-            sim_slots = _evict_until_fits(
-                working_slots, 1, int(seed_slot["token_cost"]),
-                eff_max_slots, eff_max_tokens, eff_max_pinned
-            )
-            if should_admit_table_slot(
-                (len(sim_slots) + 1) <= eff_max_slots,
-                (sum(int(s["token_cost"]) for s in sim_slots) + int(seed_slot["token_cost"])) <= eff_max_tokens
-            ):
-                working_slots = sim_slots + [seed_slot]
-                match_idx = len(working_slots) - 1
-
-        if match_idx is not None:
-            cur_slot = working_slots[match_idx]
-            cur_lod = _norm_lod(cur_slot.get("lod_tier") or LOD_0)
-            raw_tgt = d.get("target_lod") or d.get("new_lod") or d.get("lod_tier") or d.get("lod")
-            tgt_lod = (
-                _norm_lod(raw_tgt) if raw_tgt is not None
-                else (TableLOD.TLOD2 if is_escalate else (TableLOD.TLOD1 if cur_lod == TableLOD.TLOD0 else TableLOD.TLOD2))
-            )
-            clamped_sum, enriched_links, words_within_50 = _enrich_slot_from_graph_and_links(
-                cur_slot["concept_id"], cur_slot, d,
-                whiteboard_graph, store, max_summary_words
-            )
-            raw_cost = d.get("token_cost", d.get("cost"))
-            cand_cost = int(raw_cost) if (
-                isinstance(raw_cost, int) and not isinstance(raw_cost, bool)
-                and raw_cost > 0
-            ) else max(1, token_cost(clamped_sum or cur_slot["concept_id"]))
-            other_tokens = sum(int(s["token_cost"]) for i, s in enumerate(working_slots) if i != match_idx)
-            budget_ok = explicit_budget_ok and ((other_tokens + cand_cost) <= eff_max_tokens)
-
-            if should_execute_foraging_step(req, steps_under_max, budget_ok):
-                next_lod = cur_lod
-                if _LOD_RANK[tgt_lod] > _LOD_RANK[cur_lod]:
-                    while _LOD_RANK[next_lod] < _LOD_RANK[tgt_lod]:
-                        stepped = step_slot_lod_escalation(next_lod, True, words_within_50, budget_ok)
-                        if stepped == next_lod:
-                            break
-                        next_lod = stepped
-                else:
-                    next_lod = step_slot_lod_escalation(cur_lod, False, words_within_50, budget_ok)
-                if next_lod != cur_lod or words_within_50:
-                    cur_slot["lod_tier"] = next_lod.value
-                    if words_within_50:
-                        cur_slot["summary"] = cur_slot["lod1_synopsis"] = clamped_sum
-                        cur_slot["token_cost"] = cand_cost
-                    cur_slot["external_links"] = enriched_links
-                    if "pinned" in d:
-                        other_pinned = sum(
-                            1 for i, s in enumerate(working_slots)
-                            if i != match_idx and bool(s.get("pinned"))
-                        )
-                        if not bool(d["pinned"]) or other_pinned < eff_max_pinned:
-                            cur_slot["pinned"] = bool(d["pinned"])
-                    cur_slot["updated_turn"] = int(d.get("updated_turn", current_turn) or current_turn)
-                    working_slots[match_idx] = TableSlot(cur_slot, max_summary_words=max_summary_words)
-                steps_executed += 1
-                rec = {
-                    "action": action or "ESCALATE_LOD",
-                    "slot_id": working_slots[match_idx]["slot_id"],
-                    "concept_id": working_slots[match_idx]["concept_id"],
-                    "lod_tier": working_slots[match_idx]["lod_tier"],
-                    "turn": int(current_turn), **(
-                        {"target_uri": str(d.get("target_uri") or d.get("uri"))}
-                        if (d.get("target_uri") or d.get("uri")) else {}
-                    )
-                }
-                _record_forage_action(
-                    rec, foraging_actions_applied, history_list,
-                    foraged_slot_ids, working_slots[match_idx]["slot_id"]
+                    {"action": "EVICT_SLOT", "slot_id": evicted["slot_id"], "concept_id": evicted["concept_id"], "turn": int(current_turn)},
+                    foraging_actions_applied, history_list, foraged_slot_ids, evicted["slot_id"],
                 )
         else:
-            cand_slot = _build_candidate_slot(d, f"concept_{steps_executed + 1}", current_turn, max_summary_words)
-            if cand_slot["pinned"] and sum(1 for s in working_slots if bool(s.get("pinned"))) >= eff_max_pinned:
-                cand_slot["pinned"] = False
-            cand_cost = int(cand_slot["token_cost"])
-            sim_slots = _evict_until_fits(working_slots, 1, cand_cost, eff_max_slots, eff_max_tokens, eff_max_pinned)
-            budget_ok = explicit_budget_ok and should_admit_table_slot(
-                (len(sim_slots) + 1) <= eff_max_slots,
-                (sum(int(s["token_cost"]) for s in sim_slots) + cand_cost) <= eff_max_tokens
+            is_escalate = action in ("ESCALATE_LOD", "INSPECT_URI", "UPGRADE_LOD", "EXPAND_LOD", "UPGRADE", "ESCALATE")
+            working_slots, steps_executed = _escalate_or_admit_foraged_slot(
+                d, action, is_escalate, req, steps_under_max, explicit_budget_ok, raw_cid, raw_sid, match_idx,
+                working_slots, whiteboard_graph, store, current_turn, steps_executed, eff_max_slots, eff_max_tokens,
+                eff_max_pinned, max_summary_words, foraging_actions_applied, history_list, foraged_slot_ids,
             )
-            if should_execute_foraging_step(req, steps_under_max, budget_ok):
-                working_slots = sim_slots + [cand_slot]
-                steps_executed += 1
-                rec = {
-                    "action": action or "FORAGE_SLOT", "slot_id": cand_slot["slot_id"],
-                    "concept_id": cand_slot["concept_id"],
-                    "lod_tier": cand_slot["lod_tier"],
-                    "turn": int(current_turn)
-                }
-                _record_forage_action(
-                    rec, foraging_actions_applied, history_list,
-                    foraged_slot_ids, cand_slot["slot_id"]
-                )
-
     state["slots"] = state["active_slots"] = working_slots
     state["max_table_slots"], state["max_table_tokens"], state["max_pinned_slots"] = eff_max_slots, eff_max_tokens, eff_max_pinned
     state["foraging_steps"], state["turn_index"] = steps_executed, int(current_turn)
-    view = render_table_view(
-        state, max_summary_words=max_summary_words,
-        max_table_slots=eff_max_slots, max_table_tokens=eff_max_tokens
-    )
+    view = render_table_view(state, max_summary_words=max_summary_words, max_table_slots=eff_max_slots, max_table_tokens=eff_max_tokens)
     view["foraging_steps"] = view["steps_executed"] = steps_executed
-    view["max_foraging_steps"] = max_foraging_steps
-    view["foraged_slot_ids"] = foraged_slot_ids
-    view["foraging_actions_applied"] = foraging_actions_applied
-    view["table_state"] = state
+    view["max_foraging_steps"], view["foraged_slot_ids"] = max_foraging_steps, foraged_slot_ids
+    view["foraging_actions_applied"], view["table_state"] = foraging_actions_applied, state
     return view
