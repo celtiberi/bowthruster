@@ -36,7 +36,7 @@ def _locate_exec_23c_dir() -> Path:
             cand = Path(entry) / "eng2" / "the_executive"
             if (cand / "voice.py").is_file() and (cand / "orchestrator.py").is_file():
                 return cand
-    cand_lat = WORKSPACE_LATTICE / "lattice" / "the_executive"
+    cand_lat = WORKSPACE_LATTICE / "bowthruster" / "the_executive"
     if (cand_lat / "voice.py").is_file() and (cand_lat / "orchestrator.py").is_file():
         return cand_lat
     for entry in sys.path:
