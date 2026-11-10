@@ -362,7 +362,10 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
         (sib_repo / ".whiteboard").mkdir(parents=True, exist_ok=True)
         (sib_repo / "src").mkdir(parents=True, exist_ok=True)
         (sib_repo / ".whiteboard" / "sib_board.json").write_text(json.dumps(WB.create_empty_graph()), encoding="utf-8")
-        (sib_repo / "src" / "widget.py").write_text("def run_widget():\n    return True\n", encoding="utf-8")
+        (sib_repo / "src" / "widget.py").write_text(
+            "def is_widget_ready_0(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef is_widget_ready_1(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef is_widget_ready_2(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef is_widget_ready_3(a: bool, b: bool) -> bool:\n    return bool(a and b)\ndef run_widget(a: bool = True, b: bool = True) -> bool:\n    return is_widget_ready_0(a, b) and is_widget_ready_1(a, b) and is_widget_ready_2(a, b) and is_widget_ready_3(a, b)\n",
+            encoding="utf-8",
+        )
         orig_lh, orig_cli_root = MCP_SRV.LATTICE_HOME, CLI.REPO_ROOT
         try:
             import concurrent.futures
@@ -418,16 +421,9 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
         and rename_healed and delete_rejected and precommit_gate_ok and drift_detector_ok and postcommit_cascade_ok and seam_check_ok
     )
     return QaVerificationReport({
-        "passed": all_passed,
-        "bend_proofs_ok": parity_res["bend_proofs_ok"],
-        "truth_table_mismatches": parity_res["truth_table_mismatches"],
-        "mutations_rejected": parity_res["mutations_rejected"],
-        "rename_healed": rename_healed,
-        "delete_rejected": delete_rejected,
-        "precommit_gate_ok": precommit_gate_ok,
-        "drift_detector_ok": drift_detector_ok,
-        "postcommit_cascade_ok": postcommit_cascade_ok,
-        "seam_check_ok": seam_check_ok,
+        "passed": all_passed, "bend_proofs_ok": parity_res["bend_proofs_ok"], "truth_table_mismatches": parity_res["truth_table_mismatches"],
+        "mutations_rejected": parity_res["mutations_rejected"], "rename_healed": rename_healed, "delete_rejected": delete_rejected,
+        "precommit_gate_ok": precommit_gate_ok, "drift_detector_ok": drift_detector_ok, "postcommit_cascade_ok": postcommit_cascade_ok, "seam_check_ok": seam_check_ok,
     })
 
 
@@ -440,18 +436,11 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
         self.assertFalse(check_git_sync_truth_table_parity_law(False))
         report = verify_git_lattice_roundtrip()
         self.assertEqual(report["truth_table_mismatches"], 0)
-        self.assertTrue(report["bend_proofs_ok"])
-        self.assertTrue(report["mutations_rejected"])
-        self.assertTrue(report["rename_healed"])
-        self.assertTrue(report["delete_rejected"])
-        self.assertTrue(report["precommit_gate_ok"])
-        self.assertTrue(report["drift_detector_ok"])
-        self.assertTrue(report["postcommit_cascade_ok"])
-        self.assertTrue(report["seam_check_ok"])
-        self.assertTrue(report["passed"])
+        for key in ("bend_proofs_ok", "mutations_rejected", "rename_healed", "delete_rejected", "precommit_gate_ok", "drift_detector_ok", "postcommit_cascade_ok", "seam_check_ok", "passed"):
+            self.assertTrue(report[key], f"Failed check: {key}")
 
     def test_s26_pure_laws_exhaustive_python_truth_tables(self) -> None:
-        """Verifies exhaustive boolean truth tables for Law 4/5 (24A), Law 7 (23B), and Law 4 (23C)."""
+        """Verifies exhaustive boolean truth tables and all 7 adversarial call-graph probe cases."""
         for has_del, ren_ok in itertools.product((False, True), repeat=2):
             self.assertEqual(AM.is_commit_uri_state_valid(has_del, ren_ok), (not has_del) and ren_ok)
             self.assertEqual(AM.is_symbol_uri_anchored(has_del, ren_ok), (not has_del) or ren_ok)
@@ -459,14 +448,39 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
             self.assertEqual(EXEC_GATE.should_allow_git_commit(b_ok, c_ok, p_ok, d_ok), b_ok and c_ok and p_ok and d_ok)
         for up_chg, dep_ver in itertools.product((False, True), repeat=2):
             self.assertEqual(EXEC_ORCH.should_mark_dependent_stale_on_commit(up_chg, dep_ver), up_chg and dep_ver)
+        from bowthruster.nlp import verify_python_ast_laws_with_bend
+        probe_wb = {
+            "scopes": {"auth": {"id": "auth", "status": "STALE", "files": ["src/auth.py"], "rules": []}},
+            "lattice_artifacts": [
+                {"id": "iface_v", "kind": "INTERFACE", "name": "verify_token", "scope": "auth", "file": "src/auth.py", "inputs": ["a: bool", "b: bool"]},
+                {"id": "iface_h", "kind": "INTERFACE", "name": "helper_iface", "scope": "auth", "file": "src/auth.py", "inputs": ["a: bool", "b: bool"]},
+                {"id": "law_tok", "kind": "LAW", "name": "token_law", "scope": "auth", "args": "a: Bool, b: Bool", "lhs": "MOD.is_token_valid(a, b)", "rhs": "Bool.and(a, b)"},
+            ],
+        }
+        law_fn = "def is_token_valid(a: bool, b: bool) -> bool:\n    return bool(a and b)\n"
+        probes = [
+            (law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    return True\ndef helper_iface(a: bool, b: bool) -> bool:\n    return is_token_valid(a, b)\n", False),
+            (law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    _ = is_token_valid(True, True)\n    return True\ndef helper_iface(a: bool, b: bool) -> bool:\n    return is_token_valid(a, b)\n", False),
+            ("def is_token_valid(a: bool, b: bool) -> bool:\n    return bool(a or b)\ndef verify_token(a: bool, b: bool) -> bool:\n    return is_token_valid(a, b)\ndef helper_iface(a: bool, b: bool) -> bool:\n    return is_token_valid(a, b)\n", False),
+            (law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    unused = is_token_valid(a, b)\n    return True\ndef helper_iface(a: bool, b: bool) -> bool:\n    return is_token_valid(a, b)\n", False),
+            (law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    return is_token_valid(a, a)\ndef helper_iface(a: bool, b: bool) -> bool:\n    return is_token_valid(a, b)\n", False),
+            ("def verify_token(a: bool, b: bool) -> bool:\n    return is_token_valid(a, b)\ndef helper_iface(a: bool, b: bool) -> bool:\n    return is_token_valid(a, b)\n", False),
+            (law_fn + "def verify_token(a: bool, b: bool) -> bool:\n    ok = is_token_valid(a, b)\n    return ok\ndef helper_iface(a: bool, b: bool) -> bool:\n    return is_token_valid(a, b)\n", True),
+        ]
+        for src, expected_ok in probes:
+            staged = [{"path": "src/auth.py", "source": src}]
+            b_rep = verify_python_ast_laws_with_bend(probe_wb["lattice_artifacts"], staged, probe_wb["scopes"])
+            res = EXEC_GATE.evaluate_git_commit_gate(probe_wb, {"files": staged, "bend_proofs_ok": b_rep["bend_proofs_ok"]})
+            self.assertEqual(res["allowed"], expected_ok, f"Probe failed for:\n{src}\nResult: {res}")
 
     def test_s26_standing_rule_49_no_regex_and_line_budget(self) -> None:
         """Verifies zero `import re` and <= 500 lines across Stage 26 implementation and test files."""
         files_to_audit = [
-            _find_path("eng0/ai_memory/uri_resolver.py", "lattice/ai_memory/uri_resolver.py"),
-            _find_path("eng0/ai_memory/schema.py", "lattice/ai_memory/schema.py"),
-            _find_path("eng3/the_executive/gate.py", "lattice/the_executive/gate.py"),
-            _find_path("eng2/the_executive/orchestrator.py", "lattice/the_executive/orchestrator.py"),
+            _find_path("eng0/ai_memory/uri_resolver.py", "bowthruster/ai_memory/uri_resolver.py"),
+            _find_path("eng0/ai_memory/schema.py", "bowthruster/ai_memory/schema.py"),
+            _find_path("eng3/the_executive/gate.py", "bowthruster/the_executive/gate.py"),
+            _find_path("eng3/the_executive/call_graph.py", "bowthruster/the_executive/call_graph.py"),
+            _find_path("eng2/the_executive/orchestrator.py", "bowthruster/the_executive/orchestrator.py"),
             Path(__file__).resolve(),
         ]
         for path in files_to_audit:

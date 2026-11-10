@@ -404,7 +404,7 @@
         "artifact_kind": "doc",
         "link_id": "link_whiteboard_4e07791ebe4e",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L450-L450"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L448-L448"
       },
       {
         "artifact_kind": "doc",
@@ -432,15 +432,15 @@
       },
       {
         "artifact_kind": "doc",
-        "link_id": "link_whiteboard_61fb47fad9af",
+        "link_id": "link_whiteboard_c9c5e1d74a5f",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L285-L345"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L283-L343"
       },
       {
         "artifact_kind": "doc",
-        "link_id": "link_whiteboard_7332faa78e82",
+        "link_id": "link_whiteboard_9fa5eb0f66ad",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L386-L447"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L384-L445"
       }
     ]
   },
@@ -567,144 +567,8 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
+  "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
   "lattice_artifacts": [
-    {
-      "created_turn": 1,
-      "dimensions": {},
-      "id": "law_graph_core_nd_coordinate_slice_exact",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "nd_coordinate_slice_exact",
-      "outputs": [],
-      "owner": "eng0",
-      "scope": "graph_core",
-      "scope_id": "graph_core",
-      "spec": "In graph_core, LAWS.bend defines nd_coordinate_slice_exact and bounded_activation_law for eng0 in stage 21.",
-      "stage": "stage 21",
-      "text": "In graph_core, LAWS.bend defines nd_coordinate_slice_exact and bounded_activation_law for eng0 in stage 21.",
-      "turn": 1,
-      "updated_turn": 1
-    },
-    {
-      "created_turn": 1,
-      "dimensions": {},
-      "id": "law_graph_core_bounded_activation_law",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "bounded_activation_law",
-      "outputs": [],
-      "owner": "eng0",
-      "scope": "graph_core",
-      "scope_id": "graph_core",
-      "spec": "In graph_core, LAWS.bend defines nd_coordinate_slice_exact and bounded_activation_law for eng0 in stage 21.",
-      "stage": "stage 21",
-      "text": "In graph_core, LAWS.bend defines nd_coordinate_slice_exact and bounded_activation_law for eng0 in stage 21.",
-      "turn": 1,
-      "updated_turn": 1
-    },
-    {
-      "created_turn": 2,
-      "dimensions": {},
-      "id": "law_regiment_literal_conservation_law",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "literal_conservation_law",
-      "outputs": [],
-      "owner": "eng3",
-      "scope": "regiment",
-      "scope_id": "regiment",
-      "spec": "In `regiment`, `LAWS.bend` defines `literal_conservation_law` and `partition_completeness_law` for `eng3` in stage 18.",
-      "stage": "stage 18",
-      "text": "In `regiment`, `LAWS.bend` defines `literal_conservation_law` and `partition_completeness_law` for `eng3` in stage 18.",
-      "turn": 2,
-      "updated_turn": 2
-    },
-    {
-      "created_turn": 2,
-      "dimensions": {},
-      "id": "law_regiment_partition_completeness_law",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "partition_completeness_law",
-      "outputs": [],
-      "owner": "eng3",
-      "scope": "regiment",
-      "scope_id": "regiment",
-      "spec": "In `regiment`, `LAWS.bend` defines `literal_conservation_law` and `partition_completeness_law` for `eng3` in stage 18.",
-      "stage": "stage 18",
-      "text": "In `regiment`, `LAWS.bend` defines `literal_conservation_law` and `partition_completeness_law` for `eng3` in stage 18.",
-      "turn": 2,
-      "updated_turn": 2
-    },
-    {
-      "created_turn": 2,
-      "dimensions": {},
-      "id": "law_whiteboard_lattice_delta_routes_sbf_kinds",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "lattice_delta_routes_sbf_kinds",
-      "outputs": [],
-      "owner": "eng2",
-      "scope": "whiteboard",
-      "scope_id": "whiteboard",
-      "spec": "In `whiteboard`, `LAWS.bend` defines `lattice_delta_routes_sbf_kinds` and `lattice_proof_proven_iff_complete_and_conflict_free` for `eng2` in stage 22.",
-      "stage": "stage 22",
-      "text": "In `whiteboard`, `LAWS.bend` defines `lattice_delta_routes_sbf_kinds` and `lattice_proof_proven_iff_complete_and_conflict_free` for `eng2` in stage 22.",
-      "turn": 2,
-      "updated_turn": 2
-    },
-    {
-      "created_turn": 2,
-      "dimensions": {},
-      "id": "law_whiteboard_lattice_proof_proven_iff_complete_and_conflict_free",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "lattice_proof_proven_iff_complete_and_conflict_free",
-      "outputs": [],
-      "owner": "eng2",
-      "scope": "whiteboard",
-      "scope_id": "whiteboard",
-      "spec": "In `whiteboard`, `LAWS.bend` defines `lattice_delta_routes_sbf_kinds` and `lattice_proof_proven_iff_complete_and_conflict_free` for `eng2` in stage 22.",
-      "stage": "stage 22",
-      "text": "In `whiteboard`, `LAWS.bend` defines `lattice_delta_routes_sbf_kinds` and `lattice_proof_proven_iff_complete_and_conflict_free` for `eng2` in stage 22.",
-      "turn": 2,
-      "updated_turn": 2
-    },
-    {
-      "created_turn": 2,
-      "dimensions": {},
-      "id": "law_the_executive_commit_iff_all_clear",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "commit_iff_all_clear",
-      "outputs": [],
-      "owner": "eng2",
-      "scope": "the_executive",
-      "scope_id": "the_executive",
-      "spec": "In `the_executive`, `LAWS.bend` defines `commit_iff_all_clear` and `reply_valid_iff_all_four_hold` for `eng2` in stage 23.",
-      "stage": "stage 23",
-      "text": "In `the_executive`, `LAWS.bend` defines `commit_iff_all_clear` and `reply_valid_iff_all_four_hold` for `eng2` in stage 23.",
-      "turn": 2,
-      "updated_turn": 2
-    },
-    {
-      "created_turn": 2,
-      "dimensions": {},
-      "id": "law_the_executive_reply_valid_iff_all_four_hold",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "reply_valid_iff_all_four_hold",
-      "outputs": [],
-      "owner": "eng2",
-      "scope": "the_executive",
-      "scope_id": "the_executive",
-      "spec": "In `the_executive`, `LAWS.bend` defines `commit_iff_all_clear` and `reply_valid_iff_all_four_hold` for `eng2` in stage 23.",
-      "stage": "stage 23",
-      "text": "In `the_executive`, `LAWS.bend` defines `commit_iff_all_clear` and `reply_valid_iff_all_four_hold` for `eng2` in stage 23.",
-      "turn": 2,
-      "updated_turn": 2
-    },
     {
       "created_turn": 2,
       "dimensions": {
@@ -758,16 +622,16 @@
     },
     {
       "calls": [
-        "_build_conflict_foraging_directives#L48-L61",
-        "_collect_and_index_turn_rules#L64-L89",
-        "_resolve_table_fns#L28-L45"
+        "_build_conflict_foraging_directives#L38-L51",
+        "_collect_and_index_turn_rules#L54-L79",
+        "_resolve_table_fns#L18-L35"
       ],
       "created_turn": 2,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/orchestrator.py#L103-L185"
+        "file": "bowthruster/the_executive/orchestrator.py#L93-L173"
       },
-      "file": "bowthruster/the_executive/orchestrator.py#L103-L185",
+      "file": "bowthruster/the_executive/orchestrator.py#L93-L173",
       "id": "interface_the_executive_run_executive_turn",
       "inputs": [
         "whiteboard_graph",
@@ -812,40 +676,6 @@
     },
     {
       "created_turn": 5,
-      "dimensions": {},
-      "id": "law_ai_memory_pointer_only_storage_law",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "pointer_only_storage_law",
-      "outputs": [],
-      "owner": "eng0",
-      "scope": "ai_memory",
-      "scope_id": "ai_memory",
-      "spec": "In ai_memory, LAWS.bend defines pointer_only_storage_law and recall_hop_bound_law for eng0 in stage 24.",
-      "stage": "stage 24",
-      "text": "In ai_memory, LAWS.bend defines pointer_only_storage_law and recall_hop_bound_law for eng0 in stage 24.",
-      "turn": 5,
-      "updated_turn": 5
-    },
-    {
-      "created_turn": 5,
-      "dimensions": {},
-      "id": "law_ai_memory_recall_hop_bound_law",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "recall_hop_bound_law",
-      "outputs": [],
-      "owner": "eng0",
-      "scope": "ai_memory",
-      "scope_id": "ai_memory",
-      "spec": "In ai_memory, LAWS.bend defines pointer_only_storage_law and recall_hop_bound_law for eng0 in stage 24.",
-      "stage": "stage 24",
-      "text": "In ai_memory, LAWS.bend defines pointer_only_storage_law and recall_hop_bound_law for eng0 in stage 24.",
-      "turn": 5,
-      "updated_turn": 5
-    },
-    {
-      "created_turn": 5,
       "dimensions": {
         "_from_table": true,
         "file": "bowthruster/ai_memory/schema.py#L93-L151"
@@ -868,40 +698,6 @@
       "text": "Pointer-only hippocampal concept frame",
       "turn": 17,
       "updated_turn": 36
-    },
-    {
-      "created_turn": 6,
-      "dimensions": {},
-      "id": "law_the_table_table_token_budget_conservation_law",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "table_token_budget_conservation_law",
-      "outputs": [],
-      "owner": "eng1",
-      "scope": "the_table",
-      "scope_id": "the_table",
-      "spec": "In the_table, LAWS.bend defines table_token_budget_conservation_law and pinned_slot_eviction_immunity_law for eng1 in stage 25.",
-      "stage": "stage 25",
-      "text": "In the_table, LAWS.bend defines table_token_budget_conservation_law and pinned_slot_eviction_immunity_law for eng1 in stage 25.",
-      "turn": 6,
-      "updated_turn": 6
-    },
-    {
-      "created_turn": 6,
-      "dimensions": {},
-      "id": "law_the_table_pinned_slot_eviction_immunity_law",
-      "inputs": [],
-      "kind": "LAW",
-      "name": "pinned_slot_eviction_immunity_law",
-      "outputs": [],
-      "owner": "eng1",
-      "scope": "the_table",
-      "scope_id": "the_table",
-      "spec": "In the_table, LAWS.bend defines table_token_budget_conservation_law and pinned_slot_eviction_immunity_law for eng1 in stage 25.",
-      "stage": "stage 25",
-      "text": "In the_table, LAWS.bend defines table_token_budget_conservation_law and pinned_slot_eviction_immunity_law for eng1 in stage 25.",
-      "turn": 6,
-      "updated_turn": 6
     },
     {
       "created_turn": 6,
@@ -964,21 +760,21 @@
     },
     {
       "calls": [
-        "_format_tool_result#L245-L249",
-        "_hot_reload_if_changed#L430-L455",
-        "_read_doc_resource#L212-L225",
-        "_resolve_project_root#L228-L242"
+        "_format_tool_result#L234-L238",
+        "_hot_reload_if_changed#L425-L450",
+        "_read_doc_resource#L201-L214",
+        "_resolve_project_root#L217-L231"
       ],
       "created_turn": 8,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L252-L426",
+        "file": "bowthruster/mcp_server.py#L241-L421",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L252-L426",
+      "file": "bowthruster/mcp_server.py#L241-L421",
       "id": "interface_runtime_foundation_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -1085,38 +881,6 @@
       "spec": "universal_bound_scope_law: MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global) == Bool.or(Bool.not(is_universal_generic_subj), routed_to_global)",
       "stage": "20",
       "text": "universal_bound_scope_law: MOD.is_universal_bound_routed(is_universal_generic_subj, routed_to_global) == Bool.or(Bool.not(is_universal_generic_subj), routed_to_global).",
-      "turn": 9,
-      "updated_turn": 9
-    },
-    {
-      "args": "status_eq_build_status: Bool",
-      "bend_dir": "bend_wb_22a",
-      "created_turn": 9,
-      "dimensions": {
-        "_from_table": true,
-        "args": "status_eq_build_status: Bool",
-        "bend_dir": "bend_wb_22a",
-        "component": "whiteboard",
-        "law": "status_build_sync_law",
-        "lhs": "MOD.is_status_synced(status_eq_build_status)",
-        "owner": "eng1",
-        "rhs": "status_eq_build_status",
-        "spec": "Spec 22A",
-        "stage": "22"
-      },
-      "id": "law_whiteboard_status_build_sync_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_status_synced(status_eq_build_status)",
-      "name": "status_build_sync_law",
-      "outputs": [],
-      "owner": "eng1",
-      "rhs": "status_eq_build_status",
-      "scope": "whiteboard",
-      "scope_id": "whiteboard",
-      "spec": "status_build_sync_law: MOD.is_status_synced(status_eq_build_status) == status_eq_build_status",
-      "stage": "22",
-      "text": "status_build_sync_law: MOD.is_status_synced(status_eq_build_status) == status_eq_build_status.",
       "turn": 9,
       "updated_turn": 9
     },
@@ -1313,50 +1077,18 @@
       "updated_turn": 12
     },
     {
-      "args": "llm_invoked_on_turn: Bool",
-      "bend_dir": "bend_exec_23c",
-      "created_turn": 12,
-      "dimensions": {
-        "_from_table": true,
-        "args": "llm_invoked_on_turn: Bool",
-        "bend_dir": "bend_exec_23c",
-        "component": "the_executive",
-        "law": "zero_llm_turn_orchestration_law",
-        "lhs": "MOD.is_turn_zero_llm(llm_invoked_on_turn)",
-        "owner": "eng2",
-        "rhs": "Bool.not(llm_invoked_on_turn)",
-        "spec": "Spec 23C",
-        "stage": "23"
-      },
-      "id": "law_the_executive_zero_llm_turn_orchestration_law",
-      "inputs": [],
-      "kind": "LAW",
-      "lhs": "MOD.is_turn_zero_llm(llm_invoked_on_turn)",
-      "name": "zero_llm_turn_orchestration_law",
-      "outputs": [],
-      "owner": "eng2",
-      "rhs": "Bool.not(llm_invoked_on_turn)",
-      "scope": "the_executive",
-      "scope_id": "the_executive",
-      "spec": "zero_llm_turn_orchestration_law: MOD.is_turn_zero_llm(llm_invoked_on_turn) == Bool.not(llm_invoked_on_turn)",
-      "stage": "23",
-      "text": "zero_llm_turn_orchestration_law: MOD.is_turn_zero_llm(llm_invoked_on_turn) == Bool.not(llm_invoked_on_turn).",
-      "turn": 12,
-      "updated_turn": 12
-    },
-    {
       "calls": [
-        "_extract_item_names#L266-L275",
-        "_extract_law_stub_spec#L236-L263",
-        "_fmt_spec_doc#L278-L282",
-        "_py_ident#L193-L201"
+        "_extract_item_names#L264-L273",
+        "_extract_law_stub_spec#L234-L261",
+        "_fmt_spec_doc#L276-L280",
+        "_py_ident#L191-L199"
       ],
       "created_turn": 14,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L285-L345"
+        "file": "bowthruster/whiteboard/ingest.py#L283-L343"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L285-L345",
+      "file": "bowthruster/whiteboard/ingest.py#L283-L343",
       "id": "interface_whiteboard_compile_python_skeleton",
       "inputs": [
         "scope_id",
@@ -1378,14 +1110,14 @@
     },
     {
       "calls": [
-        "_build_slice_packet#L348-L383"
+        "_build_slice_packet#L346-L381"
       ],
       "created_turn": 14,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L386-L447"
+        "file": "bowthruster/whiteboard/ingest.py#L384-L445"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L386-L447",
+      "file": "bowthruster/whiteboard/ingest.py#L384-L445",
       "id": "interface_whiteboard_compile_work_packets",
       "inputs": [
         "graph",
@@ -1438,20 +1170,22 @@
     },
     {
       "calls": [
-        "_collect_dangling_imports#L200-L279",
-        "_extract_law_fn_name#L139-L148",
-        "_extract_scope_files#L102-L104",
-        "_parse_file_call_graph#L167-L186",
-        "_paths_match#L93-L96",
-        "_resolve_file_scopes#L106-L114",
-        "_unpack_lattice_and_files#L127-L137"
+        "_clean_path#L29-L33",
+        "_collect_dangling_imports#L295-L388",
+        "_extract_law_fn_name#L127-L138",
+        "_extract_scope_files#L67-L74",
+        "_parse_file_call_graph#L197-L225",
+        "_paths_match#L36-L38",
+        "_reachable_from_roots#L391-L399",
+        "_resolve_file_scopes#L77-L86",
+        "_unpack_lattice_and_files#L110-L124"
       ],
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
         "file": "bowthruster/the_executive/gate.py#L281-L347"
       },
-      "file": "bowthruster/the_executive/gate.py#L281-L347",
+      "file": "bowthruster/the_executive/call_graph.py#L402-L478",
       "id": "interface_the_executive_verify_ast_call_graph_skeleton",
       "inputs": [
         "whiteboard_graph",
@@ -1486,9 +1220,9 @@
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/gate.py#L349-L497"
+        "file": "bowthruster/the_executive/gate.py#L232-L447"
       },
-      "file": "bowthruster/the_executive/gate.py#L349-L497",
+      "file": "bowthruster/the_executive/gate.py#L232-L447",
       "id": "interface_the_executive_evaluate_git_commit_gate",
       "inputs": [
         "whiteboard_graph",
@@ -1626,9 +1360,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/gate.py#L28-L32"
+        "file": "bowthruster/the_executive/gate.py#L82-L91"
       },
-      "file": "bowthruster/the_executive/gate.py#L28-L32",
+      "file": "bowthruster/the_executive/gate.py#L82-L91",
       "id": "schema_the_executive_gatedecisionresult",
       "inputs": [
         "allowed",
@@ -1652,9 +1386,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/orchestrator.py#L92-L97"
+        "file": "bowthruster/the_executive/orchestrator.py#L82-L87"
       },
-      "file": "bowthruster/the_executive/orchestrator.py#L92-L97",
+      "file": "bowthruster/the_executive/orchestrator.py#L82-L87",
       "id": "schema_the_executive_executiveturnresult",
       "inputs": [
         "turn_index",
@@ -1678,9 +1412,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/mcp_server.py#L39-L40"
+        "file": "bowthruster/mcp_server.py#L28-L29"
       },
-      "file": "bowthruster/mcp_server.py#L39-L40",
+      "file": "bowthruster/mcp_server.py#L28-L29",
       "id": "schema_runtime_foundation_mcpjsonrpcrequest",
       "inputs": [
         "method",
@@ -2097,20 +1831,20 @@
     },
     {
       "calls": [
-        "_collect_and_index_turn_rules#L64-L89",
-        "_find_owning_scopes#L220-L223",
-        "_parse_git_report_entries#L256-L281",
-        "_paths_match#L201-L203",
-        "_scope_direct_deps#L226-L233",
-        "_scope_file_refs#L206-L217",
-        "_upsert_contract_artifact#L236-L253"
+        "_collect_and_index_turn_rules#L54-L79",
+        "_find_owning_scopes#L208-L211",
+        "_parse_git_report_entries#L244-L269",
+        "_paths_match#L189-L191",
+        "_scope_direct_deps#L214-L221",
+        "_scope_file_refs#L194-L205",
+        "_upsert_contract_artifact#L224-L241"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/orchestrator.py#L284-L392"
+        "file": "bowthruster/the_executive/orchestrator.py#L272-L380"
       },
-      "file": "bowthruster/the_executive/orchestrator.py#L284-L392",
+      "file": "bowthruster/the_executive/orchestrator.py#L272-L380",
       "id": "interface_the_executive_sync_post_commit_to_lattice",
       "inputs": [
         "whiteboard_graph",
@@ -2224,17 +1958,18 @@
     },
     {
       "calls": [
-        "_check_synthesized_bend_proof#L398-L407",
+        "_check_synthesized_bend_proof#L402-L411",
         "_eval_bend_bool#L347-L374",
+        "_find_bend_binary#L397-L398",
         "_gen_bool_case_proof#L377-L388",
         "_norm_bend_expr#L391-L394"
       ],
       "created_turn": 31,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/nlp.py#L410-L481"
+        "file": "bowthruster/nlp.py#L414-L481"
       },
-      "file": "bowthruster/nlp.py#L410-L481",
+      "file": "bowthruster/nlp.py#L414-L481",
       "id": "interface_runtime_foundation_verify_python_ast_laws_with_bend",
       "inputs": [
         "artifacts",
@@ -2263,7 +1998,7 @@
     "flow_count": 8,
     "hard_violations": [],
     "is_proven": true,
-    "law_count": 26,
+    "law_count": 12,
     "open_gaps": [],
     "status": "PROVEN_COMPLETE"
   },
@@ -2337,7 +2072,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
+      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2437,6 +2172,12 @@
           "meta_keys": [],
           "meta_tokens": [],
           "overrides": [],
+          "prohibited_imports": [
+            "regiment_nlp",
+            "spacy",
+            "torch",
+            "onnxruntime"
+          ],
           "refs": [],
           "scope": "global_defaults",
           "target_prop": "regiment_nlp",
@@ -2537,7 +2278,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
+      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2562,7 +2303,7 @@
           "bowthruster/regiment/intake_packet.py"
         ],
         "_table_role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
-        "depends_on": "runtime_foundation",
+        "depends_on": "",
         "file_hashes": {
           "bowthruster/regiment/__init__.py": "ce28bc3c6a652ec6",
           "bowthruster/regiment/intake_packet.py": "71802b9116545544",
@@ -2584,9 +2325,7 @@
       "children": [],
       "core_tag": "s18c-core-compiler-3",
       "created_turn": 1,
-      "depends_on": [
-        "runtime_foundation"
-      ],
+      "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/regiment/__init__.py": "ce28bc3c6a652ec6",
@@ -2605,7 +2344,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
+      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2628,16 +2367,18 @@
           "bowthruster/types.py",
           "bowthruster/cli.py",
           "bowthruster/mcp_server.py",
-          "bowthruster/mcp_verifier.py"
+          "bowthruster/mcp_verifier.py",
+          "bowthruster/git_manifest.py"
         ],
         "_table_role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
         "depends_on": "",
         "file_hashes": {
           "bowthruster/__init__.py": "49f3707cc729d5c6",
-          "bowthruster/cli.py": "4bc6d64d429b48c6",
-          "bowthruster/mcp_server.py": "529e667133238619",
+          "bowthruster/cli.py": "4a7c499795a62199",
+          "bowthruster/git_manifest.py": "befa73142858b064",
+          "bowthruster/mcp_server.py": "2b44c9a6db02f7b9",
           "bowthruster/mcp_verifier.py": "f26a549bab41d90f",
-          "bowthruster/nlp.py": "c1dc02d09eac65ba",
+          "bowthruster/nlp.py": "4410459bba9e6901",
           "bowthruster/types.py": "2172d10c1427d1b2"
         },
         "files": [
@@ -2646,7 +2387,8 @@
           "bowthruster/types.py",
           "bowthruster/cli.py",
           "bowthruster/mcp_server.py",
-          "bowthruster/mcp_verifier.py"
+          "bowthruster/mcp_verifier.py",
+          "bowthruster/git_manifest.py"
         ],
         "owner": "bethe",
         "role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
@@ -2663,10 +2405,11 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/__init__.py": "49f3707cc729d5c6",
-        "bowthruster/cli.py": "4bc6d64d429b48c6",
-        "bowthruster/mcp_server.py": "529e667133238619",
+        "bowthruster/cli.py": "4a7c499795a62199",
+        "bowthruster/git_manifest.py": "befa73142858b064",
+        "bowthruster/mcp_server.py": "2b44c9a6db02f7b9",
         "bowthruster/mcp_verifier.py": "f26a549bab41d90f",
-        "bowthruster/nlp.py": "c1dc02d09eac65ba",
+        "bowthruster/nlp.py": "4410459bba9e6901",
         "bowthruster/types.py": "2172d10c1427d1b2"
       },
       "files": [
@@ -2675,7 +2418,8 @@
         "bowthruster/types.py",
         "bowthruster/cli.py",
         "bowthruster/mcp_server.py",
-        "bowthruster/mcp_verifier.py"
+        "bowthruster/mcp_verifier.py",
+        "bowthruster/git_manifest.py"
       ],
       "id": "runtime_foundation",
       "in_edges": [
@@ -2683,7 +2427,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
+      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2706,6 +2450,7 @@
         ],
         "_table_files": [
           "bowthruster/the_executive/__init__.py",
+          "bowthruster/the_executive/call_graph.py",
           "bowthruster/the_executive/gate.py",
           "bowthruster/the_executive/orchestrator.py",
           "bowthruster/the_executive/preflight.py",
@@ -2714,14 +2459,16 @@
         "_table_role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
-          "bowthruster/the_executive/__init__.py": "0c6e412df40fdb88",
-          "bowthruster/the_executive/gate.py": "469a68ba19edc400",
-          "bowthruster/the_executive/orchestrator.py": "ff7897be2446d833",
+          "bowthruster/the_executive/__init__.py": "4aaddb0a7df56492",
+          "bowthruster/the_executive/call_graph.py": "5093db95621ec8ea",
+          "bowthruster/the_executive/gate.py": "116fb9a212beb8fb",
+          "bowthruster/the_executive/orchestrator.py": "8a0bd9229b62934d",
           "bowthruster/the_executive/preflight.py": "d3a94384b1c86639",
           "bowthruster/the_executive/voice.py": "36432a4bba43c32d"
         },
         "files": [
           "bowthruster/the_executive/__init__.py",
+          "bowthruster/the_executive/call_graph.py",
           "bowthruster/the_executive/gate.py",
           "bowthruster/the_executive/orchestrator.py",
           "bowthruster/the_executive/preflight.py",
@@ -2745,14 +2492,16 @@
       ],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/the_executive/__init__.py": "0c6e412df40fdb88",
-        "bowthruster/the_executive/gate.py": "469a68ba19edc400",
-        "bowthruster/the_executive/orchestrator.py": "ff7897be2446d833",
+        "bowthruster/the_executive/__init__.py": "4aaddb0a7df56492",
+        "bowthruster/the_executive/call_graph.py": "5093db95621ec8ea",
+        "bowthruster/the_executive/gate.py": "116fb9a212beb8fb",
+        "bowthruster/the_executive/orchestrator.py": "8a0bd9229b62934d",
         "bowthruster/the_executive/preflight.py": "d3a94384b1c86639",
         "bowthruster/the_executive/voice.py": "36432a4bba43c32d"
       },
       "files": [
         "bowthruster/the_executive/__init__.py",
+        "bowthruster/the_executive/call_graph.py",
         "bowthruster/the_executive/gate.py",
         "bowthruster/the_executive/orchestrator.py",
         "bowthruster/the_executive/preflight.py",
@@ -2767,7 +2516,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
+      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2850,7 +2599,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
+      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
@@ -2885,7 +2634,7 @@
         "file_hashes": {
           "bowthruster/whiteboard/__init__.py": "f865c74c77afe81d",
           "bowthruster/whiteboard/frustration.py": "0e61fe15239a0633",
-          "bowthruster/whiteboard/ingest.py": "38c4896374928baf",
+          "bowthruster/whiteboard/ingest.py": "34c0f16eccbb5945",
           "bowthruster/whiteboard/linker.py": "39eeea71eba6e525",
           "bowthruster/whiteboard/mutations.py": "4cf43d9060a27345",
           "bowthruster/whiteboard/read_engine.py": "ae038e314b6d13ce",
@@ -2921,7 +2670,7 @@
       "file_hashes": {
         "bowthruster/whiteboard/__init__.py": "f865c74c77afe81d",
         "bowthruster/whiteboard/frustration.py": "0e61fe15239a0633",
-        "bowthruster/whiteboard/ingest.py": "38c4896374928baf",
+        "bowthruster/whiteboard/ingest.py": "34c0f16eccbb5945",
         "bowthruster/whiteboard/linker.py": "39eeea71eba6e525",
         "bowthruster/whiteboard/mutations.py": "4cf43d9060a27345",
         "bowthruster/whiteboard/read_engine.py": "ae038e314b6d13ce",
@@ -2946,7 +2695,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
+      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
       "outputs": [],
       "owner": "eng2",
       "parent": null,

@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""Stage 28: Standalone BowThruster MCP Server (`bowthruster/mcp_server.py`).
-
-Stdio JSON-RPC 2.0 Model Context Protocol (MCP) server exposing the BowThruster tools and resources:
-- `readme`: Read the BowThruster README quickstart or full Architecture & Brownfield Guide
-- `atlas`: Render multi-board nD Lattice Atlas schematic, metrics, and Mermaid DAG
-- `slice`: Extract a minimal O(1) prompt slice for a component, division, stage, schema, or query
-- `packets`: Compile parallel WorkPackets (`laws_skeleton`, `python_skeleton`, `prompt_slice`)
-- `turn`: Run a conversational or pipe-table specification turn through Regiment -> Executive -> Whiteboard
-- `git_sync`: Run Stage 26/27 pre-commit gate, post-commit hash stamp, or working-tree drift check
-- `status`: Transition component build lifecycle status (`READY`, `IN_PROGRESS`, `IN_QA`, `VERIFIED`, `FAILED`)
-- `logs`: Read recent entries from the append-only Structured Flight Recorder (`.whiteboard/logs/lattice_events.jsonl`)
-"""
+"""Stage 28: Standalone BowThruster MCP Server (`bowthruster/mcp_server.py`)."""
 from __future__ import annotations
 
 import copy, io, json, os, sys, time
@@ -24,7 +13,7 @@ from bowthruster.cli import (
     LATTICE_HOME, REPO_ROOT, _board_lock, _build_git_manifest, _call_compile_packets, _execute_turn,
     _get_evaluate_lattice_proof, _get_render_lattice_atlas, _get_transition_build_status, _load_atlas_boards,
     _load_board, _save_board, _verify_component_files, format_exception_error, is_table_file_indexed,
-    read_flight_logs, record_flight_event,
+    read_flight_logs, record_flight_event, run_delta_tests,
 )
 from bowthruster.graph_core import SQLiteGraphStore
 from bowthruster.the_executive import detect_working_tree_drift, sync_post_commit_to_lattice
@@ -372,12 +361,18 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
                 if mode == "pre":
                     gate_res = dict(evaluate_git_commit_gate(graph, manifest, uri_sync_report=sync_git_diff_uris(copy.deepcopy(graph), manifest)))
                     allow = bool(gate_res.get("allowed", True))
-                    if allow and bool(args.get("mark_verified", False)) and can_transition_to_verified(True, True, True) and verified_status_files_exist_law(True, True, True):
+                    if allow and bool(args.get("mark_verified", False)) and can_transition_to_verified(bool(args.get("mark_verified", False)), bool(graph.get("scopes")), bool(gate_res.get("bounds_ok", True))) and verified_status_files_exist_law(bool(args.get("mark_verified", False)), bool(graph.get("scopes")), bool(gate_res.get("bounds_ok", True))):
                         stale_sids = [sid for sid, sc in sorted((graph.get("scopes") or {}).items()) if isinstance(sc, dict) and sid != "global_defaults" and (str(sc.get("status") or sc.get("build_status") or "").upper() in ("STALE", "READY") or (bool(sc.get("files") or (sc.get("attributes") or {}).get("files")) and str(sc.get("status") or sc.get("build_status") or "DRAFT").upper() != "VERIFIED"))]
-                        trans_fn = _get_transition_build_status()
-                        for sid in stale_sids: _verify_component_files(graph, sid); trans_fn(graph, sid, "VERIFIED")
-                        if stale_sids: _save_board(graph, wb_json, wb_sqlite)
-                        gate_res["marked_verified_scopes"] = stale_sids
+                        t_ran, t_ok, t_out = run_delta_tests(active_root, stale_sids)
+                        gate_res["delta_tests_ran"], gate_res["delta_tests_passed"] = t_ran, t_ok
+                        if not t_ok:
+                            allow, gate_res["allowed"], gate_res["decision"] = False, False, "REJECT_COMMIT"
+                            gate_res.setdefault("violations", []).append({"kind": "TEST_FAILURE", "scope": stale_sids[0] if stale_sids else "global_defaults", "path": "tests/", "description": f"Delta pytest failed:\n{t_out[-600:]}"})
+                        else:
+                            trans_fn = _get_transition_build_status()
+                            for sid in stale_sids: _verify_component_files(graph, sid); trans_fn(graph, sid, "VERIFIED")
+                            if stale_sids: _save_board(graph, wb_json, wb_sqlite)
+                            gate_res["marked_verified_scopes"] = stale_sids
                     unreg = gate_res.get("unregistered_public_symbols") or []
                     unreg_str = ", ".join(f"{u.get('scope')}:{u.get('symbol')}" for u in unreg)
                     pre_txt = f"[GIT PRE-COMMIT GATE '{board}'] allowed={allow} decision={gate_res.get('decision')} bounds_ok={gate_res.get('bounds_ok')} contracts_ok={gate_res.get('contracts_ok')} bend_proofs_ok={gate_res.get('bend_proofs_ok')} no_dangling_deletes={gate_res.get('no_dangling_deletes')} flow_schema_checked={gate_res.get('flow_schema_checked')}" + (f" marked_verified={gate_res['marked_verified_scopes']}" if gate_res.get("marked_verified_scopes") else "") + (f"\nviolations={json.dumps(gate_res.get('violations'))}" if gate_res.get("violations") else "") + (f"\nunregistered_public_symbols ({len(unreg)}): {unreg_str}" if unreg else "")
@@ -404,7 +399,7 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
                 comp, new_st = str(args.get("component") or "").strip(), str(args.get("new_status") or "").strip().upper()
                 trans_fn = _get_transition_build_status()
                 graph, wb_json, wb_sqlite, _ = _load_board(board)
-                if new_st == "VERIFIED" and can_transition_to_verified(True, True, True) and verified_status_files_exist_law(True, True, True):
+                if new_st == "VERIFIED" and can_transition_to_verified(new_st == "VERIFIED", bool(comp), bool(graph.get("scopes"))) and verified_status_files_exist_law(new_st == "VERIFIED", bool(comp), bool(graph.get("scopes"))):
                     _verify_component_files(graph, comp)
                 snode = trans_fn(graph, comp, new_st, build_tag=args.get("build_tag"), core_tag=args.get("core_tag"), failure_diagnostic=args.get("reason"))
                 _save_board(graph, wb_json, wb_sqlite)

@@ -3,7 +3,7 @@
 **Architecture memory, focused code lookup, and pre-commit verification for AI coding agents. The board itself is the spec, eliminating manual spec writing and keeping design and code in sync automatically.**
 
 > **Built for AI Coding Agents — Not Manual Human Bookkeeping**  
-> BowThruster (`bowthruster-mcp`) is a tool for **your AI coding agent** to operate directly, not another spec format for you to maintain by hand. Anyone (or any AI agent) can clone the repo and run it immediately with stock `python3`. Connect `bowthruster-mcp` to your agent and your AI builds the architecture map, pulls focused code slices, and verifies its own commits automatically.
+> BowThruster (`bowthruster-mcp`) is a tool for **your AI coding agent** to operate directly, not another spec format for you to maintain by hand. Anyone (or any AI agent) can clone the repo and run it immediately with Python 3.11+ (zero pip dependencies). Connect `bowthruster-mcp` to your agent and your AI builds the architecture map, pulls focused code slices, and verifies its own commits automatically.
 
 ---
 
@@ -16,14 +16,14 @@ When you use an AI coding agent on a growing project, three things start going w
 
 **BowThruster (`bowthruster-mcp`) fixes all three.** It is a fast, deterministic MCP server (zero LLMs, zero API keys) that your AI operates directly to keep your codebase's architecture, rules, and Git history in lockstep:
 
-- **1-Shot Code Slicing Instead of Repo Grepping:** Instead of reading whole files, your agent queries BowThruster for a function or feature and gets back a `< 2 KB` slice containing the exact `#L<start>-L<end>` source code, the private helpers it calls, and its upstream/downstream contracts in a single call.
-- **Rules That Can't Be Silently Dropped:** Important invariants and module contracts are registered on the board instead of buried in chat history. Before a commit lands, BowThruster checks your code's AST and formal invariants—blocking the commit if an invariant was bypassed or an unrelated module was edited by mistake.
+- **1-Shot Code Slicing Instead of Repo Grepping:** Instead of reading whole files, your agent queries BowThruster for a function or feature and gets back a `< 2 KB` contract/function slice (`7–10 KB` when inlining full multi-interface component source with `include_code=True`) containing the exact `#L<start>-L<end>` source code, the private helpers it calls, and its upstream/downstream contracts in a single call.
+- **Rules That Can't Be Silently Dropped:** Important invariants and module contracts are registered on the board instead of buried in chat history. Before a commit lands, BowThruster checks your code's AST and declared invariants—blocking the commit if an invariant was bypassed or an unrelated module was edited by mistake.
 - **Automatic Blast-Radius Tracking:** When your agent changes an upstream data structure or interface, BowThruster automatically marks the affected downstream modules **`STALE`** so the agent knows exactly what else needs updating and which tests to run.
-- **Works Across Languages & Repos:** Built-in AST/symbol extractors support Python, TypeScript/JavaScript, Go, Rust, C/C++, Java, Kotlin, C#, Swift, and Ruby—and `bowthruster-mcp` automatically discovers the right board across multiple repositories from a single global MCP config.
+- **Works Across Languages & Repos:** Python gets full `ast` signature, call-graph, and boolean law checks, while built-in lexical symbol extractors provide `#L<start>-L<end>` line-range and helper call-tree extraction for TypeScript/JavaScript, Go, Rust, C/C++, Java, Kotlin, C#, Swift, and Ruby—and `bowthruster-mcp` automatically discovers the right board across multiple repositories from a single global MCP config.
 
 | Without BowThruster | With BowThruster (`bowthruster-mcp`) |
 | :--- | :--- |
-| Agent greps and reads 20+ files (`30,000+` tokens) to find the 30 lines it needs to edit. | Agent calls `slice(..., include_code=True)` once and gets the `< 2 KB` contract + exact `#L<start>-L<end>` code lines immediately. |
+| Agent greps and reads 20+ files (`30,000+` tokens) to find the 30 lines it needs to edit. | Agent calls `slice(..., include_code=True)` once and gets the contract + exact `#L<start>-L<end>` code lines immediately. |
 | A 2-line bugfix in one module accidentally edits a neighboring verified file or drops an existing rule. | BowThruster's **pre-commit gate** (`git_sync`) verifies AST signatures, call-graph rules, and file boundaries before the commit can land. |
 | Changing a shared type or API leaves downstream callers broken until a slow full-repo test run fails. | BowThruster traces directed data flows (`> FLOW`) and marks only the impacted downstream components **`STALE`** so the agent updates them and runs only their tests. |
 | Architecture diagrams and `README` specs drift out of date after a few commits. | On every commit, BowThruster stamps the Git SHA, auto-heals renamed files (`git mv`), and refreshes `#L<start>-L<end>` line numbers automatically. |
@@ -63,10 +63,10 @@ When you use an AI coding agent on a growing project, three things start going w
 | :--- | :---: | :--- |
 | `readme` | **Onboard** | Fetch onboarding quickstart + unified `bowthruster` skill (`section="readme" \| "full_readme" \| "guide" \| "skill" \| "all"`). |
 | `atlas` | **Step 1 (Explore / Spec)** | Render the 1-line-per-component `LOD_0` topology (Charter, Role, Why, statuses, `> FLOW` edges, metrics, and Mermaid graph) or pass `spec=True` to compile the full Markdown specification (`board`, `load_all=True`, `mermaid=True`, `spec=True`, optional `project_root`). |
-| `slice` | **Step 1 (Slice + Code)** | Pull a `< 2 KB` component/symbol slice + exact `#L<start>-L<end>` source code in one call (`board`, `component`, `query`, `include_code=True`, `mark_stale=True`, optional `project_root`). Supports windowed lookup (`query="fn_name 100-180"`), fuzzy symbol/component matching, and cross-board fallback. |
+| `slice` | **Step 1 (Slice + Code)** | Pull a `< 2 KB` contract/symbol slice (`7–10 KB` with full component `include_code=True`) + exact `#L<start>-L<end>` source code in one call (`board`, `component`, `query`, `include_code=True`, `mark_stale=True`, optional `project_root`). Supports windowed lookup (`query="fn_name 100-180"`), fuzzy symbol/component matching, and cross-board fallback. |
 | `turn` | **Step 2 (Mutate Board)** | Compile Markdown pipe tables into the Whiteboard and mark modified/downstream components `STALE` (`board`, `speaker`, `message`, optional `project_root`). |
 | `packets` | **Step 3 (Build Packet)** | Emit wave-ordered `WorkPacket`s (`laws_skeleton`, `python_skeleton`, `baseline_commit_sha`) (`board`, `component`, `status="STALE"`, optional `project_root`). |
-| `git_sync` | **Step 4 (Verify & Sync)** | Run pre-commit verification + auto-verify (`mode="pre"`, `mark_verified=True`), post-commit hash/line-anchor stamp (`mode="post"`), initial baseline (`mode="baseline"`), or drift check (`mode="drift"`). |
+| `git_sync` | **Step 4 (Verify & Sync)** | Run pre-commit verification + delta `pytest` + auto-verify (`mode="pre"`, `mark_verified=True`), post-commit hash/line-anchor stamp (`mode="post"`), initial baseline (`mode="baseline"`), or drift check (`mode="drift"`). |
 | `status` | **Step 4 (Status)** | Transition a component's build status (`board`, `component`, `new_status="VERIFIED" \| "STALE" \| "FAILED"`). |
 | `logs` | **Diagnose** | Read structured Flight Recorder telemetry (`board`, `status="ERROR" \| "REJECTED"`, `limit=20`). |
 
@@ -82,8 +82,8 @@ When fixing an internal bug, helper function, or threshold where no `# SCHEMA`, 
 2. **Edit the Code:**
    - Call `edit_file` directly using the returned `#L<start>-L<end>` lines.
 3. **Pre-Commit Gate + Auto-Verify in One Shot:**
-   - Call `git_sync(board="my_board", mode="pre", mark_verified=True)` (and run delta tests on the changed component).
-   - Verifies AST signatures, `% LAW` call-graph reachability, `> FLOW` schemas, and Bend 2 proofs. When `allowed: true`, it **automatically transitions `STALE` components back to `VERIFIED`** and refreshes file hashes and `#L<start>-L<end>` AST anchors.
+   - Call `git_sync(board="my_board", mode="pre", mark_verified=True)`.
+   - Verifies AST signatures, `% LAW` call-graph reachability, `> FLOW` schemas, truth-table/Bend 2 proofs, and discovered delta `pytest` suites on the `STALE` components. When `allowed: true` and delta tests pass, it **automatically transitions `STALE` components back to `VERIFIED`** and refreshes file hashes and `#L<start>-L<end>` AST anchors.
 
 #### Workflow B — Architectural / Contract Change (**4 Tool Calls**)
 When adding or modifying a `@ COMPONENT`, `> FLOW`, `$ INTERFACE`, `# SCHEMA`, `% LAW`, or `Rule`:
@@ -179,8 +179,8 @@ flowchart LR
 ### 1. The 4-Layer Verification Stack
 Behavioral unit tests alone leave internal program structure underdetermined ([*Skeleton Coding*, `arXiv:2610.38214`](https://arxiv.org/abs/2610.38214)): an LLM can pass a unit test with a hardcoded workaround while ignoring your architecture. BowThruster verifies both the architecture graph and the implementation across four layers:
 1. **Graph Completeness & Interval Satisfiability (`whiteboard/frustration.py`):** A board only reaches `PROVEN_COMPLETE` when every `@ COMPONENT` has an owner, file path or typed `$ INTERFACE` / `# SCHEMA` contract, and connected `> FLOW` edge, with `0` open structural gaps and `0` contradictory `BOUND`/`PROHIBITION` intervals.
-2. **Formal Dependent-Type Proofs in Bend 2 (`LATTICE_PROOF.bend` & `LAWS.bend`):** Both the board-level completeness theorem (`lattice_proof_proven_iff_complete_and_conflict_free` in `LATTICE_PROOF.bend`) and optional component `% LAW` invariants (`Args`, `LHS`, `RHS`) are compiled into formal equality theorems (`LHS == RHS` proven via inductive case analysis) and checked by the **Bend 2 proof checker (`bend`)**.
-3. **AST Signature, Call-Graph & Python-to-Bend Law Gate (`the_executive/gate.py` & `nlp.py`):** Before every commit (`git_sync(mode="pre")`), BowThruster parses staged files to verify that every declared `# SCHEMA` class and `$ INTERFACE` function exists with its required fields/parameters, every `$ INTERFACE` invokes any declared `% LAW` helper in the static call graph, every staged Python `% LAW` helper's AST transpiles to Bend 2 and satisfies `LHS == RHS`, and no `VERIFIED` file was modified without marking its component `STALE`.
+2. **Boolean Law Truth-Table & Bend 2 Proofs (`LATTICE_PROOF.bend` & `LAWS.bend`):** Both the board-level completeness theorem (`lattice_proof_proven_iff_complete_and_conflict_free` in `LATTICE_PROOF.bend`) and optional component `% LAW` invariants (`Args`, `LHS`, `RHS`) are compiled into formal equality theorems (`LHS == RHS` proven via inductive case analysis), verified exhaustively via truth-table evaluation (`truth_table_checked: true`) and checked by the **Bend 2 proof checker (`bend`)** when installed (`bend_binary_checked: true`).
+3. **AST Signature, Call-Graph & Delta Test Gate (`the_executive/gate.py`, `call_graph.py` & `git_manifest.py`):** Before every commit (`git_sync(mode="pre")`), BowThruster parses staged Python files to verify that every declared `# SCHEMA` class and `$ INTERFACE` function exists with its required fields/parameters, every `$ INTERFACE` invokes any declared `% LAW` helper in the static call graph with non-constant, non-duplicate arguments whose result is read, every staged Python `% LAW` helper satisfies `LHS == RHS`, no `VERIFIED` file was modified without marking its component `STALE`, and discovered delta `pytest` suites pass before transitioning `STALE` components to `VERIFIED`.
 4. **Finite-State Algebraic & Mutation Parity (`bend_gate.py`):** For multi-datatype state machines in `laws/*/main.bend`, compiles Bend 2 theorems to `.mjs`, exhaustively evaluates truth-table parity against Python, and runs incremental law-mutation checks (`--only-law`).
 
 ### 2. Directed Spreading Activation vs. Naive GraphRAG (`bowthruster.ai_memory`)

@@ -15,16 +15,6 @@ from bowthruster.whiteboard.schema import ArtifactEntry
 from .voice import synthesize_executive_voice
 
 
-def is_turn_zero_llm(llm_invoked_on_turn: bool = False) -> bool:
-    """Pure zero-LLM turn orchestration guard governed by Bend 2 `zero_llm_turn_orchestration_law` (Stage 23C)."""
-    return bool(not llm_invoked_on_turn)
-
-
-def zero_llm_turn_orchestration_law(llm_invoked_on_turn: bool = False) -> bool:
-    """Alias for Bend 2 `zero_llm_turn_orchestration_law` AST call-graph verification."""
-    return is_turn_zero_llm(llm_invoked_on_turn)
-
-
 def _resolve_table_fns() -> tuple[Callable[..., dict[str, Any]] | None, Callable[..., dict[str, Any]] | None]:
     fallback_sync: Callable[..., dict[str, Any]] | None = None
     for mod_name in ("the_table", "bowthruster.the_table"):
@@ -103,8 +93,6 @@ PostCommitSyncResult = WorkingTreeDriftReport = ExecutiveTurnResult
 def run_executive_turn(whiteboard_graph: dict[str, Any] | None = None, raw_text: str = "", *, gen: Any = None, jev: Any = None, executive_gen: Any = None, limits: SizeLimits | None = None, turn_index: int | None = None, phase3_result: dict[str, Any] | None = None, intake_packet: dict[str, Any] | None = None, flawed_idea_critiques: list[dict[str, Any]] | None = None, table_state: dict[str, Any] | None = None, foraging_directives: list[dict[str, Any]] | None = None, k_cap: int = DEFAULT_K_CAP, max_ring: int = DEFAULT_MAX_RING, store: SQLiteGraphStore | None = None, db_path: str | Path | None = None) -> ExecutiveTurnResult:
     """Executes a complete turn across `regiment` -> Hippocampal Ignition -> Stage 23A Pre-Flight -> Stage 23B Gate -> `the_table` -> Stage 23C Voice."""
     _ = (gen, jev, executive_gen, limits)
-    if not (is_turn_zero_llm(False) and zero_llm_turn_orchestration_law(False)):
-        raise ExecutivePreflightError("turn_llm_invoked", ["zero_llm_turn_orchestration_law violated"])
     if whiteboard_graph is not None and not isinstance(whiteboard_graph, dict):
         raise ExecutivePreflightError("preflight_invalid_whiteboard", [f"whiteboard_graph must be a dict or None, got {type(whiteboard_graph).__name__}"])
     if turn_index is not None and (isinstance(turn_index, bool) or not isinstance(turn_index, int) or turn_index < 1):

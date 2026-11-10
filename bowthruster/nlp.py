@@ -394,9 +394,13 @@ def _norm_bend_expr(expr: str, fn_name: str) -> str:
     return s
 
 
+def _find_bend_binary() -> str | None:
+    return shutil.which("bend") or (str(Path.home() / ".cargo" / "bin" / "bend") if (Path.home() / ".cargo" / "bin" / "bend").is_file() else None)
+
+
 @functools.lru_cache(maxsize=256)
 def _check_synthesized_bend_proof(bend_src: str) -> bool:
-    bend_bin = shutil.which("bend") or (str(Path.home() / ".cargo" / "bin" / "bend") if (Path.home() / ".cargo" / "bin" / "bend").is_file() else None)
+    bend_bin = _find_bend_binary()
     if not bend_bin:
         return True
     with tempfile.TemporaryDirectory(prefix="lattice_ast_bend_") as tmp:
@@ -432,7 +436,7 @@ def verify_python_ast_laws_with_bend(
             py_files.append((str(f.get("path") or f.get("file") or "").strip(), str(f.get("scope") or f.get("component") or "").strip(), fmap, amap))
 
     if not py_files:
-        return {"bend_proofs_ok": True, "failed_laws": [], "checked_laws": []}
+        return {"bend_proofs_ok": True, "bend_binary_checked": False, "truth_table_checked": False, "failed_laws": [], "checked_laws": []}
 
     for art in artifacts:
         if str(art.get("kind") or "").upper() != "LAW":
@@ -458,13 +462,8 @@ def verify_python_ast_laws_with_bend(
                 law_params = [re.sub(r"[^A-Za-z0-9_]", "", c.replace("for ", "").lstrip("+-").split(":", 1)[0].strip()) for c in arg_chunks if c.strip() and c.strip().lower() not in ("none", "-", "—", "n/a", "null")]
                 law_params = [p for p in law_params if p] or list(py_params)
                 custom_fns = {lfn: (py_params, py_bend)}
-                table_ok = all(
-                    _eval_bend_bool(lhs, dict(zip(law_params, row)), custom_fns) == _eval_bend_bool(rhs, dict(zip(law_params, row)), custom_fns)
-                    for row in itertools.product((False, True), repeat=len(law_params))
-                )
-                sig_str = ", ".join(f"{p}: Bool" for p in py_params)
-                for_lines = "\n".join(f"  for +{p}: Bool" for p in law_params)
-                proof_lines = "\n".join(_gen_bool_case_proof(law_params, 2))
+                table_ok = all(_eval_bend_bool(lhs, dict(zip(law_params, row)), custom_fns) == _eval_bend_bool(rhs, dict(zip(law_params, row)), custom_fns) for row in itertools.product((False, True), repeat=len(law_params)))
+                sig_str, for_lines, proof_lines = ", ".join(f"{p}: Bool" for p in py_params), "\n".join(f"  for +{p}: Bool" for p in law_params), "\n".join(_gen_bool_case_proof(law_params, 2))
                 safe_law = re.sub(r"[^A-Za-z0-9_]", "_", law_id) or "law_check"
                 bend_src = (
                     "import Base\n\ndef bool_eq(a: Bool, b: Bool) -> Bool:\n  match a b:\n"
@@ -478,20 +477,12 @@ def verify_python_ast_laws_with_bend(
                 failed_laws.append(law_id)
             break
 
-    return {"bend_proofs_ok": len(failed_laws) == 0, "failed_laws": failed_laws, "checked_laws": checked_laws}
+    has_checked = bool(checked_laws)
+    return {"bend_proofs_ok": len(failed_laws) == 0, "bend_binary_checked": has_checked and bool(_find_bend_binary()), "truth_table_checked": has_checked, "failed_laws": failed_laws, "checked_laws": checked_laws}
 
 
 __all__ = [
-    "ASCII_PERIOD",
-    "_extract_generic_source_symbols",
-    "_get_spacy_nlp",
-    "dense_text_similarities",
-    "lexical_token_similarity",
-    "max_lexical_similarity",
-    "protect_ascii_dots",
-    "restore_ascii_dots",
-    "soft_token_overlap_count",
-    "tokenize_words",
-    "transpile_py_fn_to_bend_bool",
-    "verify_python_ast_laws_with_bend",
+    "ASCII_PERIOD", "_extract_generic_source_symbols", "_get_spacy_nlp", "dense_text_similarities",
+    "lexical_token_similarity", "max_lexical_similarity", "protect_ascii_dots", "restore_ascii_dots",
+    "soft_token_overlap_count", "tokenize_words", "transpile_py_fn_to_bend_bool", "verify_python_ast_laws_with_bend",
 ]

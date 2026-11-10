@@ -56,11 +56,9 @@ from .orchestrator import (
     PostCommitSyncResult,
     WorkingTreeDriftReport,
     detect_working_tree_drift,
-    is_turn_zero_llm,
     run_executive_turn,
     should_mark_dependent_stale_on_commit,
     sync_post_commit_to_lattice,
-    zero_llm_turn_orchestration_law,
 )
 from .voice import (
     EXECUTIVE_MAX_TOKENS,
@@ -117,7 +115,6 @@ __all__ = [
     "is_call_graph_skeleton_valid",
     "is_preflight_clean",
     "is_reply_valid",
-    "is_turn_zero_llm",
     "is_verified_scope_protected",
     "load_executive_prompt",
     "normalize_intake_packet",
@@ -135,5 +132,4 @@ __all__ = [
     "verify_ast_call_graph_skeleton",
     "verify_executive_reply",
     "verify_preflight_report",
-    "zero_llm_turn_orchestration_law",
 ]

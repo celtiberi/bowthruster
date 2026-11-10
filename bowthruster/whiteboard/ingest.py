@@ -183,8 +183,6 @@ def compile_laws_bend(scope_id: str, law_records: list[dict[str, Any]], *, modul
 def is_python_skeleton_complete(has_schemas: bool, has_interfaces: bool, has_law_stubs: bool) -> bool:
     """Pure completeness guard governed by Bend 2 Law 12 (`python_skeleton_completeness_law`, Stage 27)."""
     return bool(has_schemas) and bool(has_interfaces) and bool(has_law_stubs)
-def is_status_synced(status_eq_build_status: bool = True) -> bool:
-    return bool(status_eq_build_status)
 def is_work_packet_self_contained(status_synced: bool, spec_in_docstring: bool) -> bool:
     return bool(status_synced) and bool(spec_in_docstring)
 status_sync_and_spec_docstring_law = is_work_packet_self_contained
@@ -338,7 +336,7 @@ def compile_python_skeleton(
             lines.extend((f"    # MUST CALL: {lfn}({', '.join(lparams)})", f"    _law_{lfn} = {lfn}({', '.join('True' for _ in lparams)})"))
         lines.append(f"    {'return ' + out_types[0] + '()' if (len(out_types) == 1 and out_types[0] in seen_schemas) else ('return _law_' + emitted_laws[0][0] if emitted_laws else 'return None')}")
     has_defs = bool(seen_schemas or seen_ifaces or seen_laws or lines)
-    if not (is_work_packet_self_contained(is_status_synced(has_defs), has_defs) and is_table_schema_valid(has_defs, bool(lines)) and is_flow_or_rule_table_fused(bool(all_arts), has_defs)):
+    if not (is_work_packet_self_contained(has_defs, bool(lines)) and is_table_schema_valid(has_defs, bool(lines)) and is_flow_or_rule_table_fused(bool(all_arts), has_defs)):
         raise ValueError("status_sync_and_spec_docstring_law violated")
     code = "\n".join(lines) + "\n"
     ast.parse(code)
@@ -432,7 +430,7 @@ def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_f
         sc["status"] = sc["build_status"] = eff_status if sc.get("status") in (None, "", "DRAFT", "BLOCKED_BY_DEP", "READY") else (sc.get("status") or eff_status)
         wave2.append(_build_slice_packet(graph, f"pkt_wave2_{sid}", 2, "QA_VERIFICATION", sid, sc, eff_status, default_owner="bobo"))
     status_synced = all(sc.get("status") == sc.get("build_status") for _, sc in [*w1_candidates, *qa_scopes])
-    if not is_work_packet_self_contained(is_status_synced(status_synced), bool(proof)):
+    if not is_work_packet_self_contained(status_synced, bool(proof)):
         raise Phase4InvariantError("phase4_status_sync_violation", ["status != build_status after packet compilation"])
     if isinstance(status_filter, str) and status_filter.strip():
         sf = status_filter.strip().upper()
