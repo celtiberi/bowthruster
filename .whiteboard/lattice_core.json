@@ -341,6 +341,12 @@
         "link_id": "link_the_executive_2f91d0b8ef21",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/bowthruster/the_executive/orchestrator.py#L284-L392"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_the_executive_7091f230105c",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/bowthruster/the_executive/gate.py#L281-L347"
       }
     ],
     "the_table": [
@@ -561,7 +567,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+  "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -1432,20 +1438,20 @@
     },
     {
       "calls": [
-        "_collect_dangling_imports#L209-L288",
-        "_extract_law_fn_name#L148-L157",
-        "_extract_scope_files#L111-L113",
-        "_parse_file_call_graph#L176-L195",
-        "_paths_match#L102-L105",
-        "_resolve_file_scopes#L115-L123",
-        "_unpack_lattice_and_files#L136-L146"
+        "_collect_dangling_imports#L200-L279",
+        "_extract_law_fn_name#L139-L148",
+        "_extract_scope_files#L102-L104",
+        "_parse_file_call_graph#L167-L186",
+        "_paths_match#L93-L96",
+        "_resolve_file_scopes#L106-L114",
+        "_unpack_lattice_and_files#L127-L137"
       ],
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/gate.py#L290-L356"
+        "file": "bowthruster/the_executive/gate.py#L281-L347"
       },
-      "file": "bowthruster/the_executive/gate.py#L290-L356",
+      "file": "bowthruster/the_executive/gate.py#L281-L347",
       "id": "interface_the_executive_verify_ast_call_graph_skeleton",
       "inputs": [
         "whiteboard_graph",
@@ -1467,22 +1473,22 @@
     },
     {
       "calls": [
-        "_cached_ast_nodes#L173-L174",
-        "_check_numeric_bound#L107-L109",
-        "_extract_law_fn_name#L148-L157",
-        "_extract_scope_files#L111-L113",
-        "_normalize_symbol_map#L125-L134",
-        "_parse_ast_imports#L198-L207",
-        "_paths_match#L102-L105",
-        "_resolve_file_scopes#L115-L123",
-        "_unpack_lattice_and_files#L136-L146"
+        "_cached_ast_nodes#L164-L165",
+        "_check_numeric_bound#L98-L100",
+        "_extract_law_fn_name#L139-L148",
+        "_extract_scope_files#L102-L104",
+        "_normalize_symbol_map#L116-L125",
+        "_parse_ast_imports#L189-L198",
+        "_paths_match#L93-L96",
+        "_resolve_file_scopes#L106-L114",
+        "_unpack_lattice_and_files#L127-L137"
       ],
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/gate.py#L358-L500"
+        "file": "bowthruster/the_executive/gate.py#L349-L497"
       },
-      "file": "bowthruster/the_executive/gate.py#L358-L500",
+      "file": "bowthruster/the_executive/gate.py#L349-L497",
       "id": "interface_the_executive_evaluate_git_commit_gate",
       "inputs": [
         "whiteboard_graph",
@@ -1620,9 +1626,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/gate.py#L34-L38"
+        "file": "bowthruster/the_executive/gate.py#L28-L32"
       },
-      "file": "bowthruster/the_executive/gate.py#L34-L38",
+      "file": "bowthruster/the_executive/gate.py#L28-L32",
       "id": "schema_the_executive_gatedecisionresult",
       "inputs": [
         "allowed",
@@ -2331,7 +2337,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+      "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2531,7 +2537,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+      "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2573,7 +2579,7 @@
         "updated_turn": 30,
         "why": "Compiles structured Markdown pipe tables (Charter, Component, Flow, Interface, Law, Schema, Rule) into grounded MCUs in <5ms without LLM variance."
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": "s18c-eng3-compiler-3",
       "children": [],
       "core_tag": "s18c-core-compiler-3",
@@ -2599,15 +2605,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+      "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
       "role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
       "rules": [],
       "stage": "Stages 15-18",
-      "status": "STALE",
-      "updated_turn": 36,
+      "status": "VERIFIED",
+      "updated_turn": 1,
       "why": "Compiles structured Markdown pipe tables (Charter, Component, Flow, Interface, Law, Schema, Rule) into grounded MCUs in <5ms without LLM variance."
     },
     "runtime_foundation": {
@@ -2677,7 +2683,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+      "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2709,7 +2715,7 @@
         "depends_on": "graph_core, regiment, whiteboard",
         "file_hashes": {
           "bowthruster/the_executive/__init__.py": "0c6e412df40fdb88",
-          "bowthruster/the_executive/gate.py": "d2f8efcc9931afea",
+          "bowthruster/the_executive/gate.py": "469a68ba19edc400",
           "bowthruster/the_executive/orchestrator.py": "ff7897be2446d833",
           "bowthruster/the_executive/preflight.py": "d3a94384b1c86639",
           "bowthruster/the_executive/voice.py": "36432a4bba43c32d"
@@ -2727,7 +2733,7 @@
         "updated_turn": 30,
         "why": "Enforces verified-scope edit guards, AST contract/signature parity, call-graph % LAW wiring, and automatic post-commit STALE cascades across downstream dependents."
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": "s25b-eng2-table-1",
       "children": [],
       "core_tag": "s25-core-table-1",
@@ -2740,7 +2746,7 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/the_executive/__init__.py": "0c6e412df40fdb88",
-        "bowthruster/the_executive/gate.py": "d2f8efcc9931afea",
+        "bowthruster/the_executive/gate.py": "469a68ba19edc400",
         "bowthruster/the_executive/orchestrator.py": "ff7897be2446d833",
         "bowthruster/the_executive/preflight.py": "d3a94384b1c86639",
         "bowthruster/the_executive/voice.py": "36432a4bba43c32d"
@@ -2761,15 +2767,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+      "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
       "role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
       "rules": [],
       "stage": "stage 23",
-      "status": "STALE",
-      "updated_turn": 36,
+      "status": "VERIFIED",
+      "updated_turn": 1,
       "why": "Enforces verified-scope edit guards, AST contract/signature parity, call-graph % LAW wiring, and automatic post-commit STALE cascades across downstream dependents."
     },
     "the_table": {
@@ -2812,7 +2818,7 @@
         "updated_turn": 30,
         "why": "Bounds active working memory to <=16 slots / <=1200 tokens with pinned-slot immunity and compiles boards into LOD_0 Atlases and full Markdown specifications."
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": "s25a-eng1-table-1",
       "children": [],
       "core_tag": "s25-core-table-1",
@@ -2844,15 +2850,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+      "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
       "role": "Bounded Working Surface, LOD_0 Atlas & Living Spec Renderer",
       "rules": [],
       "stage": "stage 25",
-      "status": "STALE",
-      "updated_turn": 36,
+      "status": "VERIFIED",
+      "updated_turn": 1,
       "why": "Bounds active working memory to <=16 slots / <=1200 tokens with pinned-slot immunity and compiles boards into LOD_0 Atlases and full Markdown specifications."
     },
     "whiteboard": {
@@ -2902,7 +2908,7 @@
         "updated_turn": 30,
         "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves <2KB 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": "s22c-eng2-compiler-1",
       "children": [],
       "core_tag": "s22c-core-compiler-1",
@@ -2940,15 +2946,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+      "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
       "role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
       "rules": [],
       "stage": "stage 22",
-      "status": "STALE",
-      "updated_turn": 36,
+      "status": "VERIFIED",
+      "updated_turn": 1,
       "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves <2KB 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },

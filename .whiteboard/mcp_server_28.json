@@ -110,7 +110,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+  "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
   "lattice_artifacts": [
     {
       "calls": [
@@ -490,7 +490,7 @@
         "updated_turn": 10,
         "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": null,
       "children": [],
       "core_tag": null,
@@ -511,15 +511,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+      "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
       "outputs": [],
       "owner": "groves",
       "parent": null,
       "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
       "rules": [],
       "stage": "28",
-      "status": "STALE",
-      "updated_turn": 15,
+      "status": "VERIFIED",
+      "updated_turn": 1,
       "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
     },
     "mcp_server": {
@@ -568,7 +568,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dc7adb0a57d8e275c3b369fbe68d6992b6cbb43a",
+      "last_commit_sha": "b12b5739c40e5b3c4c027013475f8f6b7f23f8a1",
       "outputs": [],
       "owner": "groves",
       "parent": null,

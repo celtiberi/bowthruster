@@ -20,29 +20,20 @@ VALID_BOUNCE_REASONS = frozenset({BOUNCE_NONE, BOUNCE_NEEDS_CLARIFICATION, BOUNC
 REQUIRED_PREFLIGHT_KEYS: tuple[str, ...] = ("turn_index", "intake_packet", "is_clean", "has_ambiguity", "has_open_questions", "has_rule_conflict", "has_flawed_idea", "mcu_findings", "conflicts", "flawed_ideas", "clarification_questions", "open_questions")
 _BEND_WRAPPER_FNS = frozenset({"bool_eq", "bool_imp", "and", "or", "not", "true", "false", "eq"})
 
-class ExecutiveDecision(str, Enum):
-    COMMIT_TO_WHITEBOARD, SEND_BACK_TO_USER = DECISION_COMMIT_TO_WHITEBOARD, DECISION_SEND_BACK_TO_USER
-
-class BounceReason(str, Enum):
-    NONE, NEEDS_CLARIFICATION, FLAWED_IDEA, RULE_CONFLICT = BOUNCE_NONE, BOUNCE_NEEDS_CLARIFICATION, BOUNCE_FLAWED_IDEA, BOUNCE_RULE_CONFLICT
-
+class ExecutiveDecision(str, Enum): COMMIT_TO_WHITEBOARD, SEND_BACK_TO_USER = DECISION_COMMIT_TO_WHITEBOARD, DECISION_SEND_BACK_TO_USER
+class BounceReason(str, Enum): NONE, NEEDS_CLARIFICATION, FLAWED_IDEA, RULE_CONFLICT = BOUNCE_NONE, BOUNCE_NEEDS_CLARIFICATION, BOUNCE_FLAWED_IDEA, BOUNCE_RULE_CONFLICT
 class ExecutiveGateError(ValueError):
     def __init__(self, code: str, errors: list[str]) -> None:
-        self.code, self.errors = code, list(errors)
-        super().__init__(f"{code}: {'; '.join(self.errors)}")
-
+        self.code, self.errors = code, list(errors); super().__init__(f"{code}: {'; '.join(self.errors)}")
 class GateDecisionResult(dict[str, Any]):
     def to_dict(self) -> dict[str, Any]: return copy.deepcopy(dict(self))
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_") or hasattr(dict, name) or name not in self: raise AttributeError(name)
         return self[name]
-
 def should_commit_whiteboard(has_ambiguity: bool, has_open_questions: bool, has_rule_conflict: bool, has_flawed_idea: bool = False) -> bool:
     return not (bool(has_ambiguity) or bool(has_open_questions) or bool(has_rule_conflict) or bool(has_flawed_idea))
-
 def route_executive_decision(has_ambiguity: bool, has_open_questions: bool, has_rule_conflict: bool, has_flawed_idea: bool = False) -> str:
     return ExecutiveDecision.COMMIT_TO_WHITEBOARD.value if should_commit_whiteboard(has_ambiguity, has_open_questions, has_rule_conflict, has_flawed_idea) else ExecutiveDecision.SEND_BACK_TO_USER.value
-
 def resolve_bounce_reason(has_ambiguity: bool, has_open_questions: bool, has_rule_conflict: bool, has_flawed_idea: bool = False) -> str:
     return BounceReason.RULE_CONFLICT.value if bool(has_rule_conflict) else (BounceReason.FLAWED_IDEA.value if bool(has_flawed_idea) else (BounceReason.NEEDS_CLARIFICATION.value if (bool(has_ambiguity) or bool(has_open_questions)) else BounceReason.NONE.value))
 
@@ -432,10 +423,20 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
         if bad_imps:
             bounds_ok = False; violations.append({"kind": "PROHIBITION_VIOLATION", "scope": (f_scopes[0] if f_scopes else "global_defaults"), "path": path, "description": f"{path} contains prohibited imports: {', '.join(dict.fromkeys(bad_imps))}"})
 
+    for s, s_files in modified_scope_files.items():
+        sc = scopes.get(s) if isinstance(scopes.get(s), dict) else {}
+        if not any(f.get("file_hash") for f in s_files) or not sc.get("depends_on"): continue
+        s_srcs = "\n".join(str(f.get("source") or f.get("content") or f.get("code") or "") for f in s_files)
+        if not s_srcs.strip(): continue
+        for dep in (str(d).strip() for d in (sc.get("depends_on") or []) if str(d).strip()):
+            if dep in ("global_defaults", "runtime_foundation") or dep == s or not isinstance(dsc := scopes.get(dep), dict) or not (dep_files := [fp for fp in _extract_scope_files(dsc) if fp.endswith(".py")]): continue
+            dep_toks = {dep, dep.split("::")[0], *(Path(fp).stem for fp in dep_files if Path(fp).stem != "__init__"), *(Path(fp).parent.name for fp in dep_files if Path(fp).parent.name not in ("", ".", "bowthruster", "luchorpan", "lattice")), *(str(a.get("name") or a.get("id") or "").strip() for a in artifacts if str(a.get("scope") or "").strip() == dep and str(a.get("name") or a.get("id") or "").strip())}
+            if not any(tok and tok in s_srcs for tok in dep_toks):
+                contracts_ok = False; violations.append({"kind": "CONTRACT_VIOLATION", "scope": s, "path": str(s_files[0].get("path") or ""), "description": f"Component '{s}' declares depends_on '{dep}' on the Lattice, but none of {s}'s files import or reference {sorted(dep_toks)}"})
+
     if staged_diff_report.get("bounds_ok") is False:
         bounds_ok = False
-        if not any(v["kind"] in ("BOUND_VIOLATION", "PROHIBITION_VIOLATION") for v in violations):
-            violations.append({"kind": "BOUND_VIOLATION", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged bounds_ok=False"})
+        if not any(v["kind"] in ("BOUND_VIOLATION", "PROHIBITION_VIOLATION") for v in violations): violations.append({"kind": "BOUND_VIOLATION", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged bounds_ok=False"})
 
     decl_syms = {str(a.get("name") or a.get("id") or "").strip() for a in artifacts if str(a.get("kind") or "").upper() in ("INTERFACE", "SCHEMA")} | {_extract_law_fn_name(a) for a in artifacts if str(a.get("kind") or "").upper() == "LAW"} | {str(a.get("name") or a.get("id") or "").strip() for a in artifacts if str(a.get("kind") or "").upper() == "LAW"}
     unreg_syms = [{"scope": s, "path": str(f.get("path") or ""), "symbol": sym} for s, s_files in modified_scope_files.items() if str((scopes.get(s) or {}).get("status") or (scopes.get(s) or {}).get("build_status") or "").strip().upper() != "VERIFIED" or any(not f.get("file_hash") for f in s_files) for f in s_files for sym in sorted(_normalize_symbol_map(f.get("ast_functions"))[0] | _normalize_symbol_map(f.get("ast_classes") if "ast_classes" in f else f.get("ast_schemas"))[0]) if sym and not sym.startswith("_") and sym != "main" and sym not in decl_syms]
@@ -461,14 +462,13 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
                     contracts_ok = False; violations.append({"kind": "CONTRACT_VIOLATION", "scope": asid, "path": cpath, "description": f"SCHEMA '{aname}' in {cpath} missing required fields: {missing_f}"})
 
     if not (is_verified_scope_protected(False, False) and verified_scope_edit_guard_law(False, False)): contracts_ok = False
-    has_direct_contract_err = not contracts_ok
-    cg_report = verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report)
+    has_direct_contract_err, cg_report = not contracts_ok, verify_ast_call_graph_skeleton(whiteboard_graph, staged_diff_report)
     if not cg_report["is_valid"]:
         contracts_ok = False; violations.extend(cg_report["violations"])
     if staged_diff_report.get("contracts_ok") is False:
         contracts_ok = False
         if not any(v["kind"] == "CONTRACT_VIOLATION" for v in violations): violations.append({"kind": "CONTRACT_VIOLATION", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged contracts_ok=False"})
-    import importlib, lattice.nlp as _nlp_mod
+    import importlib, bowthruster.nlp as _nlp_mod
     ast_law_rep = (importlib.reload(_nlp_mod) if not hasattr(_nlp_mod, "verify_python_ast_laws_with_bend") else _nlp_mod).verify_python_ast_laws_with_bend(artifacts, staged_files, scopes)
     failed_laws = list(dict.fromkeys([*(staged_diff_report.get("failed_laws") or staged_diff_report.get("bend_failures") or []), *ast_law_rep["failed_laws"]]))
     if not bool(staged_diff_report.get("bend_proofs_ok", True)) or not ast_law_rep["bend_proofs_ok"] or failed_laws:
@@ -480,7 +480,6 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
         for duri in (eff_uri_sync.get("dangling_deleted_uris") or eff_uri_sync.get("dangling_uris") or [""]):
             d_str = str(duri.get("uri") if isinstance(duri, dict) else duri).strip()
             violations.append({"kind": "DANGLING_DELETED_URI", "scope": "global_defaults", "path": d_str, "description": f"URI sync report detected dangling deleted URI: {d_str or 'has_dangling_deleted_uri=True'}"})
-
     for dpath in (dp for dp in sorted(deleted_paths) if not any(_paths_match(dp, hp) for hp in healed_old_paths)):
         for sid, sc in scopes.items():
             if isinstance(sc, dict) and any(_paths_match(dpath, fp) for fp in _extract_scope_files(sc)):
@@ -488,11 +487,9 @@ def evaluate_git_commit_gate(whiteboard_graph: dict[str, Any] | None, staged_dif
         for art in artifacts:
             if art.get("file") and _paths_match(dpath, str(art["file"])):
                 no_dangling_deletes = False; violations.append({"kind": "DANGLING_DELETED_URI", "scope": str(art.get("scope") or "global_defaults"), "path": dpath, "description": f"Deleted file '{dpath}' is still referenced by lattice artifact '{art.get('name') or art.get('id')}'"})
-
     if staged_diff_report.get("no_dangling_deletes") is False:
         no_dangling_deletes = False
-        if not any(v["kind"] == "DANGLING_DELETED_URI" for v in violations):
-            violations.append({"kind": "DANGLING_DELETED_URI", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged no_dangling_deletes=False"})
+        if not any(v["kind"] == "DANGLING_DELETED_URI" for v in violations): violations.append({"kind": "DANGLING_DELETED_URI", "scope": "global_defaults", "path": "", "description": "Staged diff report flagged no_dangling_deletes=False"})
 
     allowed = should_allow_git_commit(bounds_ok, contracts_ok, bend_proofs_ok, no_dangling_deletes)
     non_del_contract_err = has_direct_contract_err or bool(cg_report["disconnected_laws"]) or staged_diff_report.get("contracts_ok") is False or (bool(cg_report["dangling_imports"]) and no_dangling_deletes)
