@@ -11,7 +11,9 @@ import sys
 import time
 from typing import Any
 
-from bowthruster.whiteboard import annotate_active_tasks, expand_node, scan_graph, slice_lattice
+from bowthruster.whiteboard import (
+    annotate_active_tasks, claim_component_scope, expand_node, scan_graph, slice_lattice,
+)
 
 STANDING_TYPES = ("BOUND", "PROHIBITION", "OBLIGATION", "POLICY")
 BUILD_STATUSES = ("DRAFT", "BLOCKED_BY_DEP", "READY", "IN_PROGRESS", "IN_QA", "FAILED", "VERIFIED", "STALE")
@@ -80,7 +82,8 @@ def _assemble_board_summary(
     annotate_active_tasks(graph)
     scopes_out, standing, facts, goals, actions = {}, [], [], [], []
     scope_keys = (
-        "parent", "role", "owner", "stage", "status", "build_tag", "core_tag", "failure_diagnostic", "active_ticket_id"
+        "parent", "role", "owner", "stage", "status", "claimed_by",
+        "build_tag", "core_tag", "failure_diagnostic", "active_ticket_id",
     )
     for sid, snode in sorted((graph.get("scopes") or {}).items()):
         if scope_filter and sid != scope_filter and not sid.startswith(f"{scope_filter}::"):
@@ -116,6 +119,44 @@ def _assemble_board_summary(
     }
 
 
+def compile_and_claim_packets(
+    graph: dict[str, Any], opts: dict[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
+    import bowthruster.cli as _cli
+
+    force = bool(opts.get("force", False))
+    status_f = str(opts["status"]).strip().upper() if opts.get("status") else None
+    wave_f, comp_f = opts.get("wave"), str(opts.get("component") or "").strip() or None
+    unclaimed, clean_claim = bool(opts.get("unclaimed_only", False)), str(opts.get("claim_by") or "").strip() or None
+    res = _cli._call_compile_packets(graph, force=force, status_filter=status_f)
+    pkts = [
+        p for p in (res.get("packets") or [])
+        if (wave_f is None or p.get("wave") == int(wave_f))
+        and (not comp_f or p.get("component") == comp_f)
+        and (not status_f or str(p.get("build_status") or "").upper() == status_f)
+        and (not unclaimed or not p.get("claimed_by") or (clean_claim and p.get("claimed_by") == clean_claim))
+    ]
+    if opts.get("strip_wave0") and any(p.get("wave") in (1, 2) for p in pkts):
+        pkts = [p for p in pkts if p.get("wave") != 0]
+    claimed_sids: list[str] = []
+    if clean_claim and (res.get("ready_to_emit") or force):
+        scopes_map = graph.get("scopes") or {}
+        targets = [p for p in pkts if p.get("wave") != 0 and str(p.get("component") or "") in scopes_map]
+        for p in targets:
+            cid, sc_d = str(p["component"]), scopes_map.get(str(p["component"])) or {}
+            if str(sc_d.get("status") or "").upper() == "VERIFIED":
+                raise ValueError(f"Cannot claim VERIFIED component {cid!r}; mark it STALE first")
+            if (cur_c := str(sc_d.get("claimed_by") or "").strip()) and cur_c != clean_claim:
+                raise ValueError(f"Component {cid!r} is already claimed by {cur_c!r}")
+        now_iso = datetime.now(timezone.utc).isoformat()
+        for p in targets:
+            cid = str(p["component"])
+            snode = claim_component_scope(graph, cid, clean_claim, timestamp_utc=now_iso)
+            p["claimed_by"], p["claimed_at"] = snode.get("claimed_by"), snode.get("claimed_at")
+            claimed_sids.append(cid)
+    return res, pkts, claimed_sids
+
+
 def _build_cli_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     parser = argparse.ArgumentParser(description="Multi-Round Executive <-> Whiteboard Dogfooding CLI")
@@ -141,6 +182,7 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     p_slice.add_argument("-q", "--query", default="")
     p_slice.add_argument("--code", "--include-code", action="store_true", dest="include_code")
     p_slice.add_argument("--mark-stale", action="store_true", dest="mark_stale")
+    p_slice.add_argument("--claim", default=None, dest="claim_by")
     p_pkts = sub.add_parser("packets", parents=[common])
     p_stat = sub.add_parser("status", parents=[common])
     p_atlas = sub.add_parser("atlas", parents=[common])
@@ -149,13 +191,21 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     p_pkts.add_argument("--wave", type=int, choices=(0, 1, 2), default=None)
     p_pkts.add_argument("--component", default=None)
     p_pkts.add_argument("--status", choices=BUILD_STATUSES, type=str.upper, default=None)
+    p_pkts.add_argument("--unclaimed", action="store_true", dest="unclaimed_only")
+    p_pkts.add_argument("--claim", default=None, dest="claim_by")
     p_pkts.add_argument("--force", action="store_true")
     p_stat.add_argument("component")
-    p_stat.add_argument("new_status", choices=BUILD_STATUSES, type=str.upper)
-    stat_opts = (("--build-tag", "build_tag"), ("--core-tag", "core_tag"), ("--reason", "reason"), ("--for", "for_div"))
+    p_stat.add_argument("new_status", nargs="?", choices=BUILD_STATUSES, type=str.upper, default=None)
+    stat_opts = (
+        ("--build-tag", "build_tag"), ("--core-tag", "core_tag"), ("--reason", "reason"),
+        ("--for", "for_div"), ("--claim", "claimed_by"),
+    )
     for flg, dst in stat_opts:
         p_stat.add_argument(flg, default=None, dest=dst)
-    for flg, dst in (("--dispatch", "dispatch"), ("--no-ticket", "no_ticket")):
+    for flg, dst in (
+        ("--dispatch", "dispatch"), ("--no-ticket", "no_ticket"),
+        ("--release", "release_claim"), ("--force-claim", "force_claim"),
+    ):
         p_stat.add_argument(flg, action="store_true", dest=dst)
     p_atlas.add_argument("--boards", default=None)
     for flg, dst in (("--all", "load_all"), ("--mermaid", "mermaid"), ("--spec", "spec")):
@@ -199,35 +249,31 @@ def _cmd_bootstrap(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
 def _cmd_status(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
     import bowthruster.cli as _cli
 
-    trans_fn = _cli._get_transition_build_status()
-    if trans_fn is None:
-        raise RuntimeError("transition_component_build_status is not yet promoted to bowthruster.whiteboard")
-    graph, wb_json, wb_sqlite, transcript_path = _cli._load_board(board)
-    if args.new_status == "VERIFIED":
-        _cli._verify_component_files(graph, args.component)
-    prev_tid = (graph.get("scopes", {}).get(args.component) or {}).get("active_ticket_id")
-    has_pkt_fn = bool(_cli._get_compile_work_packets())
-    prev_ready = (
-        {
-            str(p.get("packet_id"))
-            for p in (_cli._call_compile_packets(graph, force=True, status_filter="READY").get("packets") or [])
-        }
-        if has_pkt_fn else set()
-    )
-    snode = trans_fn(
-        graph, args.component, args.new_status,
-        build_tag=args.build_tag, core_tag=args.core_tag, failure_diagnostic=args.reason,
-    )
-    if prev_tid and not snode.get("active_ticket_id"):
-        snode["active_ticket_id"] = prev_tid
-    all_pkts = (_cli._call_compile_packets(graph, force=True).get("packets") or []) if has_pkt_fn else []
-    ready_pkts = [p for p in all_pkts if str(p.get("build_status") or "").upper() == "READY"]
-    unlocked_pkts = [p for p in ready_pkts if str(p.get("packet_id")) not in prev_ready]
-    _cli._save_board(graph, wb_json, wb_sqlite)
+    with _cli._board_lock(board):
+        graph, wb_json, wb_sqlite, transcript_path = _cli._load_board(board)
+        if args.new_status == "VERIFIED":
+            _cli._verify_component_files(graph, args.component)
+        prev_tid = (graph.get("scopes", {}).get(args.component) or {}).get("active_ticket_id")
+        has_pkt_fn = bool(_cli._get_compile_work_packets())
+        prev_ready = (
+            {
+                str(p.get("packet_id"))
+                for p in (_cli._call_compile_packets(graph, force=True, status_filter="READY").get("packets") or [])
+            }
+            if has_pkt_fn else set()
+        )
+        snode = _cli.apply_status_and_claim(graph, args.component, args.new_status, opts=vars(args))
+        if prev_tid and not snode.get("active_ticket_id"):
+            snode["active_ticket_id"] = prev_tid
+        all_pkts = (_cli._call_compile_packets(graph, force=True).get("packets") or []) if has_pkt_fn else []
+        ready_pkts = [p for p in all_pkts if str(p.get("build_status") or "").upper() == "READY"]
+        unlocked_pkts = [p for p in ready_pkts if str(p.get("packet_id")) not in prev_ready]
+        _cli._save_board(graph, wb_json, wb_sqlite)
     payload = {
-        "component": args.component, "status": snode.get("status"), "build_tag": snode.get("build_tag"),
-        "core_tag": snode.get("core_tag"), "failure_diagnostic": snode.get("failure_diagnostic"),
-        "active_ticket_id": snode.get("active_ticket_id"), "ticket_info": {"ticket_id": snode.get("active_ticket_id")},
+        "component": args.component, "status": snode.get("status"), "claimed_by": snode.get("claimed_by"),
+        "build_tag": snode.get("build_tag"), "core_tag": snode.get("core_tag"),
+        "failure_diagnostic": snode.get("failure_diagnostic"), "active_ticket_id": snode.get("active_ticket_id"),
+        "ticket_info": {"ticket_id": snode.get("active_ticket_id")},
         "ready_packets": [p.get("packet_id") for p in ready_pkts],
         "newly_unlocked_packets": [p.get("packet_id") for p in unlocked_pkts],
     }
@@ -245,8 +291,8 @@ def _cmd_status(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
     unlocked_sfx = f"\n[NEWLY UNLOCKED READY PACKETS ({len(unlocked_pkts)})]: {unlocked_items}" if unlocked_pkts else ""
     ready_ids = ", ".join(str(p.get("packet_id")) for p in ready_pkts) or "none"
     print(
-        f"[STATUS] {args.component} -> status={snode.get('status')} build_tag={snode.get('build_tag')} "
-        f"core_tag={snode.get('core_tag')} ticket={snode.get('active_ticket_id')} "
+        f"[STATUS] {args.component} -> status={snode.get('status')} claimed_by={snode.get('claimed_by')} "
+        f"build_tag={snode.get('build_tag')} core_tag={snode.get('core_tag')} ticket={snode.get('active_ticket_id')} "
         f"failure_diagnostic={snode.get('failure_diagnostic')!r}{unlocked_sfx}\n"
         f"[READY PACKETS ({len(ready_pkts)})]: {ready_ids}"
     )
@@ -257,18 +303,19 @@ def _cmd_packets_or_show(args: argparse.Namespace, board: str, t0_cmd: float) ->
     import bowthruster.cli as _cli
 
     if args.cmd == "packets":
-        res = _cli._call_compile_packets(_cli._load_board(board)[0], force=args.force, status_filter=args.status)
-        pkts = [
-            p for p in (res.get("packets") or [])
-            if (args.wave is None or p.get("wave") == args.wave)
-            and (not args.component or p.get("component") == args.component)
-            and (not args.status or str(p.get("build_status") or "").upper() == args.status)
-        ]
+        with _cli._board_lock(board):
+            graph, wb_json, wb_sqlite, _ = _cli._load_board(board)
+            res, pkts, claimed = compile_and_claim_packets(graph, vars(args))
+            if claimed:
+                _cli._save_board(graph, wb_json, wb_sqlite)
         st = "OK" if res.get("ready_to_emit") or args.force else "REJECTED"
         dur_ms = (time.perf_counter() - t0_cmd) * 1000.0
-        _cli.record_flight_event(board, "packets", dur_ms, st, decision=res.get("status"))
+        _cli.record_flight_event(
+            board, "packets", dur_ms, st, decision=res.get("status"), modified_scopes=claimed or None
+        )
         if args.as_json:
-            out_res = {**res, "packets": pkts} if (args.wave is not None or args.component or args.status) else res
+            has_f = any((args.wave is not None, args.component, args.status, args.unclaimed_only, claimed))
+            out_res = {**res, "packets": pkts, **({"claimed_scopes": claimed} if claimed else {})} if has_f else res
             print(json.dumps(out_res, indent=2, sort_keys=True, ensure_ascii=False))
             return 0
         if not res.get("ready_to_emit") and not args.force:
@@ -286,7 +333,7 @@ def _cmd_packets_or_show(args: argparse.Namespace, board: str, t0_cmd: float) ->
             print(
                 f"\n[{p.get('packet_id')}] wave={p.get('wave')} kind={p.get('kind')} component={p.get('component')} "
                 f"owner={p.get('owner')} stage={p.get('stage')} build_status={p.get('build_status')} "
-                f"build_tag={p.get('build_tag')} core_tag={p.get('core_tag')} "
+                f"claimed_by={p.get('claimed_by')} build_tag={p.get('build_tag')} core_tag={p.get('core_tag')} "
                 f"failure_diagnostic={p.get('failure_diagnostic')!r}\n{p.get('prompt_slice') or ''}"
             )
         return 0
@@ -415,32 +462,28 @@ def _dispatch_read_cmd(args: argparse.Namespace, board: str, explicit_board: str
             metrics_str = json.dumps(view.get("atlas_metrics") or {}, sort_keys=True)
             print(f"{view.get('atlas_schematic') or ''}\n\n[Atlas Metrics]: {metrics_str}{mm_sfx}")
         return 0
-    graph, wb_json, wb_sqlite, _ = _cli._load_board(board)
-    view = dict(
-        slice_lattice(
-            graph, query=args.query, component=args.component, division=args.division,
-            stage=args.stage, schema=args.schema, kind=args.kind, include_code=args.include_code,
-        )
-    )
-    if args.mark_stale:
-        scopes_map, c_arg = graph.get("scopes") or {}, str(args.component or "").strip()
-        sym_sc = {str(m.get("scope")) for m in (view.get("matched_symbols") or []) if m.get("scope") in scopes_map}
-        comp_sc = {
-            str(c.get("id")) for c in (view.get("component_specs") or [])
-            if c.get("id") in scopes_map and c.get("id") != "global_defaults"
+    with _cli._board_lock(board):
+        graph, wb_json, wb_sqlite, _ = _cli._load_board(board)
+        sl_kw = {
+            "query": args.query, "component": args.component, "division": args.division,
+            "stage": args.stage, "schema": args.schema, "kind": args.kind, "include_code": args.include_code,
         }
-        stale_sids = [c_arg] if (c_arg and c_arg in scopes_map) else sorted(sym_sc or comp_sc)
-        for sid in stale_sids:
-            _cli._get_transition_build_status()(graph, sid, "STALE")
-        if stale_sids:
+        view = dict(slice_lattice(graph, **sl_kw))
+        view, stale_sids, claimed_sids = _cli.apply_slice_stale_and_claim(
+            graph, view, sl_kw, mark_stale=args.mark_stale, claim_by=args.claim_by
+        )
+        if stale_sids or claimed_sids:
             _cli._save_board(graph, wb_json, wb_sqlite)
+    if stale_sids:
         view["marked_stale_scopes"] = stale_sids
-    _cli.record_flight_event(
-        board, "slice", (time.perf_counter() - t0_cmd) * 1000.0, "OK", modified_scopes=view.get("marked_stale_scopes")
-    )
+    if claimed_sids:
+        view["claimed_scopes"] = claimed_sids
+    mod_sc = sorted(set(stale_sids) | set(claimed_sids)) or None
+    _cli.record_flight_event(board, "slice", (time.perf_counter() - t0_cmd) * 1000.0, "OK", modified_scopes=mod_sc)
     if args.as_json:
         print(json.dumps(view, indent=2, sort_keys=True, ensure_ascii=False))
     else:
-        stale_sfx = f"\n[MARKED STALE]: {view['marked_stale_scopes']}" if view.get("marked_stale_scopes") else ""
-        print((view.get("compact_view") or "[EMPTY_SLICE]") + stale_sfx)
+        stale_sfx = f"\n[MARKED STALE]: {stale_sids}" if stale_sids else ""
+        claim_sfx = f"\n[CLAIMED BY {args.claim_by}]: {claimed_sids}" if claimed_sids else ""
+        print((view.get("compact_view") or "[EMPTY_SLICE]") + stale_sfx + claim_sfx)
     return 0

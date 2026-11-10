@@ -383,9 +383,13 @@ def _enrich_view_compact_lines(
         cand_ln = ln
         if ln.startswith("@ COMPONENT [") and "]" in ln:
             cid = ln[len("@ COMPONENT [") : ln.find("]")]
-            flist = comp_files.get(cid) or _norm_files_list((scopes.get(cid) or {}).get("files"))
+            sc_d = scopes.get(cid) or {}
+            flist = comp_files.get(cid) or _norm_files_list(sc_d.get("files"))
             if flist and "files=[" not in ln:
-                cand_ln = _insert_tag_into_line(ln, f"files=[{', '.join(flist)}]")
+                cand_ln = _insert_tag_into_line(cand_ln, f"files=[{', '.join(flist)}]")
+            c_by = str(sc_d.get("claimed_by") or "").strip()
+            if c_by and str(sc_d.get("status") or "").upper() != "VERIFIED" and "claimed_by=" not in cand_ln:
+                cand_ln = _insert_tag_into_line(cand_ln, f"claimed_by={c_by}")
         elif ln.startswith(("$ INTERFACE [", "# SCHEMA [")) and "]" in ln:
             art = iface_by_name.get(ln[ln.find("[") + 1 : ln.find("]")].lower())
             fval = str((art or {}).get("file") or ((art or {}).get("dimensions") or {}).get("file") or "").strip()

@@ -285,8 +285,8 @@ def _build_slice_packet(graph: dict[str, Any], pkt_id: str, wave: int, kind: str
         for f in art_files}
     return {"packet_id": pkt_id, "wave": wave, "kind": kind, "component": sid, "scope": sid,
         "owner": sc.get("owner") or default_owner, "stage": sc.get("stage"),
-        "build_status": build_status, "build_tag": sc.get("build_tag"),
-        "baseline_commit_sha": graph.get("last_commit_sha"),
+        "build_status": build_status, "claimed_by": sc.get("claimed_by"), "claimed_at": sc.get("claimed_at"),
+        "build_tag": sc.get("build_tag"), "baseline_commit_sha": graph.get("last_commit_sha"),
         "core_tag": sc.get("core_tag"), "failure_diagnostic": diag_clean,
         "depends_on": list(sc.get("depends_on", [])),
         "files": list(sc.get("files", [])), "tests": list(sc.get("tests", [])),
@@ -298,8 +298,9 @@ def _build_slice_packet(graph: dict[str, Any], pkt_id: str, wave: int, kind: str
         "flows": list(sl.get("active_flows", [])), "rules": scope_rules,
         "tasks": list(sl.get("active_tasks", [])), "prompt_slice": prompt_str}
 
-def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_filter: str | None = None,
-    ) -> dict[str, Any]:
+def compile_work_packets(
+    graph: dict[str, Any], *, force: bool = False, status_filter: str | None = None, unclaimed_only: bool = False,
+) -> dict[str, Any]:
     """Compiles dependency-ordered parallel Work Packets across Wave 0, Wave 1, and Wave 2 (Spec 22C §2.2)."""
     if not isinstance(graph, dict):
         raise Phase4InvariantError("phase4_invalid_graph", [f"graph must be a dict, got {type(graph).__name__}"])
@@ -323,7 +324,7 @@ def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_f
         wave0.append({"packet_id": "pkt_wave0_schemas", "wave": 0, "kind": "SCHEMA_CONTRACTS",
             "component": "schemas", "scope": "schemas", "owner": w0_owner, "stage": w0_stage,
             "build_status": resolve_packet_lifecycle_status("DRAFT", is_proven, True),
-            "build_tag": None, "core_tag": None, "failure_diagnostic": None,
+            "claimed_by": None, "claimed_at": None, "build_tag": None, "core_tag": None, "failure_diagnostic": None,
             "depends_on": [], "schemas": schemas, "contracts": schemas, "laws": all_laws,
             "compiled_laws_bend": w0_laws_bend, "laws_skeleton": w0_laws_bend, "python_skeleton": w0_py_skel,
             "is_skeleton_complete": is_python_skeleton_complete(bool(schemas), bool(all_ifaces), bool(all_laws)),
@@ -371,6 +372,8 @@ def compile_work_packets(graph: dict[str, Any], *, force: bool = False, status_f
     if isinstance(status_filter, str) and status_filter.strip():
         sf = status_filter.strip().upper()
         wave0, wave1, wave2 = ([p for p in w if p.get("build_status") == sf] for w in (wave0, wave1, wave2))
+    if unclaimed_only:
+        wave0, wave1, wave2 = ([p for p in w if not p.get("claimed_by")] for w in (wave0, wave1, wave2))
     emit = is_proven or bool(force)
     sync_to_sqlite(graph)
     return {"status": proof["status"], "is_proven": is_proven, "ready_to_emit": is_proven,

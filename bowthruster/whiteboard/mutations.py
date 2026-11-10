@@ -22,33 +22,30 @@ def upsert_component_spec(graph: dict[str, Any], scope_id: str, *, role: str | N
     inputs: list[str] | None = None, outputs: list[str] | None = None, depends_on: list[str] | None = None,
     current_turn: int = 1, **options: Any) -> dict[str, Any]:
     """Upserts SBF structural/functional fields on `scopes[scope_id]` and syncs to SQLite (Spec 22A §2.2)."""
-    parent = options.get("parent")
-    children = options.get("children")
+    parent, children = options.get("parent"), options.get("children")
     owner, stage, kind = options.get("owner"), options.get("stage"), options.get("kind")
-    status = options.get("status")
-    files, tests = options.get("files"), options.get("tests")
+    status, files, tests = options.get("status"), options.get("files"), options.get("tests")
     scope = _ensure_scope_node_nosync(graph, scope_id, parent=parent)
     sid = str(scope["id"])
     for key, val in (("role", role), ("owner", owner), ("stage", stage), ("kind", kind), ("status", status)):
         if val is not None:
             cleaned = _clean_opt_str(val)
             if key == "status" and cleaned:
-                st_up = cleaned.upper() if cleaned.upper() in BUILD_STATUSES else cleaned
-                scope["status"] = scope["build_status"] = st_up
+                scope["status"] = scope["build_status"] = (
+                    cleaned.upper() if cleaned.upper() in BUILD_STATUSES else cleaned
+                )
             else:
                 scope[key] = cleaned
     for key, lst in (("inputs", inputs), ("outputs", outputs), ("files", files), ("tests", tests)):
         if lst is not None:
             scope[key] = _clean_str_list(lst)
-    if children is not None:
-        for ch_id in _clean_str_list(children):
-            if ch_id != sid:
-                _ensure_scope_node_nosync(graph, ch_id, parent=sid)
+    for ch_id in (_clean_str_list(children) if children is not None else []):
+        if ch_id != sid:
+            _ensure_scope_node_nosync(graph, ch_id, parent=sid)
     if depends_on is not None:
         clean_deps = [d for d in _clean_str_list(depends_on) if d != sid]
         for dep in clean_deps:
-            in_e = _ensure_scope_node_nosync(graph, dep).setdefault("in_edges", [])
-            if sid not in in_e:
+            if sid not in (in_e := _ensure_scope_node_nosync(graph, dep).setdefault("in_edges", [])):
                 in_e.append(sid)
         scope["depends_on"] = clean_deps
     if status is None:
@@ -63,14 +60,11 @@ def upsert_flow_edge(graph: dict[str, Any], source: str, target: str, *, payload
     """Upserts a directed SBF `FlowEntry` in `graph['flows']` without creating a scope for `payload` (Spec 22A §2.2)."""
     if not isinstance(source, str) or not source.strip() or not isinstance(target, str) or not target.strip():
         raise ValueError(f"source and target must be non-empty strings, got source={source!r}, target={target!r}")
-    step = options.get("step")
-    text = options.get("text", "")
-    dimensions = options.get("dimensions")
+    step, text, dimensions = options.get("step"), options.get("text", ""), options.get("dimensions")
     src_sid, tgt_sid = source.strip(), target.strip()
     src_scope, tgt_scope = _ensure_scope_node_nosync(graph, src_sid), _ensure_scope_node_nosync(graph, tgt_sid)
-    cond_val = _clean_opt_str(condition)
+    cond_val, pay_val = _clean_opt_str(condition), _clean_opt_str(payload)
     text_val = restore_ascii_dots(str(text or "")).strip()
-    pay_val = _clean_opt_str(payload)
     fnm = _clean_opt_str((dimensions or {}).get("flow_name")) if isinstance(dimensions, dict) else None
     flows = graph.setdefault("flows", [])
     entry = next((f for f in flows if (f.get("source"), f.get("target")) == (src_sid, tgt_sid)
@@ -110,10 +104,8 @@ def upsert_lattice_artifact(graph: dict[str, Any], kind: str, name: str, *, scop
         raise ValueError(f"artifact kind must be in ('SCHEMA', 'INTERFACE', 'LAW'), got {kind!r}")
     if not isinstance(name, str) or not name.strip():
         raise ValueError(f"artifact name must be a non-empty str, got {name!r}")
-    owner, stage = options.get("owner"), options.get("stage")
-    dimensions = options.get("dimensions")
-    text = options.get("text", "")
-    current_turn = int(options.get("current_turn", 1))
+    owner, stage, dimensions = options.get("owner"), options.get("stage"), options.get("dimensions")
+    text, current_turn = options.get("text", ""), int(options.get("current_turn", 1))
     name_clean = restore_ascii_dots(name).strip()
     sid = str(scope_id or "global_defaults").strip() or "global_defaults"
     _ensure_scope_node_nosync(graph, sid)
@@ -125,8 +117,7 @@ def upsert_lattice_artifact(graph: dict[str, Any], kind: str, name: str, *, scop
         entry = ArtifactEntry({"id": f"{kind_clean.lower()}_{sid}_{name_clean.lower()}", "kind": kind_clean,
             "name": name_clean, "scope_id": sid, "scope": sid, "created_turn": current_turn})
         artifacts.append(entry)
-    spec_clean = restore_ascii_dots(str(spec or "")).strip()
-    text_clean = restore_ascii_dots(str(text or "")).strip()
+    spec_clean, text_clean = restore_ascii_dots(str(spec or "")).strip(), restore_ascii_dots(str(text or "")).strip()
     entry["name"] = name_clean
     if spec_clean:
         entry["spec"] = spec_clean
@@ -145,6 +136,36 @@ def upsert_lattice_artifact(graph: dict[str, Any], kind: str, name: str, *, scop
     sync_to_sqlite(graph)
     return entry
 
+def _resolve_component_scope(graph: dict[str, Any], scope_id: str) -> tuple[str, dict[str, Any]]:
+    if not isinstance(graph, dict):
+        raise ValueError("graph must be a dict")
+    scopes = graph.setdefault("scopes", {})
+    raw_sid = str(scope_id or "").strip()
+    sid = raw_sid if raw_sid in scopes else (graph.get("alias_index") or {}).get(raw_sid.lower())
+    if not sid or sid not in scopes or not isinstance(scopes[sid], dict):
+        raise KeyError(f"Component scope {scope_id!r} not found in graph['scopes']")
+    return sid, scopes[sid]
+
+def claim_component_scope(
+    graph: dict[str, Any], scope_id: str, agent_id: str | None = None, *,
+    release: bool = False, force: bool = False, timestamp_utc: str | None = None,
+) -> dict[str, Any]:
+    """Atomically claims or releases a non-VERIFIED component scope for multi-agent work."""
+    sid, scope = _resolve_component_scope(graph, scope_id)
+    clean_agent = None if release else _clean_opt_str(agent_id)
+    if clean_agent is None or clean_agent.lower() in ("none", "null"):
+        scope["claimed_by"] = scope["claimed_at"] = None
+    else:
+        if str(scope.get("status") or "").upper() == "VERIFIED":
+            raise ValueError(f"Cannot claim VERIFIED component {sid!r}; mark it STALE first")
+        if (cur := _clean_opt_str(scope.get("claimed_by"))) and cur != clean_agent and not force:
+            raise ValueError(f"Component {sid!r} is already claimed by {cur!r}")
+        scope["claimed_by"] = clean_agent
+        if timestamp_utc is not None or not scope.get("claimed_at"):
+            scope["claimed_at"] = _clean_opt_str(timestamp_utc)
+    sync_to_sqlite(graph)
+    return scope
+
 def transition_component_build_status(
     graph: dict[str, Any], scope_id: str, new_status: str, *, build_tag: str | None = None,
     core_tag: str | None = None, failure_diagnostic: str | None = None, current_turn: int = 1) -> dict[str, Any]:
@@ -152,15 +173,7 @@ def transition_component_build_status(
     st = str(new_status or "").strip().upper()
     if st not in BUILD_STATUSES:
         raise ValueError(f"Unknown build status {new_status!r}, expected one of {BUILD_STATUSES}")
-    if not isinstance(graph, dict):
-        raise ValueError("graph must be a dict")
-    scopes = graph.setdefault("scopes", {})
-    alias_idx = (graph.get("alias_index") or {})
-    raw_sid = str(scope_id or "").strip()
-    sid = raw_sid if raw_sid in scopes else alias_idx.get(raw_sid.lower())
-    if not sid or sid not in scopes or not isinstance(scopes[sid], dict):
-        raise KeyError(f"Component scope {scope_id!r} not found in graph['scopes']")
-    scope = scopes[sid]
+    _, scope = _resolve_component_scope(graph, scope_id)
     scope["status"] = scope["build_status"] = st
     if "_table_status" in scope:
         scope["_table_status"] = st
@@ -171,6 +184,8 @@ def transition_component_build_status(
     for key, val in (("build_tag", build_tag), ("core_tag", core_tag)):
         if val is not None:
             scope[key] = _clean_opt_str(val)
+    if st == "VERIFIED":
+        scope["claimed_by"] = scope["claimed_at"] = None
     if st in ("READY", "IN_PROGRESS", "IN_QA", "VERIFIED"):
         scope["failure_diagnostic"] = None
     elif failure_diagnostic is not None:
@@ -310,38 +325,33 @@ def revoke_rule(graph: dict[str, Any], rule_id: str) -> dict[str, Any] | None:
     """Revokes `rule_id` (or `attr:<sid>.<prop>`) from `graph`, invalidating its scope and dependents."""
     if not isinstance(graph, dict) or not isinstance(rule_id, str) or not rule_id.strip():
         return None
-    rid = rule_id.strip()
-    scopes = (graph.get("scopes") or {})
+    rid, scopes = rule_id.strip(), (graph.get("scopes") or {})
     if rid.startswith("attr:") and "." in rid[5:]:
         sid, prop = rid[5:].split(".", 1)
         sc = scopes.get(sid)
-        if bool(sc.get("attributes")) and prop in sc["attributes"]:
+        if bool((sc or {}).get("attributes")) and prop in sc["attributes"]:
             val = sc["attributes"].pop(prop)
             _invalidate_scope_on_edit(graph, sid)
             sync_to_sqlite(graph)
             return {"id": rid, "scope": sid, "target_prop": prop, "bound_val": val}
         return None
     for sid, sc in scopes.items():
-        if not sc:
+        if not sc or (idx := next((i for i, r in enumerate(sc.get("rules", [])) if r.get("id") == rid), None)) is None:
             continue
-        rules = sc.get("rules", [])
-        idx = next((i for i, r in enumerate(rules) if r.get("id") == rid), None)
-        if idx is not None:
-            removed = rules.pop(idx)
-            if bool(sc.get("_meta")):
-                sc["_meta"].pop(rid, None)
-            for osc in (s for s in scopes.values()):
-                if rid in osc.get("in_edges", []):
-                    osc["in_edges"].remove(rid)
-                for ro in (r for r in osc.get("rules", [])):
-                    if rid in ro.get("overrides", []):
-                        ro["overrides"].remove(rid)
-                    if isinstance(ro.get("exceptions"), list):
-                        ro["exceptions"] = [
-                            ex for ex in ro["exceptions"] if not (ex.get("rule_id") == rid)]
-            _invalidate_scope_on_edit(graph, sid)
-            sync_to_sqlite(graph)
-            return removed
+        removed = sc["rules"].pop(idx)
+        if bool(sc.get("_meta")):
+            sc["_meta"].pop(rid, None)
+        for osc in scopes.values():
+            if rid in osc.get("in_edges", []):
+                osc["in_edges"].remove(rid)
+            for ro in osc.get("rules", []):
+                if rid in ro.get("overrides", []):
+                    ro["overrides"].remove(rid)
+                if isinstance(ro.get("exceptions"), list):
+                    ro["exceptions"] = [ex for ex in ro["exceptions"] if ex.get("rule_id") != rid]
+        _invalidate_scope_on_edit(graph, sid)
+        sync_to_sqlite(graph)
+        return removed
     return None
 
 def replace_rule(graph: dict[str, Any], old_rule_id: str,

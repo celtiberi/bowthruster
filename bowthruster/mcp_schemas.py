@@ -15,6 +15,7 @@ COMPACT_PACKET_KEYS: tuple[str, ...] = (
     "owner",
     "stage",
     "build_status",
+    "claimed_by",
     "files",
     "depends_on",
     "prompt_slice",
@@ -149,6 +150,13 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
                         "internal code fixes (default: false)"
                     ),
                 },
+                "claim_by": {
+                    "type": "string",
+                    "description": (
+                        "Optional agent alias to atomically claim matched STALE component(s) "
+                        "(prevents concurrent agents from claiming the same packet)"
+                    ),
+                },
                 "include_raw": {
                     "type": "boolean",
                     "description": "Include full raw records (default: false)",
@@ -179,6 +187,14 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
                 "status": {
                     "type": "string",
                     "description": "Filter by build_status (e.g. STALE, READY, VERIFIED)",
+                },
+                "unclaimed_only": {
+                    "type": "boolean",
+                    "description": "Only return packets not currently claimed by another agent",
+                },
+                "claim_by": {
+                    "type": "string",
+                    "description": "Atomically claim matched non-VERIFIED component packet(s) for this agent alias",
                 },
                 "force": {
                     "type": "boolean",
@@ -285,8 +301,9 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
     {
         "name": "status",
         "description": (
-            "Step 4 (Transition Status): Transition a component's build lifecycle status "
-            "(e.g. new_status='VERIFIED' after pre-commit gate and delta/seam tests pass)."
+            "Step 4 (Transition Status or Claim/Release): Transition a component's build "
+            "lifecycle status and/or atomically claim/release a STALE component for multi-agent work "
+            "(claims clear automatically on VERIFIED)."
         ),
         "inputSchema": {
             "type": "object",
@@ -299,8 +316,20 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
                 "new_status": {
                     "type": "string",
                     "description": (
-                        "Target status (READY, IN_PROGRESS, IN_QA, VERIFIED, FAILED, STALE)"
+                        "Optional target status (READY, IN_PROGRESS, IN_QA, VERIFIED, FAILED, STALE)"
                     ),
+                },
+                "claimed_by": {
+                    "type": "string",
+                    "description": "Agent alias claiming this non-VERIFIED component",
+                },
+                "release_claim": {
+                    "type": "boolean",
+                    "description": "Release an active claim on this component (default: false)",
+                },
+                "force_claim": {
+                    "type": "boolean",
+                    "description": "Override an existing claim held by another agent (default: false)",
                 },
                 "build_tag": {"type": "string", "description": "Optional build tag"},
                 "core_tag": {"type": "string", "description": "Optional core tag"},
@@ -313,7 +342,7 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
                     ),
                 },
             },
-            "required": ["component", "new_status"],
+            "required": ["component"],
         },
     },
     {

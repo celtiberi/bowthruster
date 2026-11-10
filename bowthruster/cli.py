@@ -46,8 +46,8 @@ from bowthruster.graph_core import SQLiteGraphStore  # noqa: E402
 from bowthruster.nlp import _extract_generic_source_symbols, verify_python_ast_laws_with_bend  # noqa: E402
 from bowthruster.the_table import render_lattice_atlas  # noqa: E402
 from bowthruster.whiteboard import (  # noqa: E402
-    ContextGraph, annotate_active_tasks, create_empty_context_graph, expand_node,
-    frustration as _wb_frust, ingest as _wb_ingest, mutations as _wb_mut,
+    ContextGraph, annotate_active_tasks, claim_component_scope, create_empty_context_graph,
+    expand_node, frustration as _wb_frust, ingest as _wb_ingest, mutations as _wb_mut,
     scan_graph, slice_lattice, sync_to_sqlite,
 )
 
@@ -76,22 +76,76 @@ def _get_render_lattice_atlas() -> Any:
     return getattr(surf_mod, "render_lattice_atlas", render_lattice_atlas)
 
 
+def apply_slice_stale_and_claim(
+    graph: dict[str, Any], view: dict[str, Any], sl_kw: dict[str, Any], *,
+    mark_stale: bool = False, claim_by: str | None = None,
+) -> tuple[dict[str, Any], list[str], list[str]]:
+    clean_claim = str(claim_by or "").strip() or None
+    if not mark_stale and not clean_claim:
+        return view, [], []
+    scopes_map, c_arg = graph.get("scopes") or {}, str(sl_kw.get("component") or "").strip()
+    sym_sc = {str(m.get("scope")) for m in (view.get("matched_symbols") or []) if m.get("scope") in scopes_map}
+    comp_sc = {str(c.get("id")) for c in (view.get("component_specs") or [])
+        if c.get("id") in scopes_map and c.get("id") != "global_defaults"}
+    targets = [c_arg] if (c_arg and c_arg in scopes_map) else sorted(sym_sc or comp_sc)
+    if clean_claim:
+        for sid in targets:
+            sc_d = scopes_map.get(sid) or {}
+            if (cur_c := str(sc_d.get("claimed_by") or "").strip()) and cur_c != clean_claim:
+                raise ValueError(f"Component {sid!r} is already claimed by {cur_c!r}")
+            if not mark_stale and str(sc_d.get("status") or "").upper() == "VERIFIED":
+                raise ValueError(f"Cannot claim VERIFIED component {sid!r}; mark it STALE first")
+    stale_sids = list(targets) if mark_stale else []
+    for sid in stale_sids:
+        _get_transition_build_status()(graph, sid, "STALE")
+    now_iso, claimed_sids = datetime.now(timezone.utc).isoformat(), (list(targets) if clean_claim else [])
+    for sid in claimed_sids:
+        claim_component_scope(graph, sid, clean_claim, timestamp_utc=now_iso)
+    return (dict(slice_lattice(graph, **sl_kw)) if (stale_sids or claimed_sids) else view), stale_sids, claimed_sids
+
+
+def apply_status_and_claim(
+    graph: dict[str, Any], component: str, new_status: str | None = None, *, opts: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    cfg, new_st = opts or {}, str(new_status or "").strip().upper() or None
+    raw_c = cfg.get("claimed_by")
+    clean_c = str(raw_c).strip() if isinstance(raw_c, str) and raw_c.strip() else None
+    rel = bool(cfg.get("release_claim", False)) or bool(clean_c and clean_c.lower() in ("none", "null"))
+    force = bool(cfg.get("force_claim", False))
+    if not new_st and not clean_c and not rel:
+        raise ValueError("status requires 'new_status', 'claimed_by', or 'release_claim=True'")
+    scopes_map = graph.get("scopes") or {}
+    sid = component if component in scopes_map else (graph.get("alias_index") or {}).get(component.lower())
+    if clean_c and not rel:
+        if new_st == "VERIFIED":
+            raise ValueError(f"Cannot claim VERIFIED component {component!r}; mark it STALE first")
+        cur_c = str((scopes_map.get(sid or component) or {}).get("claimed_by") or "").strip()
+        if cur_c and cur_c != clean_c and not force:
+            raise ValueError(f"Component {sid or component!r} is already claimed by {cur_c!r}")
+    snode: dict[str, Any] = {}
+    if new_st:
+        if (trans_fn := _get_transition_build_status()) is None:
+            raise RuntimeError("transition_component_build_status is not yet promoted to bowthruster.whiteboard")
+        snode = trans_fn(graph, component, new_st, build_tag=cfg.get("build_tag"),
+            core_tag=cfg.get("core_tag"), failure_diagnostic=cfg.get("reason"))
+    if rel or clean_c:
+        snode = claim_component_scope(graph, component, None if rel else clean_c,
+            release=rel, force=force, timestamp_utc=datetime.now(timezone.utc).isoformat())
+    return snode
+
+
 def _call_compile_packets(
     graph: dict[str, Any], *, force: bool = False, status_filter: str | None = None
 ) -> dict[str, Any]:
-    pkt_fn = _get_compile_work_packets()
-    if pkt_fn is None:
+    if (pkt_fn := _get_compile_work_packets()) is None:
         raise RuntimeError("compile_work_packets is not yet promoted to bowthruster.whiteboard")
     if status_filter and "status_filter" in inspect.signature(pkt_fn).parameters:
         return pkt_fn(graph, force=force, status_filter=status_filter)
     res = pkt_fn(graph, force=force)
-    if status_filter:
-        filtered = [
-            p for p in (res.get("packets") or [])
-            if str(p.get("build_status") or "").upper() == status_filter.upper()
-        ]
-        return {**res, "packets": filtered}
-    return res
+    if not status_filter:
+        return res
+    sf = status_filter.upper()
+    return {**res, "packets": [p for p in (res.get("packets") or []) if str(p.get("build_status") or "").upper() == sf]}
 
 
 _META_LOCK = threading.Lock()

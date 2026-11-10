@@ -13,6 +13,7 @@ class ScopeSpec:
     """Canonical normalized board scope specification."""
     id: str = "global_defaults"
     status: str = "DRAFT"
+    claimed_by: str | None = None
     files: list[str] = field(default_factory=list)
     tests: list[str] = field(default_factory=list)
     depends_on: list[str] = field(default_factory=list)
@@ -41,7 +42,7 @@ _RULE_STORE_KINDS = frozenset({
 _SCOPE_SBF_DEFAULTS: tuple[tuple[str, Any], ...] = (
     ("role", None), ("inputs", []), ("outputs", []), ("depends_on", []), ("files", []), ("tests", []),
     ("owner", None), ("stage", None), ("kind", None), ("status", "DRAFT"), ("build_status", "DRAFT"),
-    ("build_tag", None), ("core_tag", None), ("failure_diagnostic", None))
+    ("build_tag", None), ("core_tag", None), ("failure_diagnostic", None), ("claimed_by", None), ("claimed_at", None))
 
 def _apply_entry_defaults(target: dict[str, Any], defaults: tuple[tuple[str, Any], ...], *, with_turns: bool = True,
     ) -> None:
@@ -149,6 +150,9 @@ def _normalize_scope_entry(sid: str, sc: dict[str, Any]) -> None:
     sc["files"], sc["tests"] = files_list, tests_list
     sc.pop("test_files", None)
     sc["depends_on"] = _clean_str_list(sc.get("depends_on"))
+    sc["claimed_by"] = None if sc["status"] == "VERIFIED" else _clean_opt_str(sc.get("claimed_by"))
+    if sc["claimed_by"] is None:
+        sc["claimed_at"] = None
     for k in ("rules", "children", "aliases", "in_edges"):
         if sc.get(k) is None:
             sc[k] = []

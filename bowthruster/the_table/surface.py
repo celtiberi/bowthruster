@@ -294,6 +294,7 @@ def _collect_atlas_topology(boards: list[tuple[str, dict[str, Any]]],
                 if str(f).strip()]
             deps = [str(d).strip() for d in (sc.get("depends_on") or []) if str(d).strip() and str(d).strip() != sid]
             untested = bool(merged.get("verified_untested"))
+            claimed_by = (str(merged.get("claimed_by") or "").strip() or None) if st != "VERIFIED" else None
             has_comp = _is_sbf_component_scope(sid, sc, ref_sids)
             if not (has_comp or not board_has_sbf_comps) or not (has_comp or sc.get("build_status")
                 or sc.get("status")):
@@ -301,7 +302,8 @@ def _collect_atlas_topology(boards: list[tuple[str, dict[str, Any]]],
             if sid not in components:
                 components[sid] = {
                     "id": sid, "board": bname, "build_status": st, "status": st, "verified_untested": untested,
-                    "owner": owner, "role": role, "why": why, "stage": stage, "depends_on": list(deps), "files": files,
+                    "claimed_by": claimed_by, "owner": owner, "role": role, "why": why, "stage": stage,
+                    "depends_on": list(deps), "files": files,
                 }
             else:
                 cur = components[sid]
@@ -309,6 +311,8 @@ def _collect_atlas_topology(boards: list[tuple[str, dict[str, Any]]],
                     cur["build_status"] = cur["status"] = st
                 if untested:
                     cur["verified_untested"] = True
+                if claimed_by and not cur.get("claimed_by"):
+                    cur["claimed_by"] = claimed_by
                 if owner and not cur["owner"]:
                     cur["owner"], cur["board"] = owner, bname
                 for field_k, field_v in (("role", role), ("why", why), ("stage", stage), ("files", files)):
@@ -321,7 +325,8 @@ def _collect_atlas_topology(boards: list[tuple[str, dict[str, Any]]],
         if rsid not in components:
             components[rsid] = {
                 "id": rsid, "board": bname, "build_status": "DRAFT", "status": "DRAFT", "verified_untested": False,
-                "owner": None, "role": None, "why": None, "stage": None, "depends_on": [], "files": []}
+                "claimed_by": None, "owner": None, "role": None, "why": None, "stage": None, "depends_on": [],
+                "files": []}
     dependents_map: dict[str, set[str]] = {sid: set() for sid in components}
     for sid, c in components.items():
         for dep in c["depends_on"]:
@@ -331,6 +336,7 @@ def _collect_atlas_topology(boards: list[tuple[str, dict[str, Any]]],
         "BLOCKED_BY_DEP"))
     metrics: dict[str, Any] = {"total_components": len(components),
         "verified_components": sum(1 for c in components.values() if c["build_status"] == "VERIFIED"),
+        "claimed_components": sum(1 for c in components.values() if c.get("claimed_by")),
         "total_flows": len(flows), "open_gaps": explicit_gaps if saw_explicit_gaps else inferred_gaps,
         "hub_bottlenecks": hub_bottlenecks}
     return components, flows, metrics
@@ -390,8 +396,9 @@ def _render_board_spec(boards: list[tuple[str, dict[str, Any]]], components: dic
                         rules_by_scope.setdefault(sid, []).append(r)
     lines.extend(["", "## 3. Components, Rationale & Contracts"])
     for sid, c in components.items():
-        header = f"### `{sid}` (`{c['build_status']}`, owner: `{c['owner'] or 'unassigned'}`, stage: `{c['stage']
-            or '-'}`)"
+        claim_h = f", claimed_by: `{c['claimed_by']}`" if c.get("claimed_by") else ""
+        header = (f"### `{sid}` (`{c['build_status']}`{claim_h}, owner: `{c['owner'] or 'unassigned'}`, "
+            f"stage: `{c['stage'] or '-'}`)")
         lines.extend(["", header, f"- **Purpose (`Role`):** {c.get('role') or f'Component {sid}'}"])
         if c.get("why"):
             lines.append(f"- **Why It Exists (`Rationale`):** {c['why']}")
@@ -443,9 +450,11 @@ def render_lattice_atlas(whiteboard_boards: dict[str, dict[str, Any]] | list[dic
         role_tail = (f": {c['role']}" if c.get("role") else "") + (f" [why: {c['why']}]" if c.get("why") else "")
         disp_status = ("VERIFIED (untested)" if c["build_status"] == "VERIFIED" and bool(c.get("verified_untested"))
             else c["build_status"])
-        schem_lines.append(f"- @ COMPONENT [{sid}] (board={c['board']}, status={disp_status}, "
+        claim_sfx = f", claimed_by={c['claimed_by']}" if c.get("claimed_by") else ""
+        m_claim = f", claimed:{c['claimed_by']}" if c.get("claimed_by") else ""
+        schem_lines.append(f"- @ COMPONENT [{sid}] (board={c['board']}, status={disp_status}{claim_sfx}, "
             f"owner={owner_str}, depends_on=[{deps_str}]){role_tail}")
-        mermaid_lines.append(f'  {sid}["{sid} ({c["build_status"]}, {owner_str})"]')
+        mermaid_lines.append(f'  {sid}["{sid} ({c["build_status"]}, {owner_str}{m_claim})"]')
     for fl in flows:
         pay_tag = f" [{fl['payload']}]" if fl["payload"] else ""
         schem_lines.append(f"- @ FLOW {fl['source']} -> {fl['target']}{pay_tag}")

@@ -111,29 +111,29 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
+  "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
   "lattice_artifacts": [
     {
       "calls": [
-        "_format_tool_result#L106-L114",
-        "_hot_reload_if_changed#L399-L432",
-        "_resolve_project_root#L89-L103",
-        "_tool_atlas#L143-L165",
-        "_tool_git_sync_or_status#L280-L325",
-        "_tool_packets_or_turn#L224-L277",
-        "_tool_readme_or_logs#L117-L140",
-        "_tool_slice#L168-L221"
+        "_format_tool_result#L107-L115",
+        "_hot_reload_if_changed#L388-L421",
+        "_resolve_project_root#L90-L104",
+        "_tool_atlas#L144-L166",
+        "_tool_git_sync_or_status#L273-L314",
+        "_tool_packets_or_turn#L222-L270",
+        "_tool_readme_or_logs#L118-L141",
+        "_tool_slice#L169-L219"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L328-L388",
+        "file": "bowthruster/mcp_server.py#L317-L377",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L328-L388",
+      "file": "bowthruster/mcp_server.py#L317-L377",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -155,19 +155,19 @@
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L399-L432",
-        "_read_doc_resource#L58-L86"
+        "_hot_reload_if_changed#L388-L421",
+        "_read_doc_resource#L59-L87"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "bowthruster/mcp_server.py#L435-L477",
+        "file": "bowthruster/mcp_server.py#L424-L466",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "bowthruster/mcp_server.py#L435-L477",
+      "file": "bowthruster/mcp_server.py#L424-L466",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -248,10 +248,10 @@
       "dimensions": {
         "description": "JSON-RPC 2.0 MCP request envelope",
         "fields": "jsonrpc, id, method, params",
-        "file": "bowthruster/mcp_server.py#L30-L34",
+        "file": "bowthruster/mcp_server.py#L31-L35",
         "schema": "McpJsonRpcRequest"
       },
-      "file": "bowthruster/mcp_server.py#L30-L34",
+      "file": "bowthruster/mcp_server.py#L31-L35",
       "id": "schema_mcp_server_mcpjsonrpcrequest",
       "inputs": [],
       "kind": "SCHEMA",
@@ -328,6 +328,8 @@
       "build_status": "DRAFT",
       "build_tag": null,
       "children": [],
+      "claimed_at": null,
+      "claimed_by": null,
       "core_tag": null,
       "depends_on": [],
       "failure_diagnostic": null,
@@ -396,9 +398,11 @@
         "updated_turn": 10,
         "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
       },
-      "build_status": "STALE",
+      "build_status": "VERIFIED",
       "build_tag": null,
       "children": [],
+      "claimed_at": null,
+      "claimed_by": null,
       "core_tag": null,
       "created_turn": 1,
       "depends_on": [
@@ -417,18 +421,18 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
+      "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
       "outputs": [],
       "owner": "core",
       "parent": null,
       "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
       "rules": [],
       "stage": "28",
-      "status": "STALE",
+      "status": "VERIFIED",
       "tests": [
         "tests/test_git_lattice_sync.py"
       ],
-      "updated_turn": 16,
+      "updated_turn": 1,
       "verified_untested": false,
       "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
     },
@@ -455,10 +459,10 @@
         "file": "bowthruster/mcp_server.py",
         "file_hashes": {
           "bowthruster/bootstrap.py": "f0ab81745c1d0073",
-          "bowthruster/cli.py": "0ed4e3cf434b0be4",
-          "bowthruster/cli_commands.py": "454251daca271643",
-          "bowthruster/mcp_schemas.py": "a45e71d9e6817fb0",
-          "bowthruster/mcp_server.py": "157be635a612b301"
+          "bowthruster/cli.py": "d0450267904a8224",
+          "bowthruster/cli_commands.py": "953ab4e7ebeb9b57",
+          "bowthruster/mcp_schemas.py": "5867244b183a8216",
+          "bowthruster/mcp_server.py": "ace8128bca2084e4"
         },
         "files": [
           "bowthruster/mcp_server.py",
@@ -481,16 +485,18 @@
       "build_status": "VERIFIED",
       "build_tag": null,
       "children": [],
+      "claimed_at": null,
+      "claimed_by": null,
       "core_tag": null,
       "created_turn": 1,
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/bootstrap.py": "f0ab81745c1d0073",
-        "bowthruster/cli.py": "0ed4e3cf434b0be4",
-        "bowthruster/cli_commands.py": "454251daca271643",
-        "bowthruster/mcp_schemas.py": "a45e71d9e6817fb0",
-        "bowthruster/mcp_server.py": "157be635a612b301"
+        "bowthruster/cli.py": "d0450267904a8224",
+        "bowthruster/cli_commands.py": "953ab4e7ebeb9b57",
+        "bowthruster/mcp_schemas.py": "5867244b183a8216",
+        "bowthruster/mcp_server.py": "ace8128bca2084e4"
       },
       "files": [
         "bowthruster/mcp_server.py",
@@ -505,7 +511,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
+      "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
       "outputs": [],
       "owner": "core",
       "parent": null,

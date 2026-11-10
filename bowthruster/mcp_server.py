@@ -14,11 +14,12 @@ import time
 from typing import Any
 
 from bowthruster.cli import (
-    BOWTHRUSTER_HOME, REPO_ROOT, _board_lock, _call_compile_packets, _execute_turn,
-    _get_evaluate_lattice_proof, _get_transition_build_status, _load_atlas_boards,
-    _load_board, _save_board, _verify_component_files, format_exception_error,
+    BOWTHRUSTER_HOME, REPO_ROOT, _board_lock, _execute_turn, _get_evaluate_lattice_proof,
+    _load_atlas_boards, _load_board, _save_board, _verify_component_files,
+    apply_slice_stale_and_claim, apply_status_and_claim, format_exception_error,
     read_flight_logs, record_flight_event,
 )
+from bowthruster.cli_commands import compile_and_claim_packets
 from bowthruster.mcp_schemas import (
     COMPACT_PACKET_KEYS, KNOWN_TOOL_NAMES, MCP_PROTOCOL_VERSION,
     MCP_RESOURCES, MCP_TOOLS, SERVER_NAME, SERVER_VERSION,
@@ -183,23 +184,17 @@ def _tool_slice(board: str, args: dict[str, Any], active_root: Path, t0: float) 
                 if next((_v for _v in (cv.get("matched_symbols"), cv.get("component_specs")) if _v), None):
                     board, graph, wb_json, wb_sqlite, view = cand_b, cg, c_json, c_sql, cv
                     break
-    stale_sids: list[str] = []
-    if bool(args.get("mark_stale", False)):
-        scopes_map, c_arg = graph.get("scopes") or {}, str(args.get("component") or "").strip()
-        sym_sc = {str(m.get("scope")) for m in (view.get("matched_symbols") or []) if m.get("scope") in scopes_map}
-        comp_sc = {
-            str(c.get("id")) for c in (view.get("component_specs") or [])
-            if c.get("id") in scopes_map and c.get("id") != "global_defaults"
-        }
-        cands = [c_arg] if (c_arg and c_arg in scopes_map) else sorted(sym_sc or comp_sc)
-        trans_fn = _get_transition_build_status()
-        for sid in cands:
-            trans_fn(graph, sid, "STALE")
-            stale_sids.append(sid)
-        if stale_sids:
-            _save_board(graph, wb_json, wb_sqlite)
+    view, stale_sids, claimed_sids = apply_slice_stale_and_claim(
+        graph, view, sl_kw, mark_stale=bool(args.get("mark_stale", False)), claim_by=args.get("claim_by")
+    )
+    if stale_sids or claimed_sids:
+        _save_board(graph, wb_json, wb_sqlite)
     if bool(args.get("include_raw", False)):
-        payload = dict(view)
+        payload = {
+            **view,
+            **({"marked_stale_scopes": stale_sids} if stale_sids else {}),
+            **({"claimed_scopes": claimed_sids} if claimed_sids else {}),
+        }
     else:
         matched_clean = [{k: v for k, v in m.items() if k != "code"} for m in (view.get("matched_symbols") or [])]
         payload = {
@@ -207,9 +202,11 @@ def _tool_slice(board: str, args: dict[str, Any], active_root: Path, t0: float) 
             "line_count": view.get("line_count"), "matched_symbols": matched_clean,
             "compact_view": view.get("compact_view"),
             **({"marked_stale_scopes": stale_sids} if stale_sids else {}),
+            **({"claimed_scopes": claimed_sids} if claimed_sids else {}),
         }
     stale_sfx = f"\n[MARKED STALE]: {stale_sids}" if stale_sids else ""
-    parts = ((view.get("compact_view") or "[EMPTY_SLICE]") + stale_sfx).split("\n[CODE ")
+    claim_sfx = f"\n[CLAIMED BY {args.get('claim_by')}]: {claimed_sids}" if claimed_sids else ""
+    parts = ((view.get("compact_view") or "[EMPTY_SLICE]") + stale_sfx + claim_sfx).split("\n[CODE ")
     hdr_cv = "\n".join(
         ("@ SCHEMA " + ln[9:] if ln.startswith("# SCHEMA ") else ("@ FLOW" + ln[6:] if ln.startswith("> FLOW") else ln))
         for ln in parts[0].splitlines()
@@ -217,37 +214,33 @@ def _tool_slice(board: str, args: dict[str, Any], active_root: Path, t0: float) 
     sl_txt = f"```text\n{hdr_cv}\n```" + "".join(f"\n```python\n# [CODE {p}\n```" for p in parts[1:])
     resp, nbytes = _format_tool_result(payload, text=None if bool(args.get("include_raw", False)) else sl_txt)
     dur_ms = (time.perf_counter() - t0) * 1000.0
-    record_flight_event(board, "slice", dur_ms, "OK", modified_scopes=stale_sids or None, response_bytes=nbytes)
+    mod_sc = sorted(set(stale_sids) | set(claimed_sids)) or None
+    record_flight_event(board, "slice", dur_ms, "OK", modified_scopes=mod_sc, response_bytes=nbytes)
     return resp
 
 
 def _tool_packets_or_turn(name: str, board: str, args: dict[str, Any], t0: float) -> dict[str, Any]:
     if name == "packets":
-        graph, _, _, _ = _load_board(board)
-        status_f = str(args["status"]).upper() if args.get("status") else None
-        res = _call_compile_packets(graph, force=bool(args.get("force", False)), status_filter=status_f)
-        wave_f, comp_f = args.get("wave"), args.get("component")
-        pkts = [
-            p for p in (res.get("packets") or [])
-            if (wave_f is None or p.get("wave") == int(wave_f))
-            and (not comp_f or p.get("component") == comp_f)
-            and (not status_f or str(p.get("build_status") or "").upper() == status_f)
-        ]
-        has_higher = any(p.get("wave") in (1, 2) for p in pkts)
-        if wave_f is None and not comp_f and not bool(args.get("include_raw", False)) and has_higher:
-            pkts = [p for p in pkts if p.get("wave") != 0]
+        graph, wb_json, wb_sqlite, _ = _load_board(board)
+        strip_w0 = args.get("wave") is None and not args.get("component") and not bool(args.get("include_raw", False))
+        res, pkts, claimed = compile_and_claim_packets(graph, {**args, "strip_wave0": strip_w0})
+        if claimed:
+            _save_board(graph, wb_json, wb_sqlite)
         if bool(args.get("include_raw", False)):
-            payload = {**res, "packets": pkts}
+            payload = {**res, "packets": pkts, **({"claimed_scopes": claimed} if claimed else {})}
         else:
             payload = {
                 "status": res.get("status"), "is_proven": res.get("is_proven"),
                 "ready_to_emit": res.get("ready_to_emit"),
                 "packets": [{k: p.get(k) for k in COMPACT_PACKET_KEYS} for p in pkts],
+                **({"claimed_scopes": claimed} if claimed else {}),
             }
         resp, nbytes = _format_tool_result(payload)
         st = "OK" if next((_v for _v in (res.get("ready_to_emit"), args.get("force")) if _v), None) else "REJECTED"
         dur_ms = (time.perf_counter() - t0) * 1000.0
-        record_flight_event(board, name, dur_ms, st, decision=res.get("status"), response_bytes=nbytes)
+        record_flight_event(
+            board, name, dur_ms, st, decision=res.get("status"), modified_scopes=claimed or None, response_bytes=nbytes
+        )
         return resp
     msg = str(args.get("message") or "").strip()
     if not msg:
@@ -298,22 +291,18 @@ def _tool_git_sync_or_status(
         )
         return resp
     comp, new_st = str(args.get("component") or "").strip(), str(args.get("new_status") or "").strip().upper()
-    trans_fn = _get_transition_build_status()
     graph, wb_json, wb_sqlite, _ = _load_board(board)
     if new_st == "VERIFIED" and can_transition_to_verified(new_st == "VERIFIED", bool(comp), bool(graph.get("scopes"))):
         _verify_component_files(graph, comp)
-    snode = trans_fn(
-        graph, comp, new_st,
-        build_tag=args.get("build_tag"), core_tag=args.get("core_tag"), failure_diagnostic=args.get("reason"),
-    )
+    snode = apply_status_and_claim(graph, comp, new_st or None, opts=args)
     _save_board(graph, wb_json, wb_sqlite)
     st_txt = (
-        f"[STATUS '{board}'] {comp} -> status={snode.get('status')} "
+        f"[STATUS '{board}'] {comp} -> status={snode.get('status')} claimed_by={snode.get('claimed_by')} "
         f"build_tag={snode.get('build_tag')} core_tag={snode.get('core_tag')} "
         f"failure_diagnostic={snode.get('failure_diagnostic')!r}"
     )
     out_p = {
-        "board": board, "component": comp, "status": snode.get("status"),
+        "board": board, "component": comp, "status": snode.get("status"), "claimed_by": snode.get("claimed_by"),
         "build_tag": snode.get("build_tag"), "core_tag": snode.get("core_tag"),
         "failure_diagnostic": snode.get("failure_diagnostic"),
     }

@@ -715,6 +715,61 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
             self.assertEqual(pkt_rec["schema_count"], 1)
             self.assertEqual(pkt_rec["interface_count"], 1)
 
+    def test_s28_multi_agent_component_claims_and_contention(self) -> None:
+        """Verifies multi-agent STALE claims, contention rejection, unclaimed packet filtering, and auto-release."""
+        from bowthruster.mcp_server import call_lattice_tool
+
+        with tempfile.TemporaryDirectory(prefix="qa_s28_claims_") as tmp:
+            repo = Path(tmp)
+            (repo / "src").mkdir()
+            (repo / "src" / "auth.py").write_text("def verify(tok: str) -> bool:\n    return bool(tok)\n", encoding="utf-8")
+            (repo / "src" / "orders.py").write_text(
+                "from src.auth import verify\ndef checkout(tok: str) -> bool:\n    return verify(tok)\n", encoding="utf-8"
+            )
+            msg = (
+                "| Charter | Summary | Principles |\n| :--- | :--- | :--- |\n| shop | Shop service | Clean claims |\n\n"
+                "| Component | Role | Why | Owner | Stage | Depends_On | Files |\n"
+                "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| auth | Auth service | Validates tokens | eng1 | 1 | none | src/auth.py |\n"
+                "| orders | Orders service | Handles checkout | eng2 | 1 | auth | src/orders.py |\n\n"
+                "| Interface | Component | Inputs | Outputs | File | Spec |\n"
+                "| :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| verify | auth | tok: str | bool | src/auth.py#L1-L2 | Check token |\n"
+                "| checkout | orders | tok: str | bool | src/orders.py#L2-L3 | Run checkout |\n\n"
+                "| Flow | Source | Target | Payload | Condition |\n| :--- | :--- | :--- | :--- | :--- |\n"
+                "| auth_flow | auth | orders | bool | on request |\n"
+            )
+            call_lattice_tool("turn", {"board": "claims_b", "project_root": str(repo), "message": msg})
+            call_lattice_tool("git_sync", {"board": "claims_b", "project_root": str(repo), "mode": "pre", "mark_verified": True})
+            ver_claim = call_lattice_tool("status", {"board": "claims_b", "project_root": str(repo), "component": "auth", "claimed_by": "eng1"})
+            self.assertTrue(ver_claim["isError"] and "Cannot claim VERIFIED" in ver_claim["structuredContent"]["error"])
+            sl_claim = call_lattice_tool(
+                "slice", {"board": "claims_b", "project_root": str(repo), "component": "auth", "mark_stale": True, "claim_by": "eng1"}
+            )["structuredContent"]
+            self.assertEqual((sl_claim["marked_stale_scopes"], sl_claim["claimed_scopes"]), (["auth"], ["auth"]))
+            self.assertIn("claimed_by=eng1", sl_claim["compact_view"])
+            call_lattice_tool("status", {"board": "claims_b", "project_root": str(repo), "component": "orders", "new_status": "STALE"})
+            at_res = call_lattice_tool("atlas", {"board": "claims_b", "project_root": str(repo)})["structuredContent"]
+            self.assertIn("claimed_by=eng1", at_res["atlas_schematic"])
+            self.assertEqual(at_res["atlas_metrics"]["claimed_components"], 1)
+            for bad_tool, bad_args in (
+                ("status", {"component": "auth", "claimed_by": "eng2"}),
+                ("packets", {"component": "auth", "claim_by": "eng2"}),
+                ("slice", {"component": "auth", "mark_stale": True, "claim_by": "eng2"}),
+            ):
+                clash = call_lattice_tool(bad_tool, {"board": "claims_b", "project_root": str(repo), **bad_args})
+                self.assertTrue(clash["isError"] and "already claimed by 'eng1'" in clash["structuredContent"]["error"])
+            pk_eng2 = call_lattice_tool(
+                "packets", {"board": "claims_b", "project_root": str(repo), "status": "STALE", "unclaimed_only": True, "claim_by": "eng2"}
+            )["structuredContent"]
+            self.assertEqual([p["component"] for p in pk_eng2["packets"]], ["orders"])
+            self.assertEqual(pk_eng2["packets"][0]["claimed_by"], "eng2")
+            call_lattice_tool("status", {"board": "claims_b", "project_root": str(repo), "component": "orders", "release_claim": True})
+            reclaim = call_lattice_tool("status", {"board": "claims_b", "project_root": str(repo), "component": "orders", "claimed_by": "eng1"})
+            self.assertTrue(not reclaim["isError"] and reclaim["structuredContent"]["claimed_by"] == "eng1")
+            ver_res = call_lattice_tool("status", {"board": "claims_b", "project_root": str(repo), "component": "auth", "new_status": "VERIFIED"})
+            self.assertTrue(not ver_res["isError"] and ver_res["structuredContent"]["claimed_by"] is None)
+
     def test_s26_standing_rule_49_no_regex_and_line_budget(self) -> None:
         """Verifies zero `import re` and <= 500 lines across Stage 26 implementation and test files."""
         files_to_audit = [

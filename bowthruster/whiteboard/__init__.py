@@ -54,20 +54,10 @@ from bowthruster.whiteboard.frustration import (
     detect_frustration,
 )
 from bowthruster.whiteboard.mutations import (
-    _partition_rules_for_mitosis,
-    ensure_scope_node,
-    graduate_task_to_fact,
-    markovian_overwrite_rule,
-    prune_dysfluency_and_upsert_rule,
-    resolve_open_blocker,
-    transition_component_build_status,
-    two_axis_mitosis,
-    upsert_ambient_note,
-    upsert_component_spec,
-    upsert_flow_edge,
-    upsert_lattice_artifact,
-    wire_bidirectional_refs,
-    wire_lex_specialis_override,
+    _partition_rules_for_mitosis, claim_component_scope, ensure_scope_node, graduate_task_to_fact,
+    markovian_overwrite_rule, prune_dysfluency_and_upsert_rule, resolve_open_blocker,
+    transition_component_build_status, two_axis_mitosis, upsert_ambient_note, upsert_component_spec,
+    upsert_flow_edge, upsert_lattice_artifact, wire_bidirectional_refs, wire_lex_specialis_override,
 )
 from bowthruster.whiteboard.schema import (
     ArtifactEntry,
@@ -424,6 +414,7 @@ __all__ = [
     "can_overwrite_node_kind",
     "check_phase4_invariants",
     "clamp_rule_meta",
+    "claim_component_scope",
     "classify_and_apply_delta",
     "classify_delta_transition",
     "classify_lattice_delta",
