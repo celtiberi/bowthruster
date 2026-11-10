@@ -3,20 +3,20 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "lattice"
+name = "bowthruster"
 version = "0.1.0"
-description = "Architecture memory, focused code lookup, and pre-commit verification for AI coding agents. The Lattice itself is the spec, eliminating manual spec writing and keeping design and code in sync automatically."
+description = "Architecture memory, focused code lookup, and pre-commit verification for AI coding agents. The board itself is the spec, eliminating manual spec writing and keeping design and code in sync automatically."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
-lattice = "lattice.cli:main"
-lattice-mcp = "lattice.mcp_server:main"
+bowthruster = "bowthruster.cli:main"
+bowthruster-mcp = "bowthruster.mcp_server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["lattice"]
+packages = ["bowthruster"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -26,7 +26,7 @@ def _resolve_roots() -> list[Path]:
 
 def _load_ai_memory_module():
     qa_roots = _resolve_roots()
-    for eng_pkg in ("eng3/graph_core", "lattice/graph_core"):
+    for eng_pkg in ("eng3/graph_core", "bowthruster/graph_core", "lattice/graph_core"):
         for root in qa_roots:
             gc_dir = root / eng_pkg
             if (gc_dir / "__init__.py").is_file():
@@ -40,7 +40,7 @@ def _load_ai_memory_module():
                 break
 
     search_dirs: list[str] = []
-    for rel in ("eng3/ai_memory", "eng0/ai_memory", "lattice/ai_memory"):
+    for rel in ("eng3/ai_memory", "eng0/ai_memory", "bowthruster/ai_memory", "lattice/ai_memory"):
         for root in qa_roots:
             d = root / rel
             if d.is_dir() and str(d) not in search_dirs:
@@ -79,11 +79,11 @@ def _load_bend_gate():
 
 
 AM = _load_ai_memory_module()
-from lattice.graph_core import SQLiteGraphStore  # noqa: E402
+from bowthruster.graph_core import SQLiteGraphStore  # noqa: E402
 
 
 def _find_path(*rel_candidates: str) -> Path:
-    for rel in rel_candidates:
+    for rel in [*(r.replace("lattice/", "bowthruster/") for r in rel_candidates), *rel_candidates]:
         for root in _resolve_roots():
             candidate = root / rel
             if candidate.exists():

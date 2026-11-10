@@ -20,8 +20,8 @@ if str(_WORKSPACE_MC) not in sys.path:
     sys.path.append(str(_WORKSPACE_MC))
 
 import tests.core.circuit  # noqa: F401, E402
-from lattice import whiteboard as WB  # noqa: E402
-from lattice.the_executive import gate as _CORE_GATE  # noqa: E402
+from bowthruster import whiteboard as WB  # noqa: E402
+from bowthruster.the_executive import gate as _CORE_GATE  # noqa: E402
 
 if not hasattr(WB, "compile_python_skeleton"):
     import importlib as _il
@@ -67,7 +67,7 @@ def _find_path(*rel_candidates: str, required_symbol: str = "") -> Path:
         for root in qa_only:
             if (cand := root / rel).exists():
                 return cand
-    for rel in [*(f"laws/{Path(r).name}" for r in rel_candidates), *(r.replace("core/circuit/", "lattice/") for r in rel_candidates), *sorted(rel_candidates, key=lambda r: (0 if r.startswith(("core/", "lattice/")) else 1))]:
+    for rel in [*(f"laws/{Path(r).name}" for r in rel_candidates), *(r.replace("core/circuit/", "bowthruster/").replace("lattice/", "bowthruster/") for r in rel_candidates), *sorted(rel_candidates, key=lambda r: (0 if r.startswith(("core/", "bowthruster/", "lattice/")) else 1))]:
         cand = _WORKSPACE_MC.resolve() / rel
         if cand.exists() and (not required_symbol or ((cand / "main.bend").is_file() and required_symbol in (cand / "main.bend").read_text(encoding="utf-8"))):
             return cand

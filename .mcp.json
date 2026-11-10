@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "lattice-mcp": {
+    "bowthruster": {
       "command": "python3",
-      "args": ["-m", "lattice.mcp_server"]
+      "args": ["-m", "bowthruster.mcp_server"]
     }
   }
 }

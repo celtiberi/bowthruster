@@ -22,9 +22,9 @@ if str(_WORKSPACE_MC) not in sys.path:
     sys.path.append(str(_WORKSPACE_MC))
 
 import tests.core.circuit  # noqa: F401, E402
-from lattice import ai_memory as AM, cli as CLI, whiteboard as WB, the_executive as EXEC  # noqa: E402
-from lattice.the_executive import gate as EXEC_GATE, orchestrator as EXEC_ORCH  # noqa: E402
-from lattice.graph_core import SQLiteGraphStore  # noqa: E402
+from bowthruster import ai_memory as AM, cli as CLI, whiteboard as WB, the_executive as EXEC  # noqa: E402
+from bowthruster.the_executive import gate as EXEC_GATE, orchestrator as EXEC_ORCH  # noqa: E402
+from bowthruster.graph_core import SQLiteGraphStore  # noqa: E402
 
 TRUTH_TABLE_MISMATCHES = 0
 truth_table_mismatches = 0
@@ -53,7 +53,7 @@ def _find_path(*rel_candidates: str) -> Path:
         for root in qa_only:
             if (cand := root / rel).exists():
                 return cand
-    for rel in [*(f"laws/{Path(r).name}" for r in rel_candidates), *(r.replace("core/circuit/", "lattice/") for r in rel_candidates), *sorted(rel_candidates, key=lambda r: (0 if r.startswith(("core/", "lattice/")) else 1))]:
+    for rel in [*(f"laws/{Path(r).name}" for r in rel_candidates), *(r.replace("core/circuit/", "bowthruster/").replace("lattice/", "bowthruster/") for r in rel_candidates), *sorted(rel_candidates, key=lambda r: (0 if r.startswith(("core/", "bowthruster/", "lattice/")) else 1))]:
         if (cand := _WORKSPACE_MC.resolve() / rel).exists():
             return cand
     raise FileNotFoundError(f"Could not find any of {rel_candidates}")
@@ -323,24 +323,24 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
         # 6. Producer-Consumer Seam Check (`_build_git_manifest` -> `sync_post_commit_to_lattice` -> `slice_lattice` -> `evaluate_git_commit_gate`) on real `.py` files
         seam_wb = WB.create_empty_context_graph()
         seam_wb["scopes"] = {
-            "ai_memory": {"id": "ai_memory", "status": "VERIFIED", "build_status": "VERIFIED", "files": ["lattice/ai_memory/uri_resolver.py", "lattice/ai_memory/schema.py"], "rules": []},
-            "whiteboard": {"id": "whiteboard", "status": "VERIFIED", "build_status": "VERIFIED", "files": ["lattice/whiteboard/read_engine.py"], "rules": []},
+            "ai_memory": {"id": "ai_memory", "status": "VERIFIED", "build_status": "VERIFIED", "files": ["bowthruster/ai_memory/uri_resolver.py", "bowthruster/ai_memory/schema.py"], "rules": []},
+            "whiteboard": {"id": "whiteboard", "status": "VERIFIED", "build_status": "VERIFIED", "files": ["bowthruster/whiteboard/read_engine.py"], "rules": []},
         }
-        seam_wb["external_links"] = {"ai_memory": [{"target_uri": "uri://file/lattice/ai_memory/uri_resolver.py", "symbol": "sync_git_diff_uris"}]}
+        seam_wb["external_links"] = {"ai_memory": [{"target_uri": "uri://file/bowthruster/ai_memory/uri_resolver.py", "symbol": "sync_git_diff_uris"}]}
         seam_wb["lattice_artifacts"] = [
-            {"id": "iface_sync_git_diff_uris", "kind": "INTERFACE", "name": "sync_git_diff_uris", "scope": "ai_memory", "file": "lattice/ai_memory/uri_resolver.py", "inputs": ["store_or_graph", "git_diff_manifest", "current_turn"], "outputs": ["UriSyncReport"]},
-            {"id": "schema_concept_frame", "kind": "SCHEMA", "name": "ConceptFrame", "scope": "ai_memory", "file": "lattice/ai_memory/schema.py", "inputs": ["concept_id", "lod1_synopsis", "external_links"]},
+            {"id": "iface_sync_git_diff_uris", "kind": "INTERFACE", "name": "sync_git_diff_uris", "scope": "ai_memory", "file": "bowthruster/ai_memory/uri_resolver.py", "inputs": ["store_or_graph", "git_diff_manifest", "current_turn"], "outputs": ["UriSyncReport"]},
+            {"id": "schema_concept_frame", "kind": "SCHEMA", "name": "ConceptFrame", "scope": "ai_memory", "file": "bowthruster/ai_memory/schema.py", "inputs": ["concept_id", "lod1_synopsis", "external_links"]},
         ]
         base_manifest = CLI._build_git_manifest("baseline", None, seam_wb)
         EXEC_ORCH.sync_post_commit_to_lattice(seam_wb, base_manifest)
         sl = WB.slice_lattice(seam_wb, component="ai_memory")
         pre_gate = EXEC_GATE.evaluate_git_commit_gate(seam_wb, CLI._build_git_manifest("pre", None, seam_wb))
         wb_focus = copy.deepcopy(seam_wb)
-        wb_focus["scopes"]["whiteboard"] = {"id": "whiteboard", "kind": "COMPONENT", "status": "VERIFIED", "build_status": "VERIFIED", "files": ["lattice/whiteboard/read_engine.py", "lattice/whiteboard/ingest.py"], "rules": []}
+        wb_focus["scopes"]["whiteboard"] = {"id": "whiteboard", "kind": "COMPONENT", "status": "VERIFIED", "build_status": "VERIFIED", "files": ["bowthruster/whiteboard/read_engine.py", "bowthruster/whiteboard/ingest.py"], "rules": []}
         wb_focus["lattice_artifacts"].extend([
-            {"id": "iface_slice_lattice", "kind": "INTERFACE", "name": "slice_lattice", "scope": "whiteboard", "file": "lattice/whiteboard/read_engine.py", "calls": ["_scan_ast_symbols_on_disk#L356-L397"]},
-            {"id": "iface_compile_skel", "kind": "INTERFACE", "name": "compile_python_skeleton", "scope": "whiteboard", "file": "lattice/whiteboard/ingest.py", "calls": ["_py_ident#L193-L201"]},
-            {"id": "iface_ingest_pkt", "kind": "INTERFACE", "name": "ingest_intake_packet", "scope": "whiteboard", "file": "lattice/whiteboard/ingest.py", "calls": []},
+            {"id": "iface_slice_lattice", "kind": "INTERFACE", "name": "slice_lattice", "scope": "whiteboard", "file": "bowthruster/whiteboard/read_engine.py", "calls": ["_scan_ast_symbols_on_disk#L356-L397"]},
+            {"id": "iface_compile_skel", "kind": "INTERFACE", "name": "compile_python_skeleton", "scope": "whiteboard", "file": "bowthruster/whiteboard/ingest.py", "calls": ["_py_ident#L193-L201"]},
+            {"id": "iface_ingest_pkt", "kind": "INTERFACE", "name": "ingest_intake_packet", "scope": "whiteboard", "file": "bowthruster/whiteboard/ingest.py", "calls": []},
         ])
         sl_code = WB.slice_lattice(wb_focus, component="whiteboard", query="_scan_ast_symbols_on_disk", include_code=True)
         sl_rng = WB.slice_lattice(wb_focus, component="whiteboard", query="slice_lattice 400-490", include_code=True)
@@ -349,15 +349,15 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
         ts_syms, ts_calls = CLI._extract_py_ast_symbols(ts_path), CLI._extract_ast_local_calls(ts_path)
         seam_wb["scopes"]["polyglot_ts"] = {"id": "polyglot_ts", "status": "VERIFIED", "build_status": "VERIFIED", "files": [str(ts_path)], "rules": []}
         sl_ts = WB.slice_lattice(seam_wb, query="_normalizeToken", include_code=True)
-        import lattice.mcp_server as MCP_SRV
-        from lattice.mcp_server import _resolve_project_root, call_lattice_tool
-        r_stale = call_lattice_tool("lattice_slice", {"board": "mcp_server_28", "component": "mcp_server", "mark_stale": True})["structuredContent"]
-        r_ver = call_lattice_tool("lattice_git_sync", {"board": "mcp_server_28", "mode": "pre", "mark_verified": True})["structuredContent"]
-        r_readme = call_lattice_tool("lattice_readme", {"section": "readme"})
-        r_full = call_lattice_tool("lattice_readme", {"section": "full_readme"})
-        wb_slice_txt = call_lattice_tool("lattice_slice", {"board": "lattice_core", "component": "whiteboard"})["content"][0]["text"]
+        import bowthruster.mcp_server as MCP_SRV
+        from bowthruster.mcp_server import _resolve_project_root, call_lattice_tool
+        r_stale = call_lattice_tool("slice", {"board": "mcp_server_28", "component": "mcp_server", "mark_stale": True})["structuredContent"]
+        r_ver = call_lattice_tool("git_sync", {"board": "mcp_server_28", "mode": "pre", "mark_verified": True})["structuredContent"]
+        r_readme = call_lattice_tool("readme", {"section": "readme"})
+        r_full = call_lattice_tool("readme", {"section": "full_readme"})
+        wb_slice_txt = call_lattice_tool("slice", {"board": "lattice_core", "component": "whiteboard"})["content"][0]["text"]
         sib_root = Path(tmp) / "ws_parent"
-        fake_lat_home = sib_root / "workspace" / "lattice"
+        fake_lat_home = sib_root / "workspace" / "bowthruster"
         sib_repo = sib_root / "sib_project"
         (sib_repo / ".whiteboard").mkdir(parents=True, exist_ok=True)
         (sib_repo / "src").mkdir(parents=True, exist_ok=True)
@@ -370,10 +370,10 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             disc_board = _resolve_project_root("sib_board")
             disc_msg = _resolve_project_root("new_board", message="Inspect src/widget.py in sibling repo")
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-                par_turns = list(pool.map(lambda i: call_lattice_tool("lattice_turn", {"board": "sib_board", "project_root": str(sib_repo), "message": f"| Charter | Summary | Principles |\n| :--- | :--- | :--- |\n| sib_board | Widget engine | Deterministic execution |\n\n| Component | Role | Why | Owner | Stage | Status | Depends On | Files |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| par_comp_{i} | Parallel worker {i} | Isolates worker {i} | groves | 28 | READY | | src/widget.py |\n\n| Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| run_widget | par_comp_{i} | | bool | groves | 28 | src/widget.py | Spec 28 |\n\n| Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| widget_ready_law_{i} | par_comp_{i} | groves | 28 | laws | a: Bool, b: Bool | MOD.is_widget_ready_{i}(a, b) | Bool.and(a, b) | Spec 28 |\n"}), range(4)))
-            r_sib = call_lattice_tool("lattice_slice", {"board": "sib_board", "project_root": str(sib_repo)})
-            r_sib_ver = call_lattice_tool("lattice_git_sync", {"board": "sib_board", "project_root": str(sib_repo), "mode": "pre", "mark_verified": True})["structuredContent"]
-            r_spec = call_lattice_tool("lattice_atlas", {"board": "sib_board", "project_root": str(sib_repo), "spec": True})["structuredContent"]
+                par_turns = list(pool.map(lambda i: call_lattice_tool("turn", {"board": "sib_board", "project_root": str(sib_repo), "message": f"| Charter | Summary | Principles |\n| :--- | :--- | :--- |\n| sib_board | Widget engine | Deterministic execution |\n\n| Component | Role | Why | Owner | Stage | Status | Depends On | Files |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| par_comp_{i} | Parallel worker {i} | Isolates worker {i} | groves | 28 | READY | | src/widget.py |\n\n| Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| run_widget | par_comp_{i} | | bool | groves | 28 | src/widget.py | Spec 28 |\n\n| Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| widget_ready_law_{i} | par_comp_{i} | groves | 28 | laws | a: Bool, b: Bool | MOD.is_widget_ready_{i}(a, b) | Bool.and(a, b) | Spec 28 |\n"}), range(4)))
+            r_sib = call_lattice_tool("slice", {"board": "sib_board", "project_root": str(sib_repo)})
+            r_sib_ver = call_lattice_tool("git_sync", {"board": "sib_board", "project_root": str(sib_repo), "mode": "pre", "mark_verified": True})["structuredContent"]
+            r_spec = call_lattice_tool("atlas", {"board": "sib_board", "project_root": str(sib_repo), "spec": True})["structuredContent"]
             par_scopes = set((json.loads((sib_repo / ".whiteboard" / "sib_board.json").read_text(encoding="utf-8")).get("scopes") or {}).keys())
         finally:
             MCP_SRV.LATTICE_HOME = orig_lh
@@ -391,11 +391,11 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
         seam_check_ok = (
             all("#L" in str(a.get("file", "")) for a in seam_wb["lattice_artifacts"])
             and all("#L" in str(lk.get("target_uri", "")) for lk in seam_wb["external_links"]["ai_memory"])
-            and "file=lattice/ai_memory/uri_resolver.py#L" in sl["compact_view"]
-            and "file=lattice/ai_memory/schema.py#L" in sl["compact_view"]
+            and "file=bowthruster/ai_memory/uri_resolver.py#L" in sl["compact_view"]
+            and "file=bowthruster/ai_memory/schema.py#L" in sl["compact_view"]
             and "calls=[" in sl["compact_view"]
             and "@ AST_SYMBOL [_scan_ast_symbols_on_disk]" in sl_code["compact_view"]
-            and "[CODE lattice/whiteboard/read_engine.py#L" in sl_code["compact_view"]
+            and "[CODE bowthruster/whiteboard/read_engine.py#L" in sl_code["compact_view"]
             and "# ... [LANDMARKS" not in sl_code["compact_view"]
             and "[WINDOW #L400-L490]" in sl_rng["compact_view"] and callable(getattr(MCP_SRV, "slice_lattice", None))
             and [a.get("name") for a in sl_code["active_artifacts"]] == ["slice_lattice"]
@@ -403,7 +403,7 @@ def verify_git_lattice_roundtrip(repo_fixture: dict[str, Any] | None = None) -> 
             and ts_calls.get("parseHeader") == ["_normalizeToken#L1-L3"]
             and "@ AST_SYMBOL [_normalizeToken]" in sl_ts["compact_view"] and f"[CODE {ts_path}#L1-L3]" in sl_ts["compact_view"]
             and r_stale.get("marked_stale_scopes") == ["mcp_server"] and "mcp_server" in (r_ver.get("marked_verified_scopes") or [])
-            and "# Lattice Agent Quickstart & Brownfield Onboarding" in readme_inline_txt
+            and "# BowThruster Agent Quickstart & Brownfield Onboarding" in readme_inline_txt
             and full_readme_txt == r_readme["structuredContent"]["readme"] and len(full_readme_txt) > len(readme_inline_txt)
             and all(sym in wb_slice_txt for sym in ("fuse_table_attributes", "WhiteboardGraph", "ingest_intake_packet", "slice_lattice", "compile_laws_bend", "transition_component_build_status", "_slugify_scope_id#L"))
             and disc_board == sib_repo.resolve() and disc_msg == sib_repo.resolve() and not r_sib["isError"] and restored_cli_root

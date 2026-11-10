@@ -38,7 +38,7 @@
         "artifact_kind": "doc",
         "link_id": "link_mcp_protocol_verifier_a7ae0b9d4736",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/mcp_verifier.py#L29-L76"
+        "target_uri": "uri://file/bowthruster/mcp_verifier.py#L29-L76"
       }
     ],
     "mcp_server": [
@@ -46,49 +46,49 @@
         "artifact_kind": "doc",
         "link_id": "link_mcp_server_b0d57ad68065",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/mcp_server.py#L256-L420"
+        "target_uri": "uri://file/bowthruster/mcp_server.py#L256-L420"
       },
       {
         "artifact_kind": "doc",
         "link_id": "link_mcp_server_a289f44716fb",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/mcp_server.py#L423-L468"
+        "target_uri": "uri://file/bowthruster/mcp_server.py#L423-L468"
       },
       {
         "artifact_kind": "doc",
         "link_id": "link_mcp_server_130f1e24099f",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/mcp_server.py#L54-L58"
+        "target_uri": "uri://file/bowthruster/mcp_server.py#L54-L58"
       },
       {
         "artifact_kind": "doc",
         "link_id": "link_mcp_server_fe0a7ed511a6",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/mcp_server.py#L257-L423"
+        "target_uri": "uri://file/bowthruster/mcp_server.py#L257-L423"
       },
       {
         "artifact_kind": "doc",
         "link_id": "link_mcp_server_bf2de690d35e",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/mcp_server.py#L426-L471"
+        "target_uri": "uri://file/bowthruster/mcp_server.py#L426-L471"
       },
       {
         "artifact_kind": "doc",
         "link_id": "link_mcp_server_c12139b074c2",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/mcp_server.py#L259-L425"
+        "target_uri": "uri://file/bowthruster/mcp_server.py#L259-L425"
       },
       {
         "artifact_kind": "doc",
         "link_id": "link_mcp_server_b453b91213ce",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/mcp_server.py#L428-L473"
+        "target_uri": "uri://file/bowthruster/mcp_server.py#L428-L473"
       },
       {
         "artifact_kind": "doc",
         "link_id": "link_mcp_server_ce720182a731",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/lattice/mcp_server.py#L258-L424"
+        "target_uri": "uri://file/bowthruster/mcp_server.py#L258-L424"
       }
     ]
   },
@@ -110,25 +110,25 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
+  "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
   "lattice_artifacts": [
     {
       "calls": [
-        "_format_tool_result#L247-L251",
-        "_hot_reload_if_changed#L429-L454",
-        "_read_doc_resource#L215-L227",
-        "_resolve_project_root#L230-L244"
+        "_format_tool_result#L248-L252",
+        "_hot_reload_if_changed#L431-L456",
+        "_read_doc_resource#L215-L228",
+        "_resolve_project_root#L231-L245"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "lattice/mcp_server.py#L254-L425",
+        "file": "bowthruster/mcp_server.py#L255-L427",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "lattice/mcp_server.py#L254-L425",
+      "file": "bowthruster/mcp_server.py#L255-L427",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -146,23 +146,23 @@
       "stage": "28",
       "text": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
       "turn": 8,
-      "updated_turn": 10
+      "updated_turn": 15
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L429-L454",
-        "_read_doc_resource#L215-L227"
+        "_hot_reload_if_changed#L431-L456",
+        "_read_doc_resource#L215-L228"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "lattice/mcp_server.py#L457-L479",
+        "file": "bowthruster/mcp_server.py#L459-L481",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "lattice/mcp_server.py#L457-L479",
+      "file": "bowthruster/mcp_server.py#L459-L481",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -179,19 +179,19 @@
       "stage": "28",
       "text": "Handle JSON-RPC 2.0 MCP requests with self-describing tool schemas",
       "turn": 5,
-      "updated_turn": 10
+      "updated_turn": 15
     },
     {
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Runs end-to-end MCP initialize, tool list, and tool call roundtrip checks",
-        "file": "lattice/mcp_verifier.py#L29-L76",
+        "file": "bowthruster/mcp_verifier.py#L29-L76",
         "inputs": "board",
         "interface": "verify_mcp_server_roundtrip",
         "outputs": "McpRoundtripVerdict"
       },
-      "file": "lattice/mcp_verifier.py#L29-L76",
+      "file": "bowthruster/mcp_verifier.py#L29-L76",
       "id": "interface_mcp_protocol_verifier_verify_mcp_server_roundtrip",
       "inputs": [
         "board"
@@ -208,7 +208,7 @@
       "stage": null,
       "text": "verify_mcp_server_roundtrip (mcp_protocol_verifier).",
       "turn": 1,
-      "updated_turn": 10
+      "updated_turn": 15
     },
     {
       "args": "has_name, board_nonempty",
@@ -269,10 +269,10 @@
       "dimensions": {
         "description": "JSON-RPC 2.0 MCP request envelope",
         "fields": "jsonrpc, id, method, params",
-        "file": "lattice/mcp_server.py#L39-L43",
+        "file": "bowthruster/mcp_server.py#L39-L43",
         "schema": "McpJsonRpcRequest"
       },
-      "file": "lattice/mcp_server.py#L39-L43",
+      "file": "bowthruster/mcp_server.py#L39-L43",
       "id": "schema_mcp_server_mcpjsonrpcrequest",
       "inputs": [],
       "kind": "SCHEMA",
@@ -283,9 +283,9 @@
       "scope_id": "mcp_server",
       "spec": "McpJsonRpcRequest (mcp_server)",
       "stage": null,
-      "text": "The McpJsonRpcRequest schema scoped to mcp_server has fields jsonrpc, id, method, and params in lattice/mcp_server.py and represents a JSON-RPC 2.0 MCP request envelope.",
+      "text": "The McpJsonRpcRequest schema scoped to mcp_server has fields jsonrpc, id, method, and params in bowthruster/mcp_server.py and represents a JSON-RPC 2.0 MCP request envelope.",
       "turn": 1,
-      "updated_turn": 10
+      "updated_turn": 15
     },
     {
       "args": "is_verified: Bool, files_exist: Bool, within_max_lines: Bool",
@@ -474,15 +474,15 @@
           "mcp_server"
         ],
         "_table_files": [
-          "lattice/mcp_verifier.py"
+          "bowthruster/mcp_verifier.py"
         ],
         "_table_role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
         "depends_on": "mcp_server",
         "file_hashes": {
-          "lattice/mcp_verifier.py": "dd930b6575fca206"
+          "bowthruster/mcp_verifier.py": "f26a549bab41d90f"
         },
         "files": [
-          "lattice/mcp_verifier.py"
+          "bowthruster/mcp_verifier.py"
         ],
         "owner": "groves",
         "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
@@ -490,7 +490,7 @@
         "updated_turn": 10,
         "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
       },
-      "build_status": "VERIFIED",
+      "build_status": "STALE",
       "build_tag": null,
       "children": [],
       "core_tag": null,
@@ -500,10 +500,10 @@
       ],
       "failure_diagnostic": null,
       "file_hashes": {
-        "lattice/mcp_verifier.py": "dd930b6575fca206"
+        "bowthruster/mcp_verifier.py": "f26a549bab41d90f"
       },
       "files": [
-        "lattice/mcp_verifier.py"
+        "bowthruster/mcp_verifier.py"
       ],
       "id": "mcp_protocol_verifier",
       "in_edges": [
@@ -511,15 +511,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
+      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
       "outputs": [],
       "owner": "groves",
       "parent": null,
       "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
       "rules": [],
       "stage": "28",
-      "status": "VERIFIED",
-      "updated_turn": 1,
+      "status": "STALE",
+      "updated_turn": 15,
       "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
     },
     "mcp_server": {
@@ -528,18 +528,18 @@
       "attributes": {
         "_table_depends_on": [],
         "_table_files": [
-          "lattice/mcp_server.py"
+          "bowthruster/mcp_server.py"
         ],
         "_table_role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
         "depends_on": "",
         "description": "MCP tool call result payload",
         "fields": "content, isError, structuredContent",
-        "file": "lattice/mcp_server.py",
+        "file": "bowthruster/mcp_server.py",
         "file_hashes": {
-          "lattice/mcp_server.py": "bf72c6bd877788f8"
+          "bowthruster/mcp_server.py": "172b57a96103286f"
         },
         "files": [
-          "lattice/mcp_server.py"
+          "bowthruster/mcp_server.py"
         ],
         "lod1_synopsis": "The mcp_server component must route skills sections according to Spec 28.",
         "owner": "groves",
@@ -557,10 +557,10 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "lattice/mcp_server.py": "bf72c6bd877788f8"
+        "bowthruster/mcp_server.py": "172b57a96103286f"
       },
       "files": [
-        "lattice/mcp_server.py"
+        "bowthruster/mcp_server.py"
       ],
       "id": "mcp_server",
       "in_edges": [
@@ -568,7 +568,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "8ebe9d41a613a4e411992ac732123c3d88804149",
+      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
       "outputs": [],
       "owner": "groves",
       "parent": null,

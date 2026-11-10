@@ -19,8 +19,8 @@ if str(_WORKSPACE_MC) not in sys.path:
     sys.path.insert(0, str(_WORKSPACE_MC))
 
 import tests.core.circuit  # noqa: E402,F401
-from lattice.graph_core import SQLiteGraphStore  # noqa: E402
-from lattice import ai_memory as AM  # noqa: E402
+from bowthruster.graph_core import SQLiteGraphStore  # noqa: E402
+from bowthruster import ai_memory as AM  # noqa: E402
 
 
 def _resolve_roots() -> list[Path]:
@@ -31,7 +31,7 @@ def _resolve_roots() -> list[Path]:
 
 
 def _find_path(*rel_candidates: str) -> Path:
-    for rel in rel_candidates:
+    for rel in [*(r.replace("lattice/", "bowthruster/") for r in rel_candidates), *rel_candidates]:
         for root in _resolve_roots():
             candidate = root / rel
             if candidate.exists():
@@ -41,7 +41,7 @@ def _find_path(*rel_candidates: str) -> Path:
 
 def _load_the_table_modules():
     search_dirs: list[str] = []
-    for rel in ("eng2/the_table", "eng1/the_table", "lattice/the_table"):
+    for rel in ("eng2/the_table", "eng1/the_table", "bowthruster/the_table", "lattice/the_table"):
         for root in _resolve_roots():
             d = root / rel
             if d.is_dir() and str(d) not in search_dirs:
