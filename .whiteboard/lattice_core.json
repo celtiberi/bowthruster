@@ -229,6 +229,24 @@
         "link_id": "link_regiment_b717a5746a17",
         "lod_tier": "LOD2",
         "target_uri": "uri://file/bowthruster/regiment/intake_packet.py#L165-L207"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_regiment_9fc7975250d6",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/bowthruster/regiment/intake_packet.py#L135-L147"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_regiment_5270a4856558",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/bowthruster/regiment/intake_packet.py#L253-L295"
+      },
+      {
+        "artifact_kind": "doc",
+        "link_id": "link_regiment_263b898ce8f3",
+        "lod_tier": "LOD2",
+        "target_uri": "uri://file/bowthruster/regiment/markdown_tables.py#L245-L284"
       }
     ],
     "runtime_foundation": [
@@ -543,7 +561,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+  "last_commit_sha": "520e77e405ee9dc4d3636faa19a214cb69bf1acc",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -685,9 +703,9 @@
       "created_turn": 2,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/regiment/intake_packet.py#L47-L59"
+        "file": "bowthruster/regiment/intake_packet.py#L135-L147"
       },
-      "file": "bowthruster/regiment/intake_packet.py#L47-L59",
+      "file": "bowthruster/regiment/intake_packet.py#L135-L147",
       "id": "schema_regiment_intakepacket",
       "inputs": [
         "turn_index",
@@ -910,7 +928,7 @@
       "dimensions": {
         "_from_table": true,
         "component": "regiment",
-        "file": "bowthruster/regiment/intake_packet.py#L165-L207",
+        "file": "bowthruster/regiment/intake_packet.py#L253-L295",
         "inputs": "phase3_result",
         "interface": "compile_intake_packet",
         "outputs": "IntakePacket",
@@ -918,7 +936,7 @@
         "spec": "Compiles Phase 3 output into IntakePacket for the_executive and whiteboard",
         "stage": "18"
       },
-      "file": "bowthruster/regiment/intake_packet.py#L165-L207",
+      "file": "bowthruster/regiment/intake_packet.py#L253-L295",
       "id": "interface_regiment_compile_intake_packet",
       "inputs": [
         "phase3_result",
@@ -1515,20 +1533,20 @@
     },
     {
       "calls": [
-        "_extract_canonical_and_aliases#L65-L82",
-        "_get_table_cell#L200-L208",
-        "_parse_list_cell#L94-L107",
-        "_parse_scalar_cell#L84-L92",
-        "_register_scope_aliases#L113-L120",
-        "_resolve_or_register_scope#L123-L142",
-        "_slugify_scope_id#L57-L63"
+        "_extract_canonical_and_aliases#L66-L83",
+        "_get_table_cell#L201-L209",
+        "_parse_list_cell#L95-L108",
+        "_parse_scalar_cell#L85-L93",
+        "_register_scope_aliases#L114-L121",
+        "_resolve_or_register_scope#L124-L143",
+        "_slugify_scope_id#L58-L64"
       ],
       "created_turn": 16,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/rewriter.py#L211-L401"
+        "file": "bowthruster/whiteboard/rewriter.py#L212-L402"
       },
-      "file": "bowthruster/whiteboard/rewriter.py#L211-L401",
+      "file": "bowthruster/whiteboard/rewriter.py#L212-L402",
       "id": "interface_whiteboard_fuse_table_attributes",
       "inputs": [
         "graph",
@@ -2041,7 +2059,7 @@
     },
     {
       "calls": [
-        "_classify_table_kind#L184-L201",
+        "_classify_table_kind#L225-L242",
         "_clean_cell_val#L95-L99",
         "_norm_col_key#L89-L92",
         "_split_list_cell#L102-L113"
@@ -2049,9 +2067,9 @@
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/regiment/markdown_tables.py#L204-L243"
+        "file": "bowthruster/regiment/markdown_tables.py#L245-L284"
       },
-      "file": "bowthruster/regiment/markdown_tables.py#L204-L243",
+      "file": "bowthruster/regiment/markdown_tables.py#L245-L284",
       "id": "interface_regiment_extract_structured_table_rows",
       "inputs": [
         "doc_tables"
@@ -2312,7 +2330,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+      "last_commit_sha": "520e77e405ee9dc4d3636faa19a214cb69bf1acc",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2512,7 +2530,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+      "last_commit_sha": "520e77e405ee9dc4d3636faa19a214cb69bf1acc",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2540,8 +2558,8 @@
         "depends_on": "runtime_foundation",
         "file_hashes": {
           "bowthruster/regiment/__init__.py": "ce28bc3c6a652ec6",
-          "bowthruster/regiment/intake_packet.py": "22abda8736dcfa39",
-          "bowthruster/regiment/markdown_tables.py": "6b2bfa5ad7a9e239"
+          "bowthruster/regiment/intake_packet.py": "71802b9116545544",
+          "bowthruster/regiment/markdown_tables.py": "3f86c178e3427109"
         },
         "files": [
           "bowthruster/regiment/__init__.py",
@@ -2565,8 +2583,8 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/regiment/__init__.py": "ce28bc3c6a652ec6",
-        "bowthruster/regiment/intake_packet.py": "22abda8736dcfa39",
-        "bowthruster/regiment/markdown_tables.py": "6b2bfa5ad7a9e239"
+        "bowthruster/regiment/intake_packet.py": "71802b9116545544",
+        "bowthruster/regiment/markdown_tables.py": "3f86c178e3427109"
       },
       "files": [
         "bowthruster/regiment/__init__.py",
@@ -2580,7 +2598,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+      "last_commit_sha": "520e77e405ee9dc4d3636faa19a214cb69bf1acc",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2658,7 +2676,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+      "last_commit_sha": "520e77e405ee9dc4d3636faa19a214cb69bf1acc",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2742,7 +2760,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+      "last_commit_sha": "520e77e405ee9dc4d3636faa19a214cb69bf1acc",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2825,7 +2843,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+      "last_commit_sha": "520e77e405ee9dc4d3636faa19a214cb69bf1acc",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
@@ -2859,12 +2877,12 @@
         "depends_on": "graph_core, regiment",
         "file_hashes": {
           "bowthruster/whiteboard/__init__.py": "f865c74c77afe81d",
-          "bowthruster/whiteboard/frustration.py": "d2af217e05102182",
+          "bowthruster/whiteboard/frustration.py": "0e61fe15239a0633",
           "bowthruster/whiteboard/ingest.py": "75ecddcf2d6138c2",
           "bowthruster/whiteboard/linker.py": "39eeea71eba6e525",
           "bowthruster/whiteboard/mutations.py": "4cf43d9060a27345",
           "bowthruster/whiteboard/read_engine.py": "ae038e314b6d13ce",
-          "bowthruster/whiteboard/rewriter.py": "857ad56d43319758",
+          "bowthruster/whiteboard/rewriter.py": "04e20ec934fbb86b",
           "bowthruster/whiteboard/schema.py": "937223b5316f9410"
         },
         "files": [
@@ -2895,12 +2913,12 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/whiteboard/__init__.py": "f865c74c77afe81d",
-        "bowthruster/whiteboard/frustration.py": "d2af217e05102182",
+        "bowthruster/whiteboard/frustration.py": "0e61fe15239a0633",
         "bowthruster/whiteboard/ingest.py": "75ecddcf2d6138c2",
         "bowthruster/whiteboard/linker.py": "39eeea71eba6e525",
         "bowthruster/whiteboard/mutations.py": "4cf43d9060a27345",
         "bowthruster/whiteboard/read_engine.py": "ae038e314b6d13ce",
-        "bowthruster/whiteboard/rewriter.py": "857ad56d43319758",
+        "bowthruster/whiteboard/rewriter.py": "04e20ec934fbb86b",
         "bowthruster/whiteboard/schema.py": "937223b5316f9410"
       },
       "files": [
@@ -2921,7 +2939,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "d1d2347ccb515dd5777101453358775ba9be51c6",
+      "last_commit_sha": "520e77e405ee9dc4d3636faa19a214cb69bf1acc",
       "outputs": [],
       "owner": "eng2",
       "parent": null,

@@ -8,6 +8,7 @@ zero LLM calls and zero `spacy`/`torch`/`onnxruntime` dependencies (`< 5ms` per 
 from __future__ import annotations
 
 import copy
+import math
 from typing import Any
 
 from .markdown_tables import (
@@ -16,6 +17,7 @@ from .markdown_tables import (
     TableParserState,
     TableScanMode,
     _clean_cell_val,
+    _decompose_rule_expr,
     _is_separator_row,
     _norm_col_key,
     _parse_scalar_val,
@@ -26,6 +28,92 @@ from .markdown_tables import (
     extract_markdown_tables,
     extract_structured_table_rows,
 )
+
+
+def _num_bounds(op: str | None, val: float) -> tuple[float, bool, float, bool, set[float]]:
+    """Maps `(op, val)` to `(low, low_closed, high, high_closed, neq_set)`."""
+    if op == "<=": return (-math.inf, True, val, True, set())
+    if op == "<": return (-math.inf, True, val, False, set())
+    if op == ">=": return (val, True, math.inf, True, set())
+    if op == ">": return (val, False, math.inf, True, set())
+    if op == "==": return (val, True, val, True, set())
+    if op == "!=": return (-math.inf, True, math.inf, True, {val})
+    return (-math.inf, True, math.inf, True, set())
+
+
+def _interval_subsumes(op_a: str | None, va: float, op_b: str | None, vb: float) -> bool:
+    """Returns `True` iff numeric interval `(op_b, vb)` is a subset of `(op_a, va)`."""
+    la, lac, ua, uac, neq_a = _num_bounds(op_a, va)
+    lb, lbc, ub, ubc, neq_b = _num_bounds(op_b, vb)
+    low_ok = (lb > la) or (lb == la and (lac or not lbc))
+    high_ok = (ub < ua) or (ub == ua and (uac or not ubc))
+    if not (low_ok and high_ok):
+        return False
+    for ex in neq_a:
+        in_b = ((ex > lb) or (ex == lb and lbc)) and ((ex < ub) or (ex == ub and ubc)) and (ex not in neq_b)
+        if in_b:
+            return False
+    return True
+
+
+def _parse_cond_atoms(conds: Any) -> tuple[dict[str, list[tuple[str, Any]]], set[str]]:
+    """Parses condition strings into `(var -> [(op, val)], unparsed_raw_atoms)` without `re`."""
+    atoms: dict[str, list[tuple[str, Any]]] = {}
+    raw: set[str] = set()
+    for c in (conds or []):
+        s = str(c).strip()
+        if not s or s.lower() in ("none", "-", "—", "n/a", "null", "unconditional", "always"):
+            continue
+        parts = [s]
+        for sep in (" and ", " AND ", "&&", ";"):
+            parts = [sub for p in parts for sub in p.split(sep)]
+        for p in parts:
+            cl = p.strip().strip("()").strip()
+            for pfx in ("when ", "if "):
+                if cl.lower().startswith(pfx):
+                    cl = cl[len(pfx):].strip()
+            if not cl:
+                continue
+            norm = cl.replace(" is not ", " != ").replace(" is ", " == ")
+            matched = False
+            for op in ("<=", ">=", "!=", "==", "<", ">", "="):
+                if op in norm:
+                    lhs, _, rhs = norm.partition(op)
+                    var = "_".join(lhs.strip().strip("\"`'").lower().split())
+                    val = _parse_scalar_val(rhs.strip())
+                    if var and val is not None:
+                        atoms.setdefault(var, []).append(("==" if op == "=" else op, val))
+                        matched = True
+                    break
+            if not matched:
+                raw.add(cl.lower())
+    return atoms, raw
+
+
+def _conditions_satisfiable(conds_a: Any, conds_b: Any) -> bool:
+    """Returns `True` iff condition sets `conds_a` and `conds_b` can be simultaneously satisfied."""
+    atoms_a, raw_a = _parse_cond_atoms(conds_a)
+    atoms_b, raw_b = _parse_cond_atoms(conds_b)
+    if not atoms_a and not atoms_b:
+        return bool(raw_a & raw_b) if (raw_a and raw_b) else True
+    for var in set(atoms_a) & set(atoms_b):
+        constraints = atoms_a[var] + atoms_b[var]
+        for i, (op1, v1) in enumerate(constraints):
+            n1 = isinstance(v1, (int, float)) and not isinstance(v1, bool)
+            for op2, v2 in constraints[i + 1:]:
+                n2 = isinstance(v2, (int, float)) and not isinstance(v2, bool)
+                if n1 and n2:
+                    l1, l1c, u1, u1c, neq1 = _num_bounds(op1, float(v1))
+                    l2, l2c, u2, u2c, neq2 = _num_bounds(op2, float(v2))
+                    low, lc = (l1, l1c) if l1 > l2 else ((l2, l2c) if l2 > l1 else (l1, l1c and l2c))
+                    high, hc = (u1, u1c) if u1 < u2 else ((u2, u2c) if u2 < u1 else (u1, u1c and u2c))
+                    if low > high or (low == high and (not (lc and hc) or low in (neq1 | neq2))):
+                        return False
+                else:
+                    s1, s2 = str(v1).strip().lower(), str(v2).strip().lower()
+                    if (op1 == "==" and op2 == "==" and s1 != s2) or ({op1, op2} == {"==", "!="} and s1 == s2):
+                        return False
+    return True
 
 
 class Phase3InvariantError(ValueError):
@@ -215,8 +303,12 @@ __all__ = [
     "TableParserState",
     "TableScanMode",
     "_clean_cell_val",
+    "_conditions_satisfiable",
+    "_decompose_rule_expr",
+    "_interval_subsumes",
     "_is_separator_row",
     "_norm_col_key",
+    "_parse_cond_atoms",
     "_parse_scalar_val",
     "_split_list_cell",
     "_split_pipe_row",

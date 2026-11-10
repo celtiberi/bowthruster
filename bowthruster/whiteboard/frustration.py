@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from bowthruster.regiment.intake_packet import _conditions_satisfiable, _interval_subsumes
+
 MAX_ANCESTOR_HOPS = 16
 
 
@@ -67,16 +69,16 @@ def _rules_clash(ra: dict[str, Any], rb: dict[str, Any]) -> bool:
 
     a_is_num = isinstance(va, (int, float)) and not isinstance(va, bool)
     b_is_num = isinstance(vb, (int, float)) and not isinstance(vb, bool)
-    if (
-        a_is_num
-        and b_is_num
-        and op_a in ("<=", "<", ">=", ">", "==", "!=")
-        and op_b in ("<=", "<", ">=", ">", "==", "!=")
-    ):
+    if a_is_num and b_is_num and op_a in ("<=", "<", ">=", ">", "==", "!=") and op_b in ("<=", "<", ">=", ">", "==", "!="):
         if not _intervals_satisfiable(op_a, float(va), op_b, float(vb)):
             return True
+        conds_a, conds_b = set(ra.get("conditions") or []), set(rb.get("conditions") or [])
         if ta == "BOUND" and tb == "BOUND" and op_a == op_b and op_a != "!=" and float(va) != float(vb):
-            return True
+            if not conds_a and conds_b:
+                return not _interval_subsumes(op_a, float(va), op_b, float(vb))
+            if conds_a and not conds_b:
+                return not _interval_subsumes(op_b, float(vb), op_a, float(va))
+            return conds_a == conds_b
         if op_a in ("<=", "<", ">=", ">") or op_b in ("<=", "<", ">=", ">"):
             return False
 
@@ -304,18 +306,12 @@ def detect_frustration(
                 continue
 
             conds_b = set(rb.get("conditions", []))
-            if conds_a and conds_b and not (conds_a & conds_b):
+            if conds_a and conds_b and not _conditions_satisfiable(conds_a, conds_b):
                 continue
 
             ov_b = set(rb.get("overrides", []))
             ex_b = {ex.get("rule_id") for ex in rb.get("exceptions", []) if isinstance(ex, dict)}
-            is_shielded = (
-                (rid_b in ov_a)
-                or (rid_a in ov_b)
-                or (rid_b in ex_a)
-                or (rid_a in ex_b)
-                or (is_ancestor_pair and (bool(ra.get("is_exception")) or bool(rb.get("is_exception"))))
-            )
+            is_shielded = (rid_b in ov_a) or (rid_a in ov_b) or (rid_b in ex_a) or (rid_a in ex_b) or (is_ancestor_pair and (bool(ra.get("is_exception")) or bool(rb.get("is_exception"))))
 
             if _inherited_rules_clash(ra, rb, is_shielded):
                 pair_ids = sorted([rid_a, rid_b])
@@ -463,7 +459,7 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
             open_gaps.append({"kind": "MISSING_OWNER", "scope": sid, "description": f"Component '{sid}' has no assigned division owner."})
 
         has_law = any(a.get("kind") in ("LAW", "INTERFACE", "SCHEMA") and str(a.get("scope") or a.get("scope_id") or "").strip() in family_sids for a in artifacts) or any(
-            bool(scopes.get(s, {}).get("laws") or scopes.get(s, {}).get("files")) for s in family_sids if isinstance(scopes.get(s), dict)
+            bool(scopes.get(s, {}).get("laws") or scopes.get(s, {}).get("files") or scopes.get(s, {}).get("rules")) for s in family_sids if isinstance(scopes.get(s), dict)
         )
         if not has_law:
             open_gaps.append({"kind": "MISSING_LAW", "scope": sid, "description": f"Component '{sid}' has no Bend 2 formal law (% LAW)."})
@@ -479,7 +475,7 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
             open_gaps.append({"kind": "MISSING_CONTRACT", "scope": sid, "description": f"Component '{sid}' has no schema, interface, or typed flow payload."})
 
         if not is_qa:
-            flow_sids = {sid, *child_sids}
+            flow_sids = family_sids
             if not any(str(f.get("source") or "").strip() in flow_sids or str(f.get("target") or "").strip() in flow_sids for f in flows):
                 open_gaps.append({"kind": "UNWIRED_COMPONENT", "scope": sid, "description": f"Component '{sid}' is not connected to any > FLOW edge."})
 

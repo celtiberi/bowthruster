@@ -9,6 +9,7 @@ from typing import Any
 
 from bowthruster.graph_core import SQLiteGraphStore
 from bowthruster.nlp import restore_ascii_dots
+from bowthruster.regiment.markdown_tables import _decompose_rule_expr
 from bowthruster.whiteboard.mutations import ensure_scope_node, prune_dysfluency_and_upsert_rule, upsert_component_spec, upsert_flow_edge, upsert_lattice_artifact
 from bowthruster.whiteboard.schema import ContextGraph, DEFAULT_K_CAP, DEFAULT_MAX_RING, WhiteboardGraph, create_empty_graph, should_register_as_scope, sync_to_sqlite
 
@@ -261,7 +262,7 @@ def fuse_table_attributes(
                 for sid in (src, tgt):
                     if sid not in fused_scopes: fused_scopes.append(sid)
                 raw_fnm = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("flow", "id", "name"))).strip().strip("\"`'*").strip()
-                raw_pay = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("payload", "data", "artifact", "message", "flow"))).strip().strip("\"`'*").strip()
+                raw_pay = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("payload", "contract", "schema", "data", "artifact", "message"))).strip().strip("\"`'*").strip()
                 pay = None if raw_pay.lower() in ("", "none", "-", "—", "n/a", "null") else raw_pay
                 raw_cond = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("condition", "when", "guard"))).strip().strip("\"`'*").strip()
                 cond = None if raw_cond.lower() in ("", "none", "-", "—", "n/a", "null") else raw_cond
@@ -282,8 +283,13 @@ def fuse_table_attributes(
                 b_op = raw_op if raw_op and raw_op.lower() not in ("none", "-", "—", "n/a", "null") else ("==" if t_prop else None)
                 raw_val = _get_table_cell(row, headers, norm_headers, ("value", "bound_val", "limit", "target"))
                 b_val = None if restore_ascii_dots(raw_val).strip().lower() in ("", "none", "-", "—", "n/a", "null") else _parse_scalar_cell(raw_val)
-                if not t_prop and b_val is None: continue
                 conds = _parse_list_cell(_get_table_cell(row, headers, norm_headers, ("condition", "conditions", "when")))
+                if b_val is None or any(sym in raw_prop for sym in ("<=", ">=", "==", "!=", "<", ">", "import ")):
+                    expr_cell = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("rule_spec", "bound", "rule", "spec"))).strip() or raw_prop
+                    ep, eo, ev, econds = _decompose_rule_expr(expr_cell, rtype)
+                    t_prop, b_op, b_val = (_slugify_scope_id(ep) if ep else t_prop), (eo or b_op), (ev if ev is not None else b_val)
+                    conds = [*conds, *[c for c in econds if c not in conds]]
+                if not t_prop and b_val is None: continue
                 r_text = restore_ascii_dots(_get_table_cell(row, headers, norm_headers, ("spec", "description", "text", "summary"))).strip() or f"{comp_sid}.{t_prop or 'rule'} {b_op or '=='} {b_val}"
                 prune_dysfluency_and_upsert_rule(graph, comp_sid, {"type": rtype, "text": r_text, "target_prop": t_prop, "bound_op": b_op, "bound_val": b_val, "conditions": conds, "turn": int(turn_index)})
             continue
@@ -347,7 +353,7 @@ def fuse_table_attributes(
 
         primary_col_idx = next((norm_headers.index(k) for k in ("component", "scope", "scope_id", "module") if k in norm_headers), 0)
         primary_hdr, heading_path = str(headers[primary_col_idx]), table.get("heading_path")
-        non_alias_cols = frozenset({"role", "purpose", "responsibility", "why", "rationale", "owner", "division", "stage", "phase", "parent", "depends_on", "deps", "dependencies", "children", "inputs", "input", "outputs", "output", "files", "file"})
+        non_alias_cols = frozenset({"role", "purpose", "responsibility", "why", "rationale", "owner", "division", "stage", "phase", "parent", "depends_on", "deps", "dependencies", "children", "inputs", "input", "outputs", "output", "files", "file", "scope"})
         for row in (r for r in rows if isinstance(r, dict)):
             if not (raw_entity := str(row.get(primary_hdr, row.get(norm_headers[primary_col_idx], ""))).strip()): continue
             scope_id = _resolve_or_register_scope(graph, raw_entity, create=True)
@@ -381,18 +387,13 @@ def fuse_table_attributes(
                 elif col_key == "children": sbf_kwargs["children"] = [_resolve_or_register_scope(graph, c, create=True) for c in _parse_list_cell(raw_cell_str) if c]
                 elif col_key in ("inputs", "input"): sbf_kwargs["inputs"] = _parse_list_cell(raw_cell_str)
                 elif col_key in ("outputs", "output"): sbf_kwargs["outputs"] = _parse_list_cell(raw_cell_str)
-                elif col_key in ("files", "file"):
+                elif col_key in ("files", "file") or (col_key == "scope" and files_list is None and not is_empty_cell):
                     files_list = _parse_list_cell(raw_cell_str)
                     scope["files"] = attrs["files"] = files_list
                     attrs["_table_files"] = list(files_list)
             if sbf_kwargs or files_list is not None:
-                upsert_component_spec(
-                    graph, scope_id, role=sbf_kwargs.get("role"), inputs=sbf_kwargs.get("inputs"),
-                    outputs=sbf_kwargs.get("outputs"), depends_on=sbf_kwargs.get("depends_on"),
-                    children=sbf_kwargs.get("children"), parent=sbf_kwargs.get("parent"),
-                    owner=sbf_kwargs.get("owner"), stage=sbf_kwargs.get("stage"),
-                    kind="COMPONENT", current_turn=int(turn_index),
-                )
+                eff_owner = sbf_kwargs.get("owner") or scope.get("owner") or "core"
+                upsert_component_spec(graph, scope_id, role=sbf_kwargs.get("role"), inputs=sbf_kwargs.get("inputs"), outputs=sbf_kwargs.get("outputs"), depends_on=sbf_kwargs.get("depends_on"), children=sbf_kwargs.get("children"), parent=sbf_kwargs.get("parent"), owner=eff_owner, stage=sbf_kwargs.get("stage"), kind="COMPONENT", current_turn=int(turn_index))
                 if files_list is not None: scope["files"] = files_list
 
     if not (is_flow_or_rule_table_fused(has_flow_or_rule, True) and flow_and_rule_table_fusion_law(has_flow_or_rule, True)):
