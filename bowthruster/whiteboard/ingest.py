@@ -360,11 +360,12 @@ def _build_slice_packet(
     scope_rules = list(sl.get("active_rules", []))
     compiled_laws = compile_laws_bend(sid, scope_laws)
     py_skeleton = compile_python_skeleton(sid, schemas=scope_schemas, interfaces=scope_ifaces, laws=scope_laws, rules=scope_rules)
-    art_files = sorted({str(a.get("file") or (a.get("dimensions") or {}).get("file") or "").strip() for a in [*scope_schemas, *scope_ifaces] if str(a.get("file") or (a.get("dimensions") or {}).get("file") or "").strip()})
+    _af = lambda a: str(a.get("file") or (a.get("dimensions") or {}).get("file") or "").split("#", 1)[0].split(":L", 1)[0].strip()
+    art_files = sorted({_af(a) for a in [*scope_schemas, *scope_ifaces] if _af(a)})
     by_file = {
-        f: compile_python_skeleton(sid, schemas=[s for s in scope_schemas if str(s.get("file") or (s.get("dimensions") or {}).get("file") or "").strip() in ("", f)], interfaces=[i for i in scope_ifaces if str(i.get("file") or (i.get("dimensions") or {}).get("file") or "").strip() == f], laws=scope_laws, rules=scope_rules)
+        f: compile_python_skeleton(sid, schemas=[s for s in scope_schemas if _af(s) in ("", f)], interfaces=[i for i in scope_ifaces if _af(i) == f], laws=scope_laws, rules=scope_rules)
         for f in art_files
-    } if len(art_files) > 1 else {}
+    }
     return {
         "packet_id": pkt_id, "wave": wave, "kind": kind, "component": sid, "scope": sid,
         "owner": sc.get("owner") or default_owner, "stage": sc.get("stage"),

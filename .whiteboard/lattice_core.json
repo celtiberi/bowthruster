@@ -404,7 +404,7 @@
         "artifact_kind": "doc",
         "link_id": "link_whiteboard_4e07791ebe4e",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L449-L449"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L450-L450"
       },
       {
         "artifact_kind": "doc",
@@ -438,9 +438,9 @@
       },
       {
         "artifact_kind": "doc",
-        "link_id": "link_whiteboard_d66a99b4786d",
+        "link_id": "link_whiteboard_7332faa78e82",
         "lod_tier": "LOD2",
-        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L385-L446"
+        "target_uri": "uri://file/bowthruster/whiteboard/ingest.py#L386-L447"
       }
     ]
   },
@@ -567,7 +567,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "fb69fb528248a39420846f687aca7bc2dc024d1f",
+  "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
   "lattice_artifacts": [
     {
       "created_turn": 1,
@@ -1378,14 +1378,14 @@
     },
     {
       "calls": [
-        "_build_slice_packet#L348-L382"
+        "_build_slice_packet#L348-L383"
       ],
       "created_turn": 14,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/ingest.py#L385-L446"
+        "file": "bowthruster/whiteboard/ingest.py#L386-L447"
       },
-      "file": "bowthruster/whiteboard/ingest.py#L385-L446",
+      "file": "bowthruster/whiteboard/ingest.py#L386-L447",
       "id": "interface_whiteboard_compile_work_packets",
       "inputs": [
         "graph",
@@ -2337,7 +2337,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "fb69fb528248a39420846f687aca7bc2dc024d1f",
+      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2537,7 +2537,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "fb69fb528248a39420846f687aca7bc2dc024d1f",
+      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2605,7 +2605,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "fb69fb528248a39420846f687aca7bc2dc024d1f",
+      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2683,7 +2683,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "fb69fb528248a39420846f687aca7bc2dc024d1f",
+      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2767,7 +2767,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "fb69fb528248a39420846f687aca7bc2dc024d1f",
+      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2850,7 +2850,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "fb69fb528248a39420846f687aca7bc2dc024d1f",
+      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
@@ -2885,7 +2885,7 @@
         "file_hashes": {
           "bowthruster/whiteboard/__init__.py": "f865c74c77afe81d",
           "bowthruster/whiteboard/frustration.py": "0e61fe15239a0633",
-          "bowthruster/whiteboard/ingest.py": "961cf55af05bf62c",
+          "bowthruster/whiteboard/ingest.py": "38c4896374928baf",
           "bowthruster/whiteboard/linker.py": "39eeea71eba6e525",
           "bowthruster/whiteboard/mutations.py": "4cf43d9060a27345",
           "bowthruster/whiteboard/read_engine.py": "ae038e314b6d13ce",
@@ -2921,7 +2921,7 @@
       "file_hashes": {
         "bowthruster/whiteboard/__init__.py": "f865c74c77afe81d",
         "bowthruster/whiteboard/frustration.py": "0e61fe15239a0633",
-        "bowthruster/whiteboard/ingest.py": "961cf55af05bf62c",
+        "bowthruster/whiteboard/ingest.py": "38c4896374928baf",
         "bowthruster/whiteboard/linker.py": "39eeea71eba6e525",
         "bowthruster/whiteboard/mutations.py": "4cf43d9060a27345",
         "bowthruster/whiteboard/read_engine.py": "ae038e314b6d13ce",
@@ -2946,7 +2946,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "fb69fb528248a39420846f687aca7bc2dc024d1f",
+      "last_commit_sha": "19b146a5ce244aaccac291a0e12ebf74ffb05651",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
