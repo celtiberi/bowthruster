@@ -111,12 +111,12 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+  "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
   "lattice_artifacts": [
     {
       "calls": [
         "_format_tool_result#L107-L115",
-        "_hot_reload_if_changed#L388-L421",
+        "_hot_reload_if_changed#L397-L430",
         "_resolve_project_root#L90-L104",
         "_tool_atlas#L144-L166",
         "_tool_git_sync_or_status#L273-L314",
@@ -128,12 +128,12 @@
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L317-L377",
+        "file": "bowthruster/mcp_server.py#L317-L386",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L317-L377",
+      "file": "bowthruster/mcp_server.py#L317-L386",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -155,19 +155,19 @@
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L388-L421",
+        "_hot_reload_if_changed#L397-L430",
         "_read_doc_resource#L59-L87"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "bowthruster/mcp_server.py#L424-L466",
+        "file": "bowthruster/mcp_server.py#L433-L475",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "bowthruster/mcp_server.py#L424-L466",
+      "file": "bowthruster/mcp_server.py#L433-L475",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -313,6 +313,14 @@
   "max_ring": 10,
   "mitosis_splits": [],
   "open_blockers": [],
+  "schema_migrations": [
+    {
+      "from_version": 1,
+      "step": "v1_to_v2_canonicalize_scopes_tests_claims_and_artifacts",
+      "to_version": 2
+    }
+  ],
+  "schema_version": 2,
   "scopes": {
     "global_defaults": {
       "_meta": {},
@@ -421,7 +429,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -459,10 +467,10 @@
         "file": "bowthruster/mcp_server.py",
         "file_hashes": {
           "bowthruster/bootstrap.py": "f0ab81745c1d0073",
-          "bowthruster/cli.py": "d0450267904a8224",
-          "bowthruster/cli_commands.py": "953ab4e7ebeb9b57",
-          "bowthruster/mcp_schemas.py": "5867244b183a8216",
-          "bowthruster/mcp_server.py": "ace8128bca2084e4"
+          "bowthruster/cli.py": "86f30ff4601e1fed",
+          "bowthruster/cli_commands.py": "fe817013d00cb419",
+          "bowthruster/mcp_schemas.py": "8c8fffe79a8b0012",
+          "bowthruster/mcp_server.py": "680ddb423f026798"
         },
         "files": [
           "bowthruster/mcp_server.py",
@@ -493,10 +501,10 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/bootstrap.py": "f0ab81745c1d0073",
-        "bowthruster/cli.py": "d0450267904a8224",
-        "bowthruster/cli_commands.py": "953ab4e7ebeb9b57",
-        "bowthruster/mcp_schemas.py": "5867244b183a8216",
-        "bowthruster/mcp_server.py": "ace8128bca2084e4"
+        "bowthruster/cli.py": "86f30ff4601e1fed",
+        "bowthruster/cli_commands.py": "fe817013d00cb419",
+        "bowthruster/mcp_schemas.py": "8c8fffe79a8b0012",
+        "bowthruster/mcp_server.py": "680ddb423f026798"
       },
       "files": [
         "bowthruster/mcp_server.py",
@@ -511,7 +519,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
       "outputs": [],
       "owner": "core",
       "parent": null,

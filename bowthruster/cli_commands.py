@@ -220,9 +220,11 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     p_logs.add_argument("--limit", type=int, default=20)
     p_logs.add_argument("--status", default=None)
     p_prove, p_hist = sub.add_parser("prove", parents=[common]), sub.add_parser("history", parents=[common])
-    p_boot = sub.add_parser("bootstrap", parents=[common])
+    p_boot, p_mig = sub.add_parser("bootstrap", parents=[common]), sub.add_parser("migrate", parents=[common])
     p_boot.add_argument("--component", default=None)
-    for p in (p_show, p_slice, p_prove, p_pkts, p_stat, p_atlas, p_gsync, p_logs, p_hist, p_boot):
+    p_mig.add_argument("--all", action="store_true", dest="migrate_all")
+    p_mig.add_argument("--dry-run", action="store_true", dest="dry_run")
+    for p in (p_show, p_slice, p_prove, p_pkts, p_stat, p_atlas, p_gsync, p_logs, p_hist, p_boot, p_mig):
         p.add_argument("--json", action="store_true", dest="as_json")
     sub.add_parser("reset", parents=[common])
     return parser
@@ -230,6 +232,14 @@ def _build_cli_parser() -> argparse.ArgumentParser:
 
 def _cmd_bootstrap(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
     import bowthruster.cli as _cli
+
+    if args.cmd == "migrate":
+        from bowthruster.whiteboard.migrations import format_migration_report, migrate_repo_boards
+
+        pay = migrate_repo_boards(_cli.REPO_ROOT, board=board, migrate_all=args.migrate_all, dry_run=args.dry_run)
+        _cli.record_flight_event(board, "migrate", (time.perf_counter() - t0_cmd) * 1000.0, "OK")
+        print(json.dumps(pay, indent=2, sort_keys=True, ensure_ascii=False) if args.as_json else format_migration_report(pay))
+        return 0
     from bowthruster.bootstrap import bootstrap_repository, format_bootstrap_report
 
     graph, wb_json, wb_sqlite, _ = _cli._load_board(board)

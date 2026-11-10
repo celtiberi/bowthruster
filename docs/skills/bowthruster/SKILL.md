@@ -8,7 +8,7 @@ description: Unified BowThruster workflow for exploring code (`atlas` & `slice`)
 > **Project Configuration (Customize on Onboarding):**
 > - **Default Board:** `<BOARD_NAME>` (e.g., `lattice_core`)
 > - **Test Command:** `<TEST_CMD>` (e.g., `.venv/bin/pytest -k`)
-> - **Onboarding a Repo:** Call `bootstrap(board="<BOARD_NAME>")` (CLI: `bowthruster --board <BOARD_NAME> bootstrap [--component <comp>]`) to deterministically extract candidate components, public `Schema`/`Interface` signatures with `#L<start>-L<end>` anchors, `Depends_On` imports, and matched test files, then fill in `Charter`, `Role`, `Why`, `Spec`, and `Flow`s one onboarding packet at a time via `turn`.
+> - **Onboarding a Repo:** Call `bootstrap(board="<BOARD_NAME>")` (CLI: `bowthruster --board <BOARD_NAME> bootstrap [--component <comp>]`) to deterministically extract candidate components, public `Schema`/`Interface` signatures with `#L<start>-L<end>` anchors, `Depends_On` imports, and matched test files, then fill in `Charter`, `Role`, `Why`, `Spec`, and `Flow`s one onboarding packet at a time via `turn`. If `atlas` reports `NEEDS_MIGRATION` on an older board file, run `migrate(board="<BOARD_NAME>")` (CLI: `bowthruster migrate --all`).
 
 ## Step 1 — Explore & Pull Code Slices (`atlas` $\rightarrow$ `slice`)
 Never grep blindly across the repository or read whole files out of curiosity:

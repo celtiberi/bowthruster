@@ -232,11 +232,14 @@ class ContextGraph(dict[str, Any]):
     """Persistent Bounded Whiteboard / nD Lattice Graph container with optional `SQLiteGraphStore` binding."""
     def __init__(self, data: dict[str, Any] | None = None, *, store: SQLiteGraphStore | None = None, **kwargs: Any,
         ) -> None:
+        from bowthruster.whiteboard.migrations import BOARD_SCHEMA_VERSION, migrate_board_data
         inherited_store = store if store is not None else getattr(data, "_sqlite_store", None)
-        super().__init__(data or {}, **kwargs)
+        init_d = migrate_board_data(dict(data), target_version=BOARD_SCHEMA_VERSION)[0] if data else {}
+        super().__init__(init_d, **kwargs)
         self._sqlite_store: SQLiteGraphStore | None = inherited_store
         turn_val = int(self.get("turn", self.get("turn_index", 0)))
         _apply_entry_defaults(self, (
+            ("schema_version", BOARD_SCHEMA_VERSION), ("schema_migrations", []),
             ("version", 1), ("turn", turn_val), ("turn_index", turn_val), ("k_cap", DEFAULT_K_CAP),
             ("max_ring", DEFAULT_MAX_RING), ("scopes", {}), ("flows", []), ("lattice_artifacts", []),
             ("ambient_notes", []), ("active_tasks", []), ("open_blockers", []), ("alias_index", {}),

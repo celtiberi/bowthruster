@@ -53,6 +53,10 @@
     "llm_called": "llm_called",
     "regiment": "regiment",
     "runtime_foundation": "runtime_foundation",
+    "tests/core/circuit/test_whiteboard_22a.py, tests/core/circuit/test_whiteboard_22b.py, tests/core/circuit/test_whiteboard_22c.py": "whiteboard",
+    "tests/core/circuit/test_whiteboard_22a.py, tests/core/circuit/test_whiteboard_22b.py, tests/core/circuit/test_whiteboard_22c.py, tests/test_board_migrations.py": "whiteboard",
+    "tests/core/circuit/test_whiteboard_22a.py_tests/core/circuit/test_whiteboard_22b.py_tests/core/circuit/test_whiteboard_22c.py": "whiteboard",
+    "tests/core/circuit/test_whiteboard_22a.py_tests/core/circuit/test_whiteboard_22b.py_tests/core/circuit/test_whiteboard_22c.py_tests/test_board_migrations.py": "whiteboard",
     "tests/test_git_lattice_sync.py": "runtime_foundation",
     "the_executive": "the_executive",
     "the_table": "the_table",
@@ -604,7 +608,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+  "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
   "lattice_artifacts": [
     {
       "created_turn": 2,
@@ -655,7 +659,7 @@
       "stage": "stage 22",
       "text": "Sliced nD Lattice context view",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -692,9 +696,9 @@
       "created_turn": 3,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/graph_core/sqlite_store.py#L79-L391"
+        "file": "bowthruster/graph_core/sqlite_store.py#L79-L399"
       },
-      "file": "bowthruster/graph_core/sqlite_store.py#L79-L391",
+      "file": "bowthruster/graph_core/sqlite_store.py#L79-L399",
       "id": "schema_graph_core_sqlitegraphstore",
       "inputs": [
         "db_path"
@@ -709,7 +713,7 @@
       "stage": "stage 21",
       "text": "Indexed ACID SQLite graph storage engine",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 42
     },
     {
       "created_turn": 5,
@@ -760,7 +764,7 @@
       "stage": "stage 25",
       "text": "Bounded conference-room working surface slot",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [],
@@ -799,7 +803,7 @@
     {
       "calls": [
         "_format_tool_result#L107-L115",
-        "_hot_reload_if_changed#L388-L421",
+        "_hot_reload_if_changed#L397-L430",
         "_resolve_project_root#L90-L104",
         "_tool_atlas#L144-L166",
         "_tool_git_sync_or_status#L273-L314",
@@ -811,7 +815,7 @@
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L317-L377",
+        "file": "bowthruster/mcp_server.py#L317-L386",
         "inputs": [
           "tool_name: str",
           "arguments: dict"
@@ -822,7 +826,7 @@
         ],
         "spec_missing": false
       },
-      "file": "bowthruster/mcp_server.py#L317-L377",
+      "file": "bowthruster/mcp_server.py#L317-L386",
       "id": "interface_runtime_foundation_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -836,11 +840,11 @@
       "owner": "architect",
       "scope": "runtime_foundation",
       "scope_id": "runtime_foundation",
-      "spec": "Dispatch MCP tool calls with atomic multi-agent component claims across status, packets, and slice",
+      "spec": "Dispatch MCP tool calls including migrate, bootstrap, atomic multi-agent component claims, and schema-version-checked board loading",
       "stage": "28",
-      "text": "Dispatch MCP tool calls with atomic multi-agent component claims across status, packets, and slice",
-      "turn": 39,
-      "updated_turn": 40
+      "text": "Dispatch MCP tool calls including migrate, bootstrap, atomic multi-agent component claims, and schema-version-checked board loading",
+      "turn": 41,
+      "updated_turn": 42
     },
     {
       "calls": [],
@@ -867,7 +871,7 @@
       "stage": "stage 22",
       "text": "Emit AST-parseable Python stub with Spec docstrings on schemas, laws, and interfaces and # MUST CALL anchors",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -906,7 +910,7 @@
       "stage": "stage 22",
       "text": "Compile wave-ordered WorkPackets including claimed_by metadata and synchronized status and build_status",
       "turn": 39,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1036,7 +1040,7 @@
       "stage": "stage 22",
       "text": "Fuse Component, Flow, Interface, Law, Schema, and Rule Markdown pipe tables into the Whiteboard graph",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "created_turn": 17,
@@ -1061,15 +1065,15 @@
       "stage": "stage 25",
       "text": "Rendered conference-room working surface view",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/schema.py#L268-L268"
+        "file": "bowthruster/whiteboard/schema.py#L271-L271"
       },
-      "file": "bowthruster/whiteboard/schema.py#L268-L268",
+      "file": "bowthruster/whiteboard/schema.py#L271-L271",
       "id": "schema_whiteboard_whiteboardgraph",
       "inputs": [
         "data",
@@ -1085,7 +1089,7 @@
       "stage": "stage 22",
       "text": "Living nD system lattice graph container",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "created_turn": 17,
@@ -1161,7 +1165,7 @@
       "stage": "Stage 28",
       "text": "MCP JSON-RPC 2.0 request envelope",
       "turn": 17,
-      "updated_turn": 40
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1193,7 +1197,7 @@
       "stage": "stage 21",
       "text": "Run damped activation propagation over graph_core",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1224,7 +1228,7 @@
       "stage": "stage 21",
       "text": "Scan and rank graph_core nodes by lexical/IDF overlap",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1320,16 +1324,16 @@
     },
     {
       "calls": [
-        "_collect_atlas_topology#L268-L342",
+        "_collect_atlas_topology#L268-L347",
         "_ensure_table_state_dict#L16-L38",
-        "_extract_board_charter#L344-L350",
+        "_extract_board_charter#L349-L355",
         "_normalize_atlas_boards#L198-L213",
-        "_render_board_spec#L352-L424"
+        "_render_board_spec#L357-L429"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_table/surface.py#L426-L488",
+        "file": "bowthruster/the_table/surface.py#L431-L497",
         "inputs": [
           "whiteboard_boards: dict[str, Any]"
         ],
@@ -1338,7 +1342,7 @@
         ],
         "spec_missing": false
       },
-      "file": "bowthruster/the_table/surface.py#L426-L488",
+      "file": "bowthruster/the_table/surface.py#L431-L497",
       "id": "interface_the_table_render_lattice_atlas",
       "inputs": [
         "whiteboard_boards: dict[str, Any]"
@@ -1351,11 +1355,11 @@
       "owner": "core",
       "scope": "the_table",
       "scope_id": "the_table",
-      "spec": "Render LOD_0 topological Atlas surfacing claimed_by ownership on active/STALE components and claimed_components metrics",
+      "spec": "Render LOD_0 topological Atlas surfacing board schema_version, pending migrations, claimed_by ownership, and health metrics",
       "stage": "stage 25",
-      "text": "Render LOD_0 topological Atlas surfacing claimed_by ownership on active/STALE components and claimed_components metrics",
-      "turn": 39,
-      "updated_turn": 39
+      "text": "Render LOD_0 topological Atlas surfacing board schema_version, pending migrations, claimed_by ownership, and health metrics",
+      "turn": 41,
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1385,7 +1389,7 @@
       "stage": "stage 25",
       "text": "Render active TableSlots into a bounded TableView",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1417,7 +1421,7 @@
       "stage": "stage 25",
       "text": "Synchronize recalled ConceptFrames and ContextView into the_table",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [],
@@ -1444,7 +1448,7 @@
       "stage": "stage 22",
       "text": "Ingest deterministic IntakePacket into the Whiteboard graph",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1476,7 +1480,7 @@
       "stage": "stage 22",
       "text": "Slice the nD Lattice graph with focused artifact filtering on exact AST symbol queries",
       "turn": 26,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [],
@@ -1503,7 +1507,7 @@
       "stage": "stage 22",
       "text": "Compile Bend 2 law theorems into LAWS.bend skeleton",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1542,7 +1546,7 @@
       "stage": "stage 22",
       "text": "Transition component build status, enforcing claim ownership when provided and clearing claimed_by when transitioning to VERIFIED",
       "turn": 39,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1697,7 +1701,7 @@
       "stage": "Stage 28",
       "text": "Transpile pure Python boolean decision function AST into a Bend 2 boolean expression",
       "turn": 31,
-      "updated_turn": 40
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1729,7 +1733,7 @@
       "stage": "Stage 28",
       "text": "Transpile staged Python % LAW functions to Bend 2 and verify LHS == RHS across all truth-table assignments and via bend",
       "turn": 31,
-      "updated_turn": 40
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1775,7 +1779,7 @@
       "stage": null,
       "text": "Deterministically scan repo packages, files, public classes/functions, imports, and tests into draft board tables and per-component onboarding packets with open_gaps for Charter, Role, Why, and Spec",
       "turn": 37,
-      "updated_turn": 40
+      "updated_turn": 42
     },
     {
       "calls": [],
@@ -1808,7 +1812,7 @@
       "stage": null,
       "text": "Render bounded human/agent-readable summary of a bootstrap_repository payload",
       "turn": 37,
-      "updated_turn": 40
+      "updated_turn": 42
     },
     {
       "calls": [
@@ -1847,7 +1851,7 @@
       "stage": null,
       "text": "Atomically claim or release a non-VERIFIED component scope for multi-agent work, rejecting conflicting claims unless forced and clearing claims automatically on VERIFIED",
       "turn": 39,
-      "updated_turn": 39
+      "updated_turn": 42
     },
     {
       "calls": [],
@@ -1884,7 +1888,7 @@
       "stage": "Stage 28",
       "text": "Acquire cross-process board lock, resolve project_root, load ContextGraph, yield (graph, active_root), and atomically persist SQLite + JSON on exit when save_on_exit=True",
       "turn": 40,
-      "updated_turn": 40
+      "updated_turn": 42
     },
     {
       "calls": [],
@@ -1918,12 +1922,228 @@
       "text": "Parse condition strings into (var -> [(op, val)], unparsed_raw_atoms) without regexes",
       "turn": 40,
       "updated_turn": 40
+    },
+    {
+      "created_turn": 41,
+      "dimensions": {
+        "_from_table": true,
+        "fields": [
+          "board: str",
+          "from_version: int",
+          "to_version: int",
+          "migrated: bool",
+          "steps_applied: list[str]"
+        ],
+        "file": "bowthruster/whiteboard/migrations.py#L24-L40",
+        "spec_missing": false
+      },
+      "file": "bowthruster/whiteboard/migrations.py#L24-L40",
+      "id": "schema_whiteboard_boardmigrationreport",
+      "inputs": [
+        "board: str",
+        "from_version: int",
+        "to_version: int",
+        "migrated: bool",
+        "steps_applied: list[str]"
+      ],
+      "kind": "SCHEMA",
+      "name": "BoardMigrationReport",
+      "outputs": [],
+      "owner": "core",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Structured report of an ordered board schema migration run",
+      "stage": "stage 22",
+      "text": "Structured report of an ordered board schema migration run",
+      "turn": 41,
+      "updated_turn": 42
+    },
+    {
+      "calls": [],
+      "created_turn": 41,
+      "dimensions": {
+        "_from_table": true,
+        "file": "bowthruster/whiteboard/migrations.py#L43-L57",
+        "inputs": [
+          "raw_board: dict[str, Any]"
+        ],
+        "outputs": [
+          "int"
+        ],
+        "spec_missing": false
+      },
+      "file": "bowthruster/whiteboard/migrations.py#L43-L57",
+      "id": "interface_whiteboard_detect_board_schema_version",
+      "inputs": [
+        "raw_board: dict[str, Any]"
+      ],
+      "kind": "INTERFACE",
+      "name": "detect_board_schema_version",
+      "outputs": [
+        "int"
+      ],
+      "owner": "core",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Detect explicit schema_version on raw board JSON, treating missing schema_version with legacy version=1 as v1 and empty unversioned dicts as v0 while rejecting malformed values",
+      "stage": "stage 22",
+      "text": "Detect explicit schema_version on raw board JSON, treating missing schema_version with legacy version=1 as v1 and empty unversioned dicts as v0 while rejecting malformed values",
+      "turn": 41,
+      "updated_turn": 42
+    },
+    {
+      "calls": [],
+      "created_turn": 41,
+      "dimensions": {
+        "_from_table": true,
+        "file": "bowthruster/whiteboard/migrations.py#L102-L146",
+        "inputs": [
+          "raw_board: dict[str, Any]",
+          "target_version: int",
+          "board_name: str"
+        ],
+        "outputs": [
+          "tuple[dict[str, Any], BoardMigrationReport]"
+        ],
+        "spec_missing": false
+      },
+      "file": "bowthruster/whiteboard/migrations.py#L102-L146",
+      "id": "interface_whiteboard_migrate_board_data",
+      "inputs": [
+        "raw_board: dict[str, Any]",
+        "target_version: int",
+        "board_name: str"
+      ],
+      "kind": "INTERFACE",
+      "name": "migrate_board_data",
+      "outputs": [
+        "tuple[dict[str, Any], BoardMigrationReport]"
+      ],
+      "owner": "core",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Apply ordered deterministic v0->v1->v2 migrations on a copy of raw_board, stamp schema_version and schema_migrations provenance, and reject boards newer than target_version",
+      "stage": "stage 22",
+      "text": "Apply ordered deterministic v0->v1->v2 migrations on a copy of raw_board, stamp schema_version and schema_migrations provenance, and reject boards newer than target_version",
+      "turn": 41,
+      "updated_turn": 42
+    },
+    {
+      "calls": [],
+      "created_turn": 41,
+      "dimensions": {
+        "_from_table": true,
+        "file": "bowthruster/whiteboard/migrations.py#L149-L170",
+        "inputs": [
+          "board_path: Path",
+          "target_version: int",
+          "dry_run: bool"
+        ],
+        "outputs": [
+          "dict[str, Any]"
+        ],
+        "spec_missing": false
+      },
+      "file": "bowthruster/whiteboard/migrations.py#L149-L170",
+      "id": "interface_whiteboard_migrate_board_file",
+      "inputs": [
+        "board_path: Path",
+        "target_version: int",
+        "dry_run: bool"
+      ],
+      "kind": "INTERFACE",
+      "name": "migrate_board_file",
+      "outputs": [
+        "dict[str, Any]"
+      ],
+      "owner": "core",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Read a .whiteboard JSON file, run migrate_board_data, and atomically replace the file on disk when migrated and not dry_run",
+      "stage": "stage 22",
+      "text": "Read a .whiteboard JSON file, run migrate_board_data, and atomically replace the file on disk when migrated and not dry_run",
+      "turn": 41,
+      "updated_turn": 42
+    },
+    {
+      "calls": [],
+      "created_turn": 41,
+      "dimensions": {
+        "_from_table": true,
+        "file": "bowthruster/whiteboard/migrations.py#L173-L204",
+        "inputs": [
+          "repo_root: Path",
+          "board: str",
+          "migrate_all: bool",
+          "dry_run: bool",
+          "target_version: int"
+        ],
+        "outputs": [
+          "dict[str, Any]"
+        ],
+        "spec_missing": false
+      },
+      "file": "bowthruster/whiteboard/migrations.py#L173-L204",
+      "id": "interface_whiteboard_migrate_repo_boards",
+      "inputs": [
+        "repo_root: Path",
+        "board: str",
+        "migrate_all: bool",
+        "dry_run: bool",
+        "target_version: int"
+      ],
+      "kind": "INTERFACE",
+      "name": "migrate_repo_boards",
+      "outputs": [
+        "dict[str, Any]"
+      ],
+      "owner": "core",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Migrate a single named board or all discovered .whiteboard/*.json files in repo_root to target_version",
+      "stage": "stage 22",
+      "text": "Migrate a single named board or all discovered .whiteboard/*.json files in repo_root to target_version",
+      "turn": 41,
+      "updated_turn": 42
+    },
+    {
+      "calls": [],
+      "created_turn": 41,
+      "dimensions": {
+        "_from_table": true,
+        "file": "bowthruster/whiteboard/migrations.py#L207-L221",
+        "inputs": [
+          "payload: dict[str, Any]"
+        ],
+        "outputs": [
+          "str"
+        ],
+        "spec_missing": false
+      },
+      "file": "bowthruster/whiteboard/migrations.py#L207-L221",
+      "id": "interface_whiteboard_format_migration_report",
+      "inputs": [
+        "payload: dict[str, Any]"
+      ],
+      "kind": "INTERFACE",
+      "name": "format_migration_report",
+      "outputs": [
+        "str"
+      ],
+      "owner": "core",
+      "scope": "whiteboard",
+      "scope_id": "whiteboard",
+      "spec": "Render human/agent-readable summary of a migrate_repo_boards payload",
+      "stage": "stage 22",
+      "text": "Render human/agent-readable summary of a migrate_repo_boards payload",
+      "turn": 41,
+      "updated_turn": 42
     }
   ],
   "lattice_proof": {
     "bend_proof_source": "import Base\n\ntype LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\ndef is_lp_proven(s: LPStatus) -> Bool:\n  match s:\n    case LPBroken{}: False{}\n    case LPProven{}: True{}\n    case LPDraft{}: False{}\n\ndef classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n    case False{} True{} True{} True{}:\n      LPProven{}\n    case False{} True{} True{} False{}:\n      LPDraft{}\n    case False{} True{} False{} flow_ok:\n      LPDraft{}\n    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\nlaw lattice_proof_proven_iff_complete_and_conflict_free:\n  for +has_viol: Bool\n  for +has_comp: Bool\n  for +comp_ok: Bool\n  for +flow_ok: Bool\n  {is_lp_proven(classify_lattice_proof_status(has_viol, has_comp, comp_ok, flow_ok)) == Bool.and(Bool.not(has_viol), Bool.and(has_comp, Bool.and(comp_ok, flow_ok))) : Bool}\n\ndef lattice_proof_proven_iff_complete_and_conflict_free(has_viol, has_comp, comp_ok, flow_ok):\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok: {==}\n    case False{} True{} True{} True{}: {==}\n    case False{} True{} True{} False{}: {==}\n    case False{} True{} False{} flow_ok: {==}\n    case False{} False{} comp_ok flow_ok: {==}\n\ndef board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status(False{}, True{}, True{}, True{})\n",
     "component_count": 7,
-    "contract_count": 40,
+    "contract_count": 46,
     "flow_count": 8,
     "hard_violations": [],
     "is_proven": true,
@@ -1934,6 +2154,14 @@
   "max_ring": 10,
   "mitosis_splits": [],
   "open_blockers": [],
+  "schema_migrations": [
+    {
+      "from_version": 1,
+      "step": "v1_to_v2_canonicalize_scopes_tests_claims_and_artifacts",
+      "to_version": 2
+    }
+  ],
+  "schema_version": 2,
   "scopes": {
     "ai_memory": {
       "_meta": {},
@@ -2006,7 +2234,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2017,7 +2245,7 @@
       "tests": [
         "tests/test_ai_memory.py"
       ],
-      "updated_turn": 36,
+      "updated_turn": 1,
       "verified_untested": false,
       "why": "Resolves and auto-heals file#Lstart-Lend AST symbol pointers across git mv renames and line shifts while preventing dangling deleted URIs."
     },
@@ -2151,7 +2379,7 @@
           "bowthruster/graph_core/activation.py": "af7e0a4c92c572a3",
           "bowthruster/graph_core/formatting.py": "f1c1fcc549bf4e3f",
           "bowthruster/graph_core/propagation.py": "72876c944beb4fe9",
-          "bowthruster/graph_core/sqlite_store.py": "d1cc0a22ab2880b5"
+          "bowthruster/graph_core/sqlite_store.py": "646c8250eab82b41"
         },
         "files": [
           "bowthruster/graph_core/__init__.py",
@@ -2183,7 +2411,7 @@
         "bowthruster/graph_core/activation.py": "af7e0a4c92c572a3",
         "bowthruster/graph_core/formatting.py": "f1c1fcc549bf4e3f",
         "bowthruster/graph_core/propagation.py": "72876c944beb4fe9",
-        "bowthruster/graph_core/sqlite_store.py": "d1cc0a22ab2880b5"
+        "bowthruster/graph_core/sqlite_store.py": "646c8250eab82b41"
       },
       "files": [
         "bowthruster/graph_core/__init__.py",
@@ -2202,7 +2430,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2278,7 +2506,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2321,11 +2549,11 @@
         "file_hashes": {
           "bowthruster/__init__.py": "3a04d76df1049b7f",
           "bowthruster/bootstrap.py": "f0ab81745c1d0073",
-          "bowthruster/cli.py": "d0450267904a8224",
-          "bowthruster/cli_commands.py": "953ab4e7ebeb9b57",
+          "bowthruster/cli.py": "86f30ff4601e1fed",
+          "bowthruster/cli_commands.py": "fe817013d00cb419",
           "bowthruster/git_manifest.py": "2bb53452b0e9f3aa",
-          "bowthruster/mcp_schemas.py": "5867244b183a8216",
-          "bowthruster/mcp_server.py": "ace8128bca2084e4",
+          "bowthruster/mcp_schemas.py": "8c8fffe79a8b0012",
+          "bowthruster/mcp_server.py": "680ddb423f026798",
           "bowthruster/mcp_verifier.py": "db0c05b9078bd0da",
           "bowthruster/nlp.py": "ea0d6364592ce90d",
           "bowthruster/types.py": "2af24d52165bfc92"
@@ -2363,11 +2591,11 @@
       "file_hashes": {
         "bowthruster/__init__.py": "3a04d76df1049b7f",
         "bowthruster/bootstrap.py": "f0ab81745c1d0073",
-        "bowthruster/cli.py": "d0450267904a8224",
-        "bowthruster/cli_commands.py": "953ab4e7ebeb9b57",
+        "bowthruster/cli.py": "86f30ff4601e1fed",
+        "bowthruster/cli_commands.py": "fe817013d00cb419",
         "bowthruster/git_manifest.py": "2bb53452b0e9f3aa",
-        "bowthruster/mcp_schemas.py": "5867244b183a8216",
-        "bowthruster/mcp_server.py": "ace8128bca2084e4",
+        "bowthruster/mcp_schemas.py": "8c8fffe79a8b0012",
+        "bowthruster/mcp_server.py": "680ddb423f026798",
         "bowthruster/mcp_verifier.py": "db0c05b9078bd0da",
         "bowthruster/nlp.py": "ea0d6364592ce90d",
         "bowthruster/types.py": "2af24d52165bfc92"
@@ -2390,7 +2618,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2491,7 +2719,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2533,7 +2761,7 @@
           "bowthruster/the_table/__init__.py": "d042c7a67743d5a6",
           "bowthruster/the_table/renderer.py": "ecfd3d469f22dc81",
           "bowthruster/the_table/schema.py": "2fcfaefa0e00a172",
-          "bowthruster/the_table/surface.py": "5d8f453ded5bca7c",
+          "bowthruster/the_table/surface.py": "68ef88987d961ca7",
           "bowthruster/the_table/workspace_sync.py": "2def595b0242ddf6"
         },
         "files": [
@@ -2569,7 +2797,7 @@
         "bowthruster/the_table/__init__.py": "d042c7a67743d5a6",
         "bowthruster/the_table/renderer.py": "ecfd3d469f22dc81",
         "bowthruster/the_table/schema.py": "2fcfaefa0e00a172",
-        "bowthruster/the_table/surface.py": "5d8f453ded5bca7c",
+        "bowthruster/the_table/surface.py": "68ef88987d961ca7",
         "bowthruster/the_table/workspace_sync.py": "2def595b0242ddf6"
       },
       "files": [
@@ -2586,7 +2814,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2603,8 +2831,13 @@
     },
     "whiteboard": {
       "_meta": {},
+      "_role_missing": false,
+      "_why_missing": false,
       "active_ticket_id": "693f443",
-      "aliases": [],
+      "aliases": [
+        "tests/core/circuit/test_whiteboard_22a.py, tests/core/circuit/test_whiteboard_22b.py, tests/core/circuit/test_whiteboard_22c.py",
+        "tests/core/circuit/test_whiteboard_22a.py, tests/core/circuit/test_whiteboard_22b.py, tests/core/circuit/test_whiteboard_22c.py, tests/test_board_migrations.py"
+      ],
       "attributes": {
         "_table_depends_on": [
           "graph_core",
@@ -2613,46 +2846,53 @@
         "_table_files": [
           "bowthruster/whiteboard/__init__.py",
           "bowthruster/whiteboard/schema.py",
+          "bowthruster/whiteboard/migrations.py",
           "bowthruster/whiteboard/mutations.py",
           "bowthruster/whiteboard/ingest.py",
           "bowthruster/whiteboard/linker.py",
           "bowthruster/whiteboard/rewriter.py",
           "bowthruster/whiteboard/read_engine.py",
-          "bowthruster/whiteboard/frustration.py"
+          "bowthruster/whiteboard/frustration.py",
+          "bowthruster/whiteboard/table_helpers.py"
         ],
-        "_table_role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
+        "_table_role": "Living nD System Lattice, Hyperplane Slicer, Schema Migrator & WorkPacket Compiler",
         "depends_on": "graph_core, regiment",
         "file_hashes": {
-          "bowthruster/whiteboard/__init__.py": "f11ef31ad3fb0026",
+          "bowthruster/whiteboard/__init__.py": "3076108b072c4b3c",
           "bowthruster/whiteboard/frustration.py": "0399ce10a740db68",
           "bowthruster/whiteboard/ingest.py": "5d800d0335b081fc",
           "bowthruster/whiteboard/linker.py": "841e76d6a054e47f",
+          "bowthruster/whiteboard/migrations.py": "0e261e40ea6225c6",
           "bowthruster/whiteboard/mutations.py": "2b1fd0ea523c619d",
           "bowthruster/whiteboard/read_engine.py": "ce96c33b1c88516b",
           "bowthruster/whiteboard/rewriter.py": "958c31dcce1cc4e2",
-          "bowthruster/whiteboard/schema.py": "af026f0f8632f11c",
+          "bowthruster/whiteboard/schema.py": "cf381167a5885fc7",
           "bowthruster/whiteboard/table_helpers.py": "7a609a394eeeea40"
         },
         "files": [
           "bowthruster/whiteboard/__init__.py",
           "bowthruster/whiteboard/schema.py",
+          "bowthruster/whiteboard/migrations.py",
           "bowthruster/whiteboard/mutations.py",
           "bowthruster/whiteboard/ingest.py",
           "bowthruster/whiteboard/linker.py",
           "bowthruster/whiteboard/rewriter.py",
           "bowthruster/whiteboard/read_engine.py",
-          "bowthruster/whiteboard/frustration.py"
+          "bowthruster/whiteboard/frustration.py",
+          "bowthruster/whiteboard/table_helpers.py"
         ],
         "owner": "core",
-        "role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
+        "role": "Living nD System Lattice, Hyperplane Slicer, Schema Migrator & WorkPacket Compiler",
         "stage": "stage 22",
+        "status": "VERIFIED",
         "tests": [
           "tests/core/circuit/test_whiteboard_22a.py",
           "tests/core/circuit/test_whiteboard_22b.py",
-          "tests/core/circuit/test_whiteboard_22c.py"
+          "tests/core/circuit/test_whiteboard_22c.py",
+          "tests/test_board_migrations.py"
         ],
-        "updated_turn": 30,
-        "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
+        "updated_turn": 42,
+        "why": "Maintains the canonical versioned system architecture graph, runs deterministic forward schema migrations, detects frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
       },
       "build_status": "VERIFIED",
       "build_tag": "s22c-eng2-compiler-1",
@@ -2667,19 +2907,21 @@
       ],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/whiteboard/__init__.py": "f11ef31ad3fb0026",
+        "bowthruster/whiteboard/__init__.py": "3076108b072c4b3c",
         "bowthruster/whiteboard/frustration.py": "0399ce10a740db68",
         "bowthruster/whiteboard/ingest.py": "5d800d0335b081fc",
         "bowthruster/whiteboard/linker.py": "841e76d6a054e47f",
+        "bowthruster/whiteboard/migrations.py": "0e261e40ea6225c6",
         "bowthruster/whiteboard/mutations.py": "2b1fd0ea523c619d",
         "bowthruster/whiteboard/read_engine.py": "ce96c33b1c88516b",
         "bowthruster/whiteboard/rewriter.py": "958c31dcce1cc4e2",
-        "bowthruster/whiteboard/schema.py": "af026f0f8632f11c",
+        "bowthruster/whiteboard/schema.py": "cf381167a5885fc7",
         "bowthruster/whiteboard/table_helpers.py": "7a609a394eeeea40"
       },
       "files": [
         "bowthruster/whiteboard/__init__.py",
         "bowthruster/whiteboard/schema.py",
+        "bowthruster/whiteboard/migrations.py",
         "bowthruster/whiteboard/mutations.py",
         "bowthruster/whiteboard/ingest.py",
         "bowthruster/whiteboard/linker.py",
@@ -2696,25 +2938,26 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
+      "last_commit_sha": "234391466bf0340b3a974a831b5c22f789c36863",
       "outputs": [],
       "owner": "core",
       "parent": null,
-      "role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
+      "role": "Living nD System Lattice, Hyperplane Slicer, Schema Migrator & WorkPacket Compiler",
       "rules": [],
       "stage": "stage 22",
       "status": "VERIFIED",
       "tests": [
         "tests/core/circuit/test_whiteboard_22a.py",
         "tests/core/circuit/test_whiteboard_22b.py",
-        "tests/core/circuit/test_whiteboard_22c.py"
+        "tests/core/circuit/test_whiteboard_22c.py",
+        "tests/test_board_migrations.py"
       ],
       "updated_turn": 1,
       "verified_untested": false,
-      "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
+      "why": "Maintains the canonical versioned system architecture graph, runs deterministic forward schema migrations, detects frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },
-  "turn": 40,
-  "turn_index": 40,
+  "turn": 42,
+  "turn_index": 42,
   "version": 1
 }

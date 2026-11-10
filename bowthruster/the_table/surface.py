@@ -334,11 +334,16 @@ def _collect_atlas_topology(boards: list[tuple[str, dict[str, Any]]],
     hub_bottlenecks = sorted(explicit_hubs | {sid for sid, imps in dependents_map.items() if len(imps) >= 3})
     inferred_gaps = sum(1 for c in components.values() if not c["owner"] or c["build_status"] in ("FAILED",
         "BLOCKED_BY_DEP"))
+    board_versions: dict[str, dict[str, Any]] = {}
+    for bname, bdict in boards:
+        act_v = int(bdict.get("schema_version") or 1)
+        disk_v = int(bdict.get("_on_disk_schema_version", act_v))
+        board_versions[bname] = {"on_disk": disk_v, "active": act_v, "needs_migration": disk_v < act_v}
     metrics: dict[str, Any] = {"total_components": len(components),
         "verified_components": sum(1 for c in components.values() if c["build_status"] == "VERIFIED"),
         "claimed_components": sum(1 for c in components.values() if c.get("claimed_by")),
         "total_flows": len(flows), "open_gaps": explicit_gaps if saw_explicit_gaps else inferred_gaps,
-        "hub_bottlenecks": hub_bottlenecks}
+        "hub_bottlenecks": hub_bottlenecks, "board_schema_versions": board_versions}
     return components, flows, metrics
 
 def _extract_board_charter(bname: str, board: dict[str, Any]) -> dict[str, str] | None:
@@ -438,7 +443,11 @@ def render_lattice_atlas(whiteboard_boards: dict[str, dict[str, Any]] | list[dic
     for bname, board in boards:
         if ch := _extract_board_charter(bname, board):
             prin_sfx = f" (principles: {ch['principles']})" if ch["principles"] else ""
-            schem_lines.append(f"- @ CHARTER [{ch['name']}]: {ch['summary']}{prin_sfx}")
+            bv = (atlas_metrics.get("board_schema_versions") or {}).get(bname) or {}
+            act_v = bv.get("active", board.get("schema_version", 2))
+            mig_tag = (f" [schema=v{bv.get('on_disk', 1)}->v{act_v} NEEDS_MIGRATION]"
+                if bv.get("needs_migration") else f" [schema=v{act_v}]")
+            schem_lines.append(f"- @ CHARTER [{ch['name']}]: {ch['summary']}{prin_sfx}{mig_tag}")
         for k, sc in ((board.get("scopes") or {}).items() if isinstance(board.get("scopes"), dict) else []):
             if (k == "global_defaults" or str(k).startswith("global_defaults::")) :
                 for r in (sc.get("rules") or []):

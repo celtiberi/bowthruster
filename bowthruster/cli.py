@@ -199,9 +199,12 @@ def _board_paths(board: str) -> tuple[Path, Path, Path, Path]:
 def _save_board(graph: dict[str, Any], wb_json: Path, wb_sqlite: Path) -> None:
     if isinstance(graph, ContextGraph):
         object.__setattr__(graph, "_sqlite_store", SQLiteGraphStore(wb_sqlite))
+    graph["schema_version"] = int(graph.get("schema_version") or _wb.BOARD_SCHEMA_VERSION)
+    graph.setdefault("schema_migrations", [])
     sync_to_sqlite(graph)
     tmp_p = wb_json.with_name(f".{wb_json.name}.{os.getpid()}.{threading.get_ident()}.tmp")
-    clean_graph = copy.deepcopy({k: v for k, v in dict(graph).items() if k != "_sqlite_store"})
+    skip_k = ("_sqlite_store", "_on_disk_schema_version")
+    clean_graph = copy.deepcopy({k: v for k, v in dict(graph).items() if k not in skip_k})
     tmp_p.write_text(json.dumps(clean_graph, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     os.replace(tmp_p, wb_json)
 
@@ -211,7 +214,7 @@ def _load_board(board: str) -> tuple[ContextGraph, Path, Path, Path]:
         _, wb_json, wb_sqlite, transcript_path = _board_paths(board)
         store = SQLiteGraphStore(wb_sqlite)
         if wb_json.is_file():
-            raw_data = json.loads(wb_json.read_text(encoding="utf-8"))
+            raw_data, _ = _wb.migrate_board_data(json.loads(wb_json.read_text(encoding="utf-8")), board_name=board)
             graph = ContextGraph(raw_data, store=store)
             for sid, raw_sc in (raw_data.get("scopes") or {}).items():
                 if isinstance(raw_sc, dict) and raw_sc.get("active_ticket_id") and sid in graph.get("scopes", {}):
@@ -243,7 +246,10 @@ def _load_atlas_boards(
     for n in names:
         cand_paths = (vault_wb / f"{n}.json", vault_wb / n / "whiteboard.json", SESSIONS_ROOT / n / "whiteboard.json")
         if cand := next((c for c in cand_paths if c.is_file()), None):
-            d = json.loads(cand.read_text(encoding="utf-8"))
+            raw_d = json.loads(cand.read_text(encoding="utf-8"))
+            disk_v = _wb.detect_board_schema_version(raw_d)
+            d, _ = _wb.migrate_board_data(raw_d, board_name=n)
+            d["_on_disk_schema_version"] = disk_v
             has_scopes = [k for k in (d.get("scopes") or {}) if k != "global_defaults"]
             if boards_csv or (not load_all and explicit_board) or has_scopes or d.get("flows"):
                 out[n] = d
@@ -429,16 +435,9 @@ def main() -> int:
         if args.cmd in ("logs", "atlas", "slice"):
             return _dispatch_read_cmd(args, board, explicit_board, t0_cmd)
         if args.cmd == "git-sync":
-            if getattr(args, "install_hook", False):
-                mode = "install_hook"
-            elif args.pre_commit:
-                mode = "pre"
-            elif args.baseline:
-                mode = "baseline"
-            elif args.post_commit:
-                mode = "post"
-            else:
-                mode = "drift"
+            modes = ((getattr(args, "install_hook", False), "install_hook"), (args.pre_commit, "pre"),
+                (args.baseline, "baseline"), (args.post_commit, "post"))
+            mode = next((m for flag, m in modes if flag), "drift")
             payload, txt, allow = execute_git_sync(board, mode, args.manifest, mark_verified=bool(args.mark_verified))
             mod_sc = payload.get("marked_verified_scopes", payload.get("modified_scopes"))
             record_flight_event(
@@ -451,8 +450,9 @@ def main() -> int:
             return 0 if allow else 1
         if args.cmd == "reset":
             bdir, wb_json, wb_sqlite, transcript_path = _board_paths(board)
-            for p in (wb_json, wb_sqlite, transcript_path, bdir / "LATTICE_PROOF.bend"):
+            for p in (wb_json, wb_sqlite, Path(f"{wb_sqlite}-wal"), Path(f"{wb_sqlite}-shm"), transcript_path):
                 p.unlink(missing_ok=True)
+            (bdir / "LATTICE_PROOF.bend").unlink(missing_ok=True)
             _save_board(create_empty_context_graph(store=SQLiteGraphStore(wb_sqlite)), wb_json, wb_sqlite)
             record_flight_event(board, "reset", (time.perf_counter() - t0_cmd) * 1000.0, "OK")
             print(f"Reset Whiteboard session '{board}' at {bdir}")
@@ -479,7 +479,7 @@ def main() -> int:
                 msg = _read_input_text(args.message, args.file)
                 return _execute_turn(board, args.speaker, msg, args.round_num, profile, config_path)
             return 0
-        if args.cmd == "bootstrap":
+        if args.cmd in ("bootstrap", "migrate"):
             return _cmd_bootstrap(args, board, t0_cmd)
         if args.cmd == "status":
             return _cmd_status(args, board, t0_cmd)

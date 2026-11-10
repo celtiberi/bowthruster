@@ -373,6 +373,35 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
         },
     },
     {
+        "name": "migrate",
+        "description": (
+            "Deterministically upgrade .whiteboard/*.json persistent board files to the current "
+            "BOARD_SCHEMA_VERSION via ordered forward migrations (v0 -> v1 -> v2), stamping "
+            "schema_version and schema_migrations provenance."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "board": {
+                    "type": "string",
+                    "description": "Target board name (default: lattice_core)",
+                },
+                "migrate_all": {
+                    "type": "boolean",
+                    "description": "Migrate all .whiteboard/*.json files in project_root (default: false)",
+                },
+                "dry_run": {
+                    "type": "boolean",
+                    "description": "Preview pending migration steps without modifying files (default: false)",
+                },
+                "project_root": {
+                    "type": "string",
+                    "description": "Optional repository root path (defaults to active project root)",
+                },
+            },
+        },
+    },
+    {
         "name": "logs",
         "description": (
             "Query the append-only Structured Flight Recorder "

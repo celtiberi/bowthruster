@@ -58,13 +58,14 @@ When you use an AI coding agent on a growing project, three things start going w
 
 ## Agent Reference: Tools, Workflows & Pipe-Table Schema
 
-### The 9 MCP Tools (`bowthruster` server)
+### The 10 MCP Tools (`bowthruster` server)
 
 | MCP Tool | Step | Key Arguments & Purpose |
 | :--- | :---: | :--- |
 | `readme` | **Onboard** | Fetch onboarding quickstart + unified `bowthruster` skill (`section="readme" \| "full_readme" \| "guide" \| "skill" \| "all"`). |
 | `bootstrap` | **Onboard (Scan)** | Deterministically extract candidate components, public `Schema` classes and `Interface` functions with `#L<start>-L<end>` anchors, intra-repo imports as `Depends_On`, and matched test files into an honest draft board (`INCOMPLETE_DRAFT`) with bounded per-component onboarding packets and `open_gaps` (`MISSING_CHARTER`, `MISSING_ROLE`, `MISSING_WHY`, `MISSING_SPEC`, `UNWIRED_COMPONENT`) (`board`, `component`, optional `project_root`). Never infers `Flow`s or `Law`s. |
-| `atlas` | **Step 1 (Explore / Spec)** | Render the 1-line-per-component `LOD_0` topology (Charter, Role, Why, statuses, `claimed_by`, `> FLOW` edges, metrics, and Mermaid graph) or pass `spec=True` to compile the full Markdown specification (`board`, `load_all=True`, `mermaid=True`, `spec=True`, optional `project_root`). |
+| `migrate` | **Upgrade Board** | Deterministically upgrade `.whiteboard/*.json` files to the current `BOARD_SCHEMA_VERSION` (`v0 -> v1 -> v2`), stamping `schema_version` and `schema_migrations` provenance (`board`, `migrate_all=True`, `dry_run=True`, optional `project_root`). Forward-incompatible future versions (`schema_version > BOARD_SCHEMA_VERSION`) are refused rather than overwritten. |
+| `atlas` | **Step 1 (Explore / Spec)** | Render the 1-line-per-component `LOD_0` topology (Charter, `schema=v<N>`, Role, Why, statuses, `claimed_by`, `> FLOW` edges, metrics, and Mermaid graph) or pass `spec=True` to compile the full Markdown specification (`board`, `load_all=True`, `mermaid=True`, `spec=True`, optional `project_root`). |
 | `slice` | **Step 1 (Slice + Code)** | Pull a `< 2 KB` contract/symbol slice (`7–10 KB` with full component `include_code=True`) + exact `#L<start>-L<end>` source code in one call (`board`, `component`, `query`, `include_code=True`, `mark_stale=True`, `claim_by`, optional `project_root`). Supports windowed lookup (`query="fn_name 100-180"`), fuzzy symbol/component matching, and cross-board fallback. |
 | `turn` | **Step 2 (Mutate Board)** | Compile Markdown pipe tables into the Whiteboard and mark modified/downstream components `STALE` (`board`, `speaker`, `message`, optional `project_root`). |
 | `packets` | **Step 3 (Build Packet)** | Emit wave-ordered `WorkPacket`s (`laws_skeleton`, `python_skeleton`, `baseline_commit_sha`) and optionally filter/claim unclaimed work (`board`, `component`, `status="STALE"`, `unclaimed_only=True`, `claim_by="<agent>"`, optional `project_root`). |

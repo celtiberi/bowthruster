@@ -340,6 +340,15 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
         _cli.REPO_ROOT = active_root
         os.environ["BOWTHRUSTER_PROJECT_ROOT"] = str(active_root)
         try:
+            if name == "migrate":
+                from bowthruster.whiteboard.migrations import format_migration_report, migrate_repo_boards
+
+                m_pay = migrate_repo_boards(
+                    active_root, board=board, migrate_all=bool(args.get("migrate_all")), dry_run=bool(args.get("dry_run"))
+                )
+                resp, nbytes = _format_tool_result(m_pay, text=format_migration_report(m_pay))
+                record_flight_event(board, name, (time.perf_counter() - t0) * 1000.0, "OK", response_bytes=nbytes)
+                return resp
             if name == "bootstrap":
                 from bowthruster.bootstrap import bootstrap_repository, format_bootstrap_report
 

@@ -235,6 +235,10 @@ class SQLiteGraphStore:
                 meta_scalars["_has_flows"] = True
             if "lattice_artifacts" in graph:
                 meta_scalars["_has_lattice_artifacts"] = True
+            if "schema_version" in graph:
+                meta_scalars["schema_version"] = int(graph["schema_version"])
+            if "schema_migrations" in graph:
+                meta_scalars["schema_migrations"] = list(graph["schema_migrations"] or [])
             self._save_scopes_and_nodes(graph)
             ext_links_top = graph.get("external_links")
             if isinstance(ext_links_top, dict):
@@ -376,6 +380,10 @@ class SQLiteGraphStore:
             out["lattice_artifacts"] = artifacts_list
         if links_by_node:
             out["external_links"] = links_by_node
+        if "schema_version" in scalars:
+            out["schema_version"] = int(scalars["schema_version"])
+        if "schema_migrations" in scalars:
+            out["schema_migrations"] = list(scalars["schema_migrations"] or [])
         return out
     def query_nodes_by_scope(self, scope_id: str) -> list[dict[str, Any]]:
         """Indexed SQLite lookup returning all nodes in `scope_id` (Spec 21 §1.1)."""
