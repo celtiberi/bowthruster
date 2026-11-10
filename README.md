@@ -32,6 +32,10 @@ When you use an AI coding agent on a growing project, three things start going w
 
 ## Quick Start
 
+- **Requirements:** Python 3.11+ (zero pip dependencies). For formal Bend 2 proof checking (`~/.bend/bin/bend`), install Bend 2:
+  ```bash
+  curl -fsSL https://bend-lang.com/install.sh | sh
+  ```
 - Standard MCP JSON Config
   ```json
   {

@@ -43,7 +43,6 @@ class QaVerificationReport(dict[str, Any]):
 
 
 def check_git_sync_truth_table_parity_law(x: bool) -> bool:
-    """Pure identity witness for `git_sync_truth_table_parity_law` on `--board git_lattice_sync`."""
     return bool(x)
 
 
@@ -69,13 +68,7 @@ def _load_bend_gate():
 
 
 def _compile_bend_to_mjs(bend_exe: Path, bend_file: Path, out_mjs: Path) -> None:
-    subprocess.run(
-        [str(bend_exe), str(bend_file), "-o", str(out_mjs)],
-        cwd=str(bend_file.parent),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    subprocess.run([str(bend_exe), str(bend_file), "-o", str(out_mjs)], cwd=str(bend_file.parent), capture_output=True, text=True, check=True)
 
 
 def _verify_bend2_and_mjs_parity() -> dict[str, Any]:
@@ -470,6 +463,8 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
         for src, expected_ok in probes:
             staged = [{"path": "src/auth.py", "source": src}]
             b_rep = verify_python_ast_laws_with_bend(probe_wb["lattice_artifacts"], staged, probe_wb["scopes"])
+            if "def is_token_valid" in src:
+                self.assertEqual((b_rep["bend_binary_checked"], b_rep["bend_proof_status"]), (True, "PROVEN" if "a and b" in src else "FAILED"))
             res = EXEC_GATE.evaluate_git_commit_gate(probe_wb, {"files": staged, "bend_proofs_ok": b_rep["bend_proofs_ok"]})
             self.assertEqual(res["allowed"], expected_ok, f"Probe failed for:\n{src}\nResult: {res}")
 

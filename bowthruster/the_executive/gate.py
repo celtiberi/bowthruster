@@ -432,6 +432,7 @@ def evaluate_git_commit_gate(
         "bounds_ok": bounds_ok,
         "contracts_ok": contracts_ok,
         "bend_proofs_ok": bend_proofs_ok,
+        "bend_proof_status": str(ast_law_rep.get("bend_proof_status") or "NO_LAWS"),
         "bend_binary_checked": bool(ast_law_rep.get("bend_binary_checked", False)),
         "truth_table_checked": bool(ast_law_rep.get("truth_table_checked", True)),
         "no_dangling_deletes": no_dangling_deletes,

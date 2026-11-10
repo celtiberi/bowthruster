@@ -567,7 +567,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
+  "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
   "lattice_artifacts": [
     {
       "created_turn": 2,
@@ -1220,9 +1220,9 @@
       "created_turn": 15,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/the_executive/gate.py#L232-L447"
+        "file": "bowthruster/the_executive/gate.py#L232-L448"
       },
-      "file": "bowthruster/the_executive/gate.py#L232-L447",
+      "file": "bowthruster/the_executive/gate.py#L232-L448",
       "id": "interface_the_executive_evaluate_git_commit_gate",
       "inputs": [
         "whiteboard_graph",
@@ -1926,16 +1926,16 @@
     },
     {
       "calls": [
-        "_expr#L286-L324",
-        "_stmts#L326-L342",
-        "_sub_ident#L267-L271"
+        "_expr#L279-L317",
+        "_stmts#L319-L335",
+        "_sub_ident#L260-L264"
       ],
       "created_turn": 31,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/nlp.py#L274-L344"
+        "file": "bowthruster/nlp.py#L267-L337"
       },
-      "file": "bowthruster/nlp.py#L274-L344",
+      "file": "bowthruster/nlp.py#L267-L337",
       "id": "interface_runtime_foundation_transpile_py_fn_to_bend_bool",
       "inputs": [
         "fn_node",
@@ -1958,18 +1958,18 @@
     },
     {
       "calls": [
-        "_check_synthesized_bend_proof#L402-L411",
-        "_eval_bend_bool#L347-L374",
-        "_find_bend_binary#L397-L398",
-        "_gen_bool_case_proof#L377-L388",
-        "_norm_bend_expr#L391-L394"
+        "_check_synthesized_bend_proof#L397-L406",
+        "_eval_bend_bool#L340-L367",
+        "_find_bend_binary#L390-L393",
+        "_gen_bool_case_proof#L370-L381",
+        "_norm_bend_expr#L384-L387"
       ],
       "created_turn": 31,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/nlp.py#L414-L481"
+        "file": "bowthruster/nlp.py#L409-L482"
       },
-      "file": "bowthruster/nlp.py#L414-L481",
+      "file": "bowthruster/nlp.py#L409-L482",
       "id": "interface_runtime_foundation_verify_python_ast_laws_with_bend",
       "inputs": [
         "artifacts",
@@ -2072,7 +2072,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
+      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2278,7 +2278,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
+      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
       "outputs": [],
       "owner": "eng0",
       "parent": null,
@@ -2344,7 +2344,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
+      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
       "outputs": [],
       "owner": "eng0, eng1, eng2, eng3",
       "parent": null,
@@ -2378,7 +2378,7 @@
           "bowthruster/git_manifest.py": "befa73142858b064",
           "bowthruster/mcp_server.py": "2b44c9a6db02f7b9",
           "bowthruster/mcp_verifier.py": "f26a549bab41d90f",
-          "bowthruster/nlp.py": "4410459bba9e6901",
+          "bowthruster/nlp.py": "98220ee239475eac",
           "bowthruster/types.py": "2172d10c1427d1b2"
         },
         "files": [
@@ -2409,7 +2409,7 @@
         "bowthruster/git_manifest.py": "befa73142858b064",
         "bowthruster/mcp_server.py": "2b44c9a6db02f7b9",
         "bowthruster/mcp_verifier.py": "f26a549bab41d90f",
-        "bowthruster/nlp.py": "4410459bba9e6901",
+        "bowthruster/nlp.py": "98220ee239475eac",
         "bowthruster/types.py": "2172d10c1427d1b2"
       },
       "files": [
@@ -2427,7 +2427,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
+      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
       "outputs": [],
       "owner": "bethe",
       "parent": null,
@@ -2461,7 +2461,7 @@
         "file_hashes": {
           "bowthruster/the_executive/__init__.py": "4aaddb0a7df56492",
           "bowthruster/the_executive/call_graph.py": "5093db95621ec8ea",
-          "bowthruster/the_executive/gate.py": "116fb9a212beb8fb",
+          "bowthruster/the_executive/gate.py": "7cec5b7c78442c57",
           "bowthruster/the_executive/orchestrator.py": "8a0bd9229b62934d",
           "bowthruster/the_executive/preflight.py": "d3a94384b1c86639",
           "bowthruster/the_executive/voice.py": "36432a4bba43c32d"
@@ -2494,7 +2494,7 @@
       "file_hashes": {
         "bowthruster/the_executive/__init__.py": "4aaddb0a7df56492",
         "bowthruster/the_executive/call_graph.py": "5093db95621ec8ea",
-        "bowthruster/the_executive/gate.py": "116fb9a212beb8fb",
+        "bowthruster/the_executive/gate.py": "7cec5b7c78442c57",
         "bowthruster/the_executive/orchestrator.py": "8a0bd9229b62934d",
         "bowthruster/the_executive/preflight.py": "d3a94384b1c86639",
         "bowthruster/the_executive/voice.py": "36432a4bba43c32d"
@@ -2516,7 +2516,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
+      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
       "outputs": [],
       "owner": "eng2",
       "parent": null,
@@ -2599,7 +2599,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
+      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
       "outputs": [],
       "owner": "eng1",
       "parent": null,
@@ -2695,7 +2695,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "c4ca9a7ae39f4d3a10d24f523caf068b3a3a2493",
+      "last_commit_sha": "b897c23e72cf13fe640f1fc9311c3daffcb2a8f0",
       "outputs": [],
       "owner": "eng2",
       "parent": null,

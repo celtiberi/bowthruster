@@ -7,15 +7,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from difflib import SequenceMatcher
-import ast
-import functools
-import itertools
-import math
+import ast, functools, itertools, math, os, re, shutil, subprocess, tempfile
 from pathlib import Path
-import re
-import shutil
-import subprocess
-import tempfile
 from typing import Any
 
 ASCII_PERIOD = "\u2024"
@@ -395,20 +388,22 @@ def _norm_bend_expr(expr: str, fn_name: str) -> str:
 
 
 def _find_bend_binary() -> str | None:
-    return shutil.which("bend") or (str(Path.home() / ".cargo" / "bin" / "bend") if (Path.home() / ".cargo" / "bin" / "bend").is_file() else None)
+    env_bin = os.environ.get("BEND_BIN")
+    cands = (Path(env_bin) if env_bin else None, Path.home() / ".bend" / "bin" / "bend", Path(w) if (w := shutil.which("bend")) else None, Path.home() / ".cargo" / "bin" / "bend")
+    return next((str(c) for c in cands if c is not None and c.is_file() and os.access(c, os.X_OK)), None)
 
 
 @functools.lru_cache(maxsize=256)
-def _check_synthesized_bend_proof(bend_src: str) -> bool:
+def _check_synthesized_bend_proof(bend_src: str) -> bool | None:
     bend_bin = _find_bend_binary()
     if not bend_bin:
-        return True
+        return None
     with tempfile.TemporaryDirectory(prefix="lattice_ast_bend_") as tmp:
         p = Path(tmp) / "LAW_CHECK.bend"
         p.write_text(bend_src, encoding="utf-8")
-        res = subprocess.run([bend_bin, str(p)], cwd=tmp, capture_output=True, text=True, timeout=15)
+        res = subprocess.run([bend_bin, str(p)], cwd=tmp, env={**os.environ, "BEND_NO_TELEMETRY": "1"}, capture_output=True, text=True, timeout=15)
         out = f"{res.stdout}\n{res.stderr}"
-        return res.returncode == 0 and "ERROR" not in out
+        return res.returncode == 0 and "ALL PROOFS CHECK" in out and "ERROR" not in out
 
 
 def verify_python_ast_laws_with_bend(
@@ -468,17 +463,23 @@ def verify_python_ast_laws_with_bend(
                 bend_src = (
                     "import Base\n\ndef bool_eq(a: Bool, b: Bool) -> Bool:\n  match a b:\n"
                     "    case True{} True{}:\n      True{}\n    case False{} False{}:\n      True{}\n"
-                    f"    case _ _:\n      False{{}}\n\ndef {lfn}({sig_str}) -> Bool:\n  {py_bend}\n\n"
-                    f"law {safe_law}:\n{for_lines}\n  {{{_norm_bend_expr(lhs, lfn)} == {_norm_bend_expr(rhs, lfn)} : Bool}}\n{proof_lines}\n"
+                    "    case True{} False{}:\n      False{}\n    case False{} True{}:\n      False{}\n\n"
+                    "def bool_imp(a: Bool, b: Bool) -> Bool:\n  match a:\n    case False{}:\n      True{}\n    case True{}:\n      b\n\n"
+                    f"def {lfn}({sig_str}) -> Bool:\n  {py_bend}\n\n"
+                    f"law {safe_law}:\n{for_lines}\n  {{{_norm_bend_expr(lhs, lfn)} == {_norm_bend_expr(rhs, lfn)} : Bool}}\n\n"
+                    f"def {safe_law}({', '.join(law_params)}):\n{proof_lines}\n"
                 )
-                if not table_ok or not _check_synthesized_bend_proof(bend_src):
+                bend_verdict = _check_synthesized_bend_proof(bend_src)
+                if not table_ok or bend_verdict is False:
                     failed_laws.append(law_id)
             except Exception:
                 failed_laws.append(law_id)
             break
 
     has_checked = bool(checked_laws)
-    return {"bend_proofs_ok": len(failed_laws) == 0, "bend_binary_checked": has_checked and bool(_find_bend_binary()), "truth_table_checked": has_checked, "failed_laws": failed_laws, "checked_laws": checked_laws}
+    has_bend_bin = bool(_find_bend_binary())
+    status = ("FAILED" if failed_laws else ("PROVEN" if has_bend_bin else "NOT_CHECKED")) if has_checked else "NO_LAWS"
+    return {"bend_proofs_ok": len(failed_laws) == 0, "bend_proof_status": status, "bend_binary_checked": has_checked and has_bend_bin, "truth_table_checked": has_checked, "failed_laws": failed_laws, "checked_laws": checked_laws}
 
 
 __all__ = [
