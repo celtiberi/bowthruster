@@ -104,8 +104,7 @@ class TableParserState:
 
 
 def _split_pipe_row(line: str) -> list[str]:
-    s = line.strip()
-    return [c.strip() for c in s[1:-1].split("|")]
+    return [c.replace("\x00", "|").strip() for c in line.strip()[1:-1].replace("\\|", "\x00").split("|")]
 
 
 def _is_separator_row(cells: list[str]) -> bool:
@@ -132,11 +131,22 @@ def _clean_cell_val(raw_val: Any) -> str:
 def _split_list_cell(val: Any) -> list[str]:
     if isinstance(val, list):
         return [c for x in val if (c := _clean_cell_val(x)) and c.lower() not in _EMPTY_TOKENS]
-    raw = _clean_cell_val(val).strip("[]")
+    raw = _clean_cell_val(val)
+    if raw.startswith("[") and raw.endswith("]"):
+        raw = raw[1:-1].strip()
     if not raw or raw.lower() in _EMPTY_TOKENS:
         return []
+    chunks, buf, depth = [], [], 0
+    for ch in raw:
+        depth += 1 if ch in "([{" else (-1 if ch in ")]}" and depth > 0 else 0)
+        if ch in (",", ";") and depth == 0:
+            chunks.append("".join(buf))
+            buf = []
+        else:
+            buf.append(ch)
+    chunks.append("".join(buf))
     out: list[str] = []
-    for part in raw.replace(";", ",").split(","):
+    for part in chunks:
         tok = part.strip().strip("\"`'*").strip()
         if tok and tok.lower() not in _EMPTY_TOKENS and tok not in out:
             out.append(tok)
@@ -388,12 +398,14 @@ def _compile_component_row(
     files = _split_list_cell(_pick(srow, "files", "file", "raw_scope"))
     tests = _split_test_paths(_pick(srow, "tests", "test_files", "test"))
     has_test_col = any(k in srow for k in ("tests", "test_files", "test"))
-    role = str(_pick(srow, "role", "description", "purpose", default=f"Component {eff_scope}")).strip()
+    raw_role = str(_pick(srow, "role", "description", "purpose")).strip()
+    role = raw_role or f"Component {eff_scope}"
     why = str(_pick(srow, "why", "rationale")).strip() or None
+    why_missing = any(k in srow for k in ("why", "rationale")) and not why
     attrs: dict[str, Any] = {"files": list(files), "depends_on": list(deps)}
     payload: dict[str, Any] = {
-        "scope": eff_scope, "role": role, "why": why,
-        "depends_on": deps, "files": files, "owner": eff_owner, "stage": eff_stage,
+        "scope": eff_scope, "role": role, "why": why, "_role_missing": not raw_role,
+        "_why_missing": why_missing, "depends_on": deps, "files": files, "owner": eff_owner, "stage": eff_stage,
     }
     if tests or has_test_col:
         attrs["tests"] = list(tests)
@@ -420,11 +432,12 @@ def _build_artifact_or_charter_mcu(
     if t_kind == "COMPONENT":
         return _compile_component_row(srow, next_id, scope, owner, stage)
     name = str(_pick(srow, t_kind.lower(), "name", "id", default=scope)).strip()
-    spec_s = str(_pick(srow, "spec", "description", "theorem", default=f"{t_kind} {name} ({scope})")).strip()
+    raw_spec = str(_pick(srow, "spec", "description", "theorem")).strip()
+    spec_s = raw_spec or f"{t_kind} {name} ({scope})"
     ins = _split_list_cell(_pick(srow, "inputs", "fields", "args"))
     outs = _split_list_cell(_pick(srow, "outputs", "output", "returns"))
     payload = {
-        "id": name, "name": name, "scope": scope, "spec": spec_s,
+        "id": name, "name": name, "scope": scope, "spec": spec_s, "spec_missing": not raw_spec,
         "inputs": ins, "outputs": outs, "owner": owner, "stage": stage,
         "file": str(srow.get("file") or "").strip() or None,
     }

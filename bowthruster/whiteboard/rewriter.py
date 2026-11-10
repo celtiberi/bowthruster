@@ -173,9 +173,16 @@ def _fuse_artifact_or_law_rows(graph: dict[str, Any], rows: list[Any], headers: 
                 _get_table_cell(row, headers, norm_headers, ("spec", "description", "role", "summary")) ).strip()
             spec_str = raw_spec or (f"{art_name}({', '.join(inputs_list)})" if art_kind == "SCHEMA"
                 else f"{art_name}({', '.join(inputs_list)}) -> {', '.join(outputs_list)}")
-            dims = {"_from_table": True, **({"file": clean_file} if clean_file else {})}
+            dims: dict[str, Any] = {"_from_table": True, "spec_missing": not bool(raw_spec)}
+            if clean_file:
+                dims["file"] = clean_file
+            if inputs_list:
+                dims["fields" if art_kind == "SCHEMA" else "inputs"] = list(inputs_list)
+            if outputs_list:
+                dims["outputs"] = list(outputs_list)
             art_entry = upsert_lattice_artifact(
-                graph, art_kind, art_name, scope_id=comp_sid, spec=spec_str, inputs=inputs_list, outputs=outputs_list,
+                graph, art_kind, art_name, scope_id=comp_sid, spec=spec_str,
+                inputs=inputs_list or None, outputs=outputs_list or None,
                 owner=owner_val, stage=stage_val, dimensions=dims, text=spec_str, current_turn=int(turn_index))
             if clean_file:
                 art_entry["file"] = clean_file
@@ -208,6 +215,40 @@ def _fuse_artifact_or_law_rows(graph: dict[str, Any], rows: list[Any], headers: 
             text=spec_str, current_turn=int(turn_index))
         for lkey, lval in law_fields.items():
             art_entry[lkey] = lval
+
+def _reconcile_bootstrapped_file_claims(graph: dict[str, Any], scope_id: str, claimed_files: list[str]) -> None:
+    if not graph.get("bootstrapped") or not claimed_files:
+        return
+    claimed_set = set(claimed_files)
+    scopes = graph.get("scopes") or {}
+    artifacts = graph.get("lattice_artifacts") or []
+    for other_sid, other_sc in list(scopes.items()):
+        if other_sid in (scope_id, "global_defaults"):
+            continue
+        other_files = list(other_sc.get("files") or [])
+        overlap = [f for f in other_files if f in claimed_set]
+        if not overlap:
+            continue
+        for art in artifacts:
+            if (art.get("scope") or art.get("scope_id")) == other_sid:
+                af = str(art.get("file") or (art.get("dimensions") or {}).get("file") or "").split("#", 1)[0]
+                if af in claimed_set:
+                    art["scope"] = art["scope_id"] = scope_id
+        rem_files = [f for f in other_files if f not in claimed_set]
+        other_sc["files"] = rem_files
+        other_sc.setdefault("attributes", {})["files"] = rem_files
+        if not rem_files and other_sc.get("_bootstrapped"):
+            scopes.pop(other_sid, None)
+            for art in artifacts:
+                if (art.get("scope") or art.get("scope_id")) == other_sid:
+                    art["scope"] = art["scope_id"] = scope_id
+            for snode in scopes.values():
+                if isinstance(snode.get("depends_on"), list) and other_sid in snode["depends_on"]:
+                    snode["depends_on"] = [
+                        d for d in (scope_id if x == other_sid else x for x in snode["depends_on"])
+                        if d != snode.get("id")
+                    ]
+
 
 def _fuse_component_rows(graph: dict[str, Any], table: dict[str, Any], rows: list[Any], headers: list[Any],
     norm_headers: list[str], turn_index: int, fused_scopes: list[str]) -> None:
@@ -243,10 +284,18 @@ def _fuse_component_rows(graph: dict[str, Any], table: dict[str, Any], rows: lis
                     _register_scope_aliases(graph, scope_id, _extract_canonical_and_aliases(cell_val)[1])
             clean_str = str(cell_val).strip()
             is_empty_cell = clean_str.lower() in _EMPTY_TOKENS
-            if col_key in ("role", "purpose", "responsibility") and not is_empty_cell:
-                sbf_kwargs["role"] = attrs["_table_role"] = clean_str
-            elif col_key in ("why", "rationale") and not is_empty_cell:
-                scope["why"] = attrs["why"] = clean_str
+            if col_key in ("role", "purpose", "responsibility"):
+                if not is_empty_cell:
+                    sbf_kwargs["role"] = attrs["_table_role"] = clean_str
+                    scope["_role_missing"] = False
+                elif not scope.get("role"):
+                    scope["_role_missing"] = True
+            elif col_key in ("why", "rationale"):
+                if not is_empty_cell:
+                    scope["why"] = attrs["why"] = clean_str
+                    scope["_why_missing"] = False
+                elif not scope.get("why"):
+                    scope["_why_missing"] = True
             elif col_key in ("owner", "division") and not is_empty_cell:
                 sbf_kwargs["owner"] = (_extract_canonical_and_aliases(raw_cell_str)[0]
                     if ("`" in raw_cell_str or "(" in raw_cell_str) else clean_str)
@@ -254,7 +303,9 @@ def _fuse_component_rows(graph: dict[str, Any], table: dict[str, Any], rows: lis
                 sbf_kwargs["stage"] = clean_str
             elif col_key == "parent" and not is_empty_cell:
                 sbf_kwargs["parent"] = _slugify_scope_id(clean_str) or clean_str
-            elif col_key in ("depends_on", "deps", "dependencies"):
+            elif col_key in ("depends_on", "deps", "dependencies") and (
+                not is_empty_cell or not scope.get("depends_on")
+            ):
                 dep_sids = [
                     _resolve_or_register_scope(graph, d, create=True) for d in _parse_list_cell(raw_cell_str) if d]
                 sbf_kwargs["depends_on"] = [d for d in dep_sids if d != scope_id]
@@ -267,9 +318,12 @@ def _fuse_component_rows(graph: dict[str, Any], table: dict[str, Any], rows: lis
             elif col_key in ("outputs", "output"):
                 sbf_kwargs["outputs"] = _parse_list_cell(raw_cell_str)
             elif col_key in ("files", "file") or (col_key == "scope" and files_list is None and not is_empty_cell):
-                files_list = _parse_list_cell(raw_cell_str)
-                scope["files"] = attrs["files"] = files_list
-                attrs["_table_files"] = list(files_list)
+                parsed_f = _parse_list_cell(raw_cell_str)
+                if parsed_f or not scope.get("files"):
+                    files_list = parsed_f
+                    scope["files"] = attrs["files"] = files_list
+                    attrs["_table_files"] = list(files_list)
+                    _reconcile_bootstrapped_file_claims(graph, scope_id, files_list)
             elif col_key in ("tests", "test", "test_files") and not is_empty_cell:
                 t_list = _parse_list_cell(raw_cell_str)
                 scope["tests"] = attrs["tests"] = sbf_kwargs["tests"] = t_list

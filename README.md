@@ -49,8 +49,8 @@ When you use an AI coding agent on a growing project, three things start going w
   ```
 
 - Once connected, open any new or existing repository and tell your agent:
-1. **Map the codebase:**
-   > *`"Call readme(section='readme') on bowthruster and map this repository onto a board with its Charter, component Roles/Why, Flows, Interfaces, and Laws."`*
+1. **Bootstrap the repository deterministically (`< 50ms`, zero LLM):**
+   > *`"Call bootstrap(board='my_board') on bowthruster to extract candidate components, public class/function signatures with line anchors, Depends_On imports, and matched test files, then fill in the open gaps (Charter, Role, Why, Spec, Flows) one onboarding packet at a time via turn."`*
 2. **Run an architectural audit:**
    > *`"With the insight you now have from the board and AST slices, what would you change about this project's architecture (e.g., monoliths doing another component's job, hidden state mutations across flows, duplicated logic, or missing seams)?"`*
 
@@ -58,11 +58,12 @@ When you use an AI coding agent on a growing project, three things start going w
 
 ## Agent Reference: Tools, Workflows & Pipe-Table Schema
 
-### The 8 MCP Tools (`bowthruster` server)
+### The 9 MCP Tools (`bowthruster` server)
 
 | MCP Tool | Step | Key Arguments & Purpose |
 | :--- | :---: | :--- |
 | `readme` | **Onboard** | Fetch onboarding quickstart + unified `bowthruster` skill (`section="readme" \| "full_readme" \| "guide" \| "skill" \| "all"`). |
+| `bootstrap` | **Onboard (Scan)** | Deterministically extract candidate components, public `Schema` classes and `Interface` functions with `#L<start>-L<end>` anchors, intra-repo imports as `Depends_On`, and matched test files into an honest draft board (`INCOMPLETE_DRAFT`) with bounded per-component onboarding packets and `open_gaps` (`MISSING_CHARTER`, `MISSING_ROLE`, `MISSING_WHY`, `MISSING_SPEC`, `UNWIRED_COMPONENT`) (`board`, `component`, optional `project_root`). Never infers `Flow`s or `Law`s. |
 | `atlas` | **Step 1 (Explore / Spec)** | Render the 1-line-per-component `LOD_0` topology (Charter, Role, Why, statuses, `> FLOW` edges, metrics, and Mermaid graph) or pass `spec=True` to compile the full Markdown specification (`board`, `load_all=True`, `mermaid=True`, `spec=True`, optional `project_root`). |
 | `slice` | **Step 1 (Slice + Code)** | Pull a `< 2 KB` contract/symbol slice (`7–10 KB` with full component `include_code=True`) + exact `#L<start>-L<end>` source code in one call (`board`, `component`, `query`, `include_code=True`, `mark_stale=True`, optional `project_root`). Supports windowed lookup (`query="fn_name 100-180"`), fuzzy symbol/component matching, and cross-board fallback. |
 | `turn` | **Step 2 (Mutate Board)** | Compile Markdown pipe tables into the Whiteboard and mark modified/downstream components `STALE` (`board`, `speaker`, `message`, optional `project_root`). |
@@ -139,9 +140,10 @@ Pass canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`
 
 ### Onboarding an Existing Repository & Installing the AI Skill / Git Hooks
 
-1. **Compile & Verify the Baseline:** Submit the initial pipe tables via `turn`, mark existing files `VERIFIED` via `git_sync(board="my_board", mode="pre", mark_verified=True)`, and stamp the initial Git SHA via `git_sync(board="my_board", mode="post")`.
-2. **Install the Unified `bowthruster` Skill:** Call `readme(section="skills")` to retrieve [`docs/skills/bowthruster/SKILL.md`](docs/skills/bowthruster/SKILL.md) and write it to `.agents/skills/bowthruster/SKILL.md` (or `.claude/skills/bowthruster/SKILL.md`), replacing `<BOARD_NAME>` and `<TEST_CMD>`.
-3. **Optional — Run `install_hook` if you want the gate on every commit:**
+1. **Bootstrap the Draft Board (`bootstrap`):** Run `bootstrap(board="my_board")` (CLI: `bowthruster --board my_board bootstrap [--component <comp>]`) to mechanically extract candidate components (`Files`), public `Schema` classes and `Interface` functions with real signatures and `#L<start>-L<end>` anchors, intra-repo imports (`Depends_On`), and matched test files (`Tests`). `Charter`, `Role`, `Why`, and `Spec` are left blank and flagged in `open_gaps`, and candidate component boundaries can be kept, merged, or split via `turn`.
+2. **Fill in Judgment Gaps (`turn`) & Verify (`git_sync`):** Work through one onboarding packet at a time via `turn` to fill in `Charter`, `Role`, `Why`, `Spec`, and `Flow`s until `open_gaps` reaches `0` (`PROVEN_COMPLETE`), then mark existing files `VERIFIED` via `git_sync(board="my_board", mode="pre", mark_verified=True)` and stamp the initial Git SHA via `git_sync(board="my_board", mode="post")`.
+3. **Install the Unified `bowthruster` Skill:** Call `readme(section="skills")` to retrieve [`docs/skills/bowthruster/SKILL.md`](docs/skills/bowthruster/SKILL.md) and write it to `.agents/skills/bowthruster/SKILL.md` (or `.claude/skills/bowthruster/SKILL.md`), replacing `<BOARD_NAME>` and `<TEST_CMD>`.
+4. **Optional — Run `install_hook` if you want the gate on every commit:**
    Run `git_sync(board="my_board", mode="install_hook")` (CLI: `bowthruster --board my_board git-sync --install-hook`) to write a portable `.git/hooks/pre-commit` script for that board (which fails open with a warning if `bowthruster` is not installed in the active environment). To stamp commit SHAs automatically after each commit, you can also add a `.git/hooks/post-commit` hook calling `bowthruster --board my_board git-sync --post-commit`.
 
 ---

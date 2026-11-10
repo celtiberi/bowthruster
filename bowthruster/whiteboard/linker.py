@@ -218,7 +218,7 @@ def _apply_upsert_component_delta(graph: dict[str, Any], parsed_mcu: dict[str, A
     raw_deps = lpayload.get("depends_on") if "depends_on" in lpayload else parsed_mcu.get("depends_on")
     if "_table_depends_on" in sc_attrs and from_table_this_turn:
         dep_sids: list[str] | None = list(sc_attrs["_table_depends_on"])
-    elif isinstance(raw_deps, list):
+    elif isinstance(raw_deps, list) and (raw_deps or not existing_sc.get("depends_on")):
         clean_deps, _ = _filter_non_dep_tokens(graph, comp_sid, raw_deps, text_clean, lpayload, parsed_mcu)
         dep_sids = [_resolve_or_register_scope(graph, str(d), create=True) for d in clean_deps if str(d).strip()]
     else:
@@ -235,16 +235,23 @@ def _apply_upsert_component_delta(graph: dict[str, Any], parsed_mcu: dict[str, A
         stage=lpayload.get("stage") if "stage" in lpayload else parsed_mcu.get("stage"),
         kind=lpayload.get("kind") or "COMPONENT",
         status=lpayload.get("status") if "status" in lpayload else parsed_mcu.get("status"))
+    if role_val and not lpayload.get("_role_missing"):
+        comp_scope["_role_missing"] = False
+    if lpayload.get("why"):
+        comp_scope["why"] = str(lpayload["why"]).strip()
+        comp_scope["_why_missing"] = False
     if raw_files is not None:
         flist = (_parse_list_cell(raw_files) if isinstance(raw_files, str)
             else [str(f).strip() for f in raw_files if str(f).strip()])
-        comp_scope["files"] = flist
-        comp_scope.setdefault("attributes", {})["files"] = flist
+        if flist or not comp_scope.get("files"):
+            comp_scope["files"] = flist
+            comp_scope.setdefault("attributes", {})["files"] = flist
     if raw_tests is not None:
         tlist = (_parse_list_cell(raw_tests) if isinstance(raw_tests, str)
             else [str(t).strip() for t in raw_tests if str(t).strip()])
-        comp_scope["tests"] = tlist
-        comp_scope.setdefault("attributes", {})["tests"] = tlist
+        if tlist or not comp_scope.get("tests"):
+            comp_scope["tests"] = tlist
+            comp_scope.setdefault("attributes", {})["tests"] = tlist
     annotate_active_tasks(graph)
     sync_to_sqlite(graph)
     return {"operation": lop, "scope": comp_scope["id"], "scope_id": comp_scope["id"], "mcu_id": mcu_id}
@@ -275,6 +282,8 @@ def _apply_upsert_artifact_delta(graph: dict[str, Any], parsed_mcu: dict[str, An
         if (v := (lpayload.get(k) if k in lpayload else parsed_mcu.get(k))) is not None and str(v).strip()}
     dims_in = dict(lpayload.get("dimensions") or {}) if isinstance(lpayload.get("dimensions"), dict) else {}
     dims_in.update(extra_art_fields)
+    if "spec_missing" in lpayload:
+        dims_in["spec_missing"] = bool(lpayload["spec_missing"])
     upserted_entries: list[dict[str, Any]] = []
     for art_name in art_ids:
         eff_sid = art_sid
@@ -287,7 +296,7 @@ def _apply_upsert_artifact_delta(graph: dict[str, Any], parsed_mcu: dict[str, An
                 eff_sid = str(existing_art["scope"])
         entry = upsert_lattice_artifact(
             graph, lkind, art_name, scope_id=eff_sid, spec=str(lpayload.get("spec") or text_clean),
-            inputs=ins_list, outputs=outs_list,
+            inputs=ins_list or None, outputs=outs_list or None,
             owner=lpayload.get("owner") if "owner" in lpayload else parsed_mcu.get("owner"),
             stage=lpayload.get("stage") if "stage" in lpayload else parsed_mcu.get("stage"),
             dimensions=dims_in or None, text=str(lpayload.get("text") or text_clean), current_turn=t_turn)

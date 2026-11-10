@@ -170,10 +170,30 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     p_logs.add_argument("--limit", type=int, default=20)
     p_logs.add_argument("--status", default=None)
     p_prove, p_hist = sub.add_parser("prove", parents=[common]), sub.add_parser("history", parents=[common])
-    for p in (p_show, p_slice, p_prove, p_pkts, p_stat, p_atlas, p_gsync, p_logs, p_hist):
+    p_boot = sub.add_parser("bootstrap", parents=[common])
+    p_boot.add_argument("--component", default=None)
+    for p in (p_show, p_slice, p_prove, p_pkts, p_stat, p_atlas, p_gsync, p_logs, p_hist, p_boot):
         p.add_argument("--json", action="store_true", dest="as_json")
     sub.add_parser("reset", parents=[common])
     return parser
+
+
+def _cmd_bootstrap(args: argparse.Namespace, board: str, t0_cmd: float) -> int:
+    import bowthruster.cli as _cli
+    from bowthruster.bootstrap import bootstrap_repository, format_bootstrap_report
+
+    graph, wb_json, wb_sqlite, _ = _cli._load_board(board)
+    payload = bootstrap_repository(_cli.REPO_ROOT, board, graph, component=args.component)
+    _cli._save_board(graph, wb_json, wb_sqlite)
+    _cli.record_flight_event(
+        board, "bootstrap", (time.perf_counter() - t0_cmd) * 1000.0, "OK", decision=payload.get("status")
+    )
+    out_str = (
+        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False)
+        if args.as_json else format_bootstrap_report(payload)
+    )
+    print(out_str)
+    return 0
 
 
 def _cmd_status(args: argparse.Namespace, board: str, t0_cmd: float) -> int:

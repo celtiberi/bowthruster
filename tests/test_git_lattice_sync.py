@@ -603,6 +603,118 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
             self.assertEqual(proc.returncode, 0)
             self.assertIn("failing open", proc.stderr)
 
+    def test_s28_bootstrap_repository_and_onboarding_packets(self) -> None:
+        """Verifies deterministic bootstrap extraction, open_gaps, component split/merge, and turn completion."""
+        from bowthruster.mcp_server import call_lattice_tool
+
+        with tempfile.TemporaryDirectory(prefix="qa_s28_boot_") as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init"], cwd=str(repo), capture_output=True, check=True)
+            (repo / "src" / "shop" / "auth").mkdir(parents=True, exist_ok=True)
+            (repo / "src" / "shop" / "orders").mkdir(parents=True, exist_ok=True)
+            (repo / "tests").mkdir(parents=True, exist_ok=True)
+            (repo / "src" / "shop" / "__init__.py").write_text("", encoding="utf-8")
+            (repo / "src" / "shop" / "auth" / "tokens.py").write_text(
+                "from dataclasses import dataclass\n\n"
+                "@dataclass\n"
+                "class AuthToken:\n"
+                "    user_id: str\n"
+                "    scopes: list[str]\n\n"
+                "def verify_token(raw: str) -> AuthToken:\n"
+                "    return AuthToken(user_id=raw, scopes=['read'])\n",
+                encoding="utf-8",
+            )
+            (repo / "src" / "shop" / "orders" / "checkout.py").write_text(
+                "from shop.auth.tokens import AuthToken, verify_token\n\n"
+                "def place_order(token_str: str, items: dict[str, int]) -> bool:\n"
+                "    tok = verify_token(token_str)\n"
+                "    return bool(tok.user_id and items)\n",
+                encoding="utf-8",
+            )
+            (repo / "src" / "shop" / "orders" / "receipt.py").write_text(
+                "class OrderReceipt:\n"
+                "    def __init__(self, order_id: str, total_cents: int) -> None:\n"
+                "        self.order_id = order_id\n"
+                "        self.total_cents = total_cents\n\n"
+                "def render_receipt(order_id: str, total_cents: int) -> str:\n"
+                "    r = OrderReceipt(order_id, total_cents)\n"
+                "    return f'{r.order_id}:{r.total_cents}'\n",
+                encoding="utf-8",
+            )
+            (repo / "tests" / "test_auth.py").write_text(
+                "from shop.auth.tokens import verify_token\n"
+                "def test_verify():\n"
+                "    assert verify_token('u1').user_id == 'u1'\n",
+                encoding="utf-8",
+            )
+            (repo / "tests" / "test_orders.py").write_text(
+                "from shop.orders.checkout import place_order\n"
+                "from shop.orders.receipt import render_receipt\n"
+                "def test_order_and_receipt():\n"
+                "    assert place_order('u1', {'sku1': 2}) is True\n"
+                "    assert render_receipt('o1', 500) == 'o1:500'\n",
+                encoding="utf-8",
+            )
+            res = call_lattice_tool("bootstrap", {"board": "shop_board", "project_root": str(repo)})["structuredContent"]
+            self.assertEqual(res["status"], "INCOMPLETE_DRAFT")
+            self.assertFalse(res["is_proven"])
+            self.assertEqual(res["candidate_component_count"], 2)
+            self.assertEqual(res["schema_count"], 2)
+            self.assertEqual(res["interface_count"], 3)
+            gap_kinds = {g["kind"] for g in res["open_gaps"]}
+            for expected_gap in ("MISSING_CHARTER", "MISSING_ROLE", "MISSING_WHY", "MISSING_SPEC", "UNWIRED_COMPONENT"):
+                self.assertIn(expected_gap, gap_kinds)
+            pkt_auth = call_lattice_tool(
+                "bootstrap", {"board": "shop_board", "component": "auth", "project_root": str(repo)}
+            )["structuredContent"]["onboarding_packets"][0]
+            self.assertEqual(pkt_auth["component"], "auth")
+            self.assertIn("tests/test_auth.py", pkt_auth["tests"])
+            self.assertIn("src/shop/auth/tokens.py#L4-L6", pkt_auth["pipe_table_template"])
+            turn_msg = (
+                "| Charter | Summary | Principles |\n"
+                "| :--- | :--- | :--- |\n"
+                "| shop_board | Modular shop checkout and receipt service | Explicit contracts and isolated auth |\n\n"
+                "| Component | Role | Files | Depends_On | Tests | Why |\n"
+                "| :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| auth | Token verification service | src/shop/__init__.py, src/shop/auth/tokens.py | | tests/test_auth.py | Isolate token parsing |\n"
+                "| orders | Order placement and receipt service | src/shop/orders/checkout.py, src/shop/orders/receipt.py | auth | tests/test_orders.py | Coordinate checkout and receipts |\n\n"
+                "| Schema | Component | Fields | File | Spec |\n"
+                "| :--- | :--- | :--- | :--- | :--- |\n"
+                "| AuthToken | auth | user_id: str, scopes: list[str] | src/shop/auth/tokens.py#L4-L6 | Verified user identity token |\n"
+                "| OrderReceipt | orders | order_id: str, total_cents: int | src/shop/orders/receipt.py#L1-L4 | Immutable receipt record |\n\n"
+                "| Interface | Component | Inputs | Outputs | File | Spec |\n"
+                "| :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| verify_token | auth | raw: str | AuthToken | src/shop/auth/tokens.py#L8-L9 | Parse raw token into AuthToken |\n"
+                "| place_order | orders | token_str: str, items: dict[str, int] | bool | src/shop/orders/checkout.py#L3-L5 | Validate token and items dict |\n"
+                "| render_receipt | orders | order_id: str, total_cents: int | str | src/shop/orders/receipt.py#L6-L8 | Format receipt string |\n\n"
+                "| Flow | Source | Target | Payload | Condition |\n"
+                "| :--- | :--- | :--- | :--- | :--- |\n"
+                "| auth_to_orders | auth | orders | AuthToken | on checkout |\n"
+            )
+            t_res = call_lattice_tool(
+                "turn", {"board": "shop_board", "project_root": str(repo), "message": turn_msg}
+            )["structuredContent"]
+            self.assertEqual(t_res["lattice_proof"]["status"], "PROVEN_COMPLETE")
+            self.assertEqual(t_res["lattice_proof"]["open_gaps"], [])
+            split_msg = (
+                "| Component | Role | Files | Depends_On | Tests | Why |\n"
+                "| :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| receipts | Receipt formatting service | src/shop/orders/receipt.py | | tests/test_orders.py | Separate receipt rendering |\n\n"
+                "| Flow | Source | Target | Payload | Condition |\n"
+                "| :--- | :--- | :--- | :--- | :--- |\n"
+                "| orders_to_receipts | orders | receipts | OrderReceipt | after checkout |\n"
+            )
+            s_res = call_lattice_tool(
+                "turn", {"board": "shop_board", "project_root": str(repo), "message": split_msg}
+            )["structuredContent"]
+            self.assertEqual(s_res["lattice_proof"]["status"], "PROVEN_COMPLETE")
+            self.assertEqual(s_res["lattice_proof"]["component_count"], 3)
+            pkt_rec = call_lattice_tool(
+                "bootstrap", {"board": "shop_board", "component": "receipts", "project_root": str(repo)}
+            )["structuredContent"]["onboarding_packets"][0]
+            self.assertEqual(pkt_rec["schema_count"], 1)
+            self.assertEqual(pkt_rec["interface_count"], 1)
+
     def test_s26_standing_rule_49_no_regex_and_line_budget(self) -> None:
         """Verifies zero `import re` and <= 500 lines across Stage 26 implementation and test files."""
         files_to_audit = [

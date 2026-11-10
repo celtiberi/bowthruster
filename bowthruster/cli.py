@@ -32,8 +32,8 @@ if str(BOWTHRUSTER_HOME) not in sys.path:
 import bowthruster.whiteboard as _wb  # noqa: E402
 from bowthruster.cli_commands import (  # noqa: E402
     BUILD_STATUSES, STANDING_TYPES, _assemble_board_summary, _build_cli_parser,
-    _cmd_packets_or_show, _cmd_prove_or_history, _cmd_status, _dispatch_read_cmd,
-    _read_input_text, _remove_item_from_board,
+    _cmd_bootstrap, _cmd_packets_or_show, _cmd_prove_or_history, _cmd_status,
+    _dispatch_read_cmd, _read_input_text, _remove_item_from_board,
 )
 from bowthruster.git_manifest import (  # noqa: E402
     AST_EXTRACTORS, DEFAULT_CONFIG_PATHS, _PY_AST_CACHE, _build_git_manifest,
@@ -425,6 +425,8 @@ def main() -> int:
                 msg = _read_input_text(args.message, args.file)
                 return _execute_turn(board, args.speaker, msg, args.round_num, profile, config_path)
             return 0
+        if args.cmd == "bootstrap":
+            return _cmd_bootstrap(args, board, t0_cmd)
         if args.cmd == "status":
             return _cmd_status(args, board, t0_cmd)
         if args.cmd in ("packets", "show"):

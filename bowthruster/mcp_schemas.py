@@ -317,6 +317,33 @@ MCP_TOOLS: tuple[dict[str, Any], ...] = (
         },
     },
     {
+        "name": "bootstrap",
+        "description": (
+            "Deterministically scan a repository (zero LLM, < 50ms) to extract candidate "
+            "components, public class/function signatures with line anchors, intra-repo "
+            "imports as Depends_On, and matched test files into an honest draft board with "
+            "bounded per-component onboarding packets and open_gaps for Charter, Role, Why, and Spec."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "board": {
+                    "type": "string",
+                    "description": "Board name (default: 'default')",
+                    "default": "default",
+                },
+                "component": {
+                    "type": "string",
+                    "description": "Optional component ID filter to fetch a single onboarding packet",
+                },
+                "project_root": {
+                    "type": "string",
+                    "description": "Optional repository root path (defaults to active project root)",
+                },
+            },
+        },
+    },
+    {
         "name": "logs",
         "description": (
             "Query the append-only Structured Flight Recorder "

@@ -69,12 +69,13 @@ def _read_doc_resource(section: str = "readme") -> dict[str, Any]:
         out["guide"] = readme_p.read_text(encoding="utf-8")
     out["quickstart"] = (
         "# BowThruster Agent Quickstart & Brownfield Onboarding\n"
-        "1. Compile repo architecture into `.whiteboard/<board>.json` via "
-        "`turn(board='<board>', message='| Component | ... |')` "
-        "(`project_root` auto-discovered from file paths or pass `project_root='/abs/path'`).\n"
-        "2. Mark existing files `VERIFIED` via `git_sync(board='<board>', mode='pre', mark_verified=True)` "
-        "and stamp baseline via `git_sync(board='<board>', mode='post')`.\n"
-        "3. Save the unified skill below to `.agents/skills/bowthruster/SKILL.md` "
+        "1. Deterministically extract candidate components, public symbols, imports, and tests via "
+        "`bootstrap(board='<board>', project_root='/abs/path')`.\n"
+        "2. Work through one onboarding packet at a time via `turn(board='<board>', message='| Component | ... |')` "
+        "to fill in Charter, Role, Why, Spec, Flows, and optional Laws (or merge/split candidate components).\n"
+        "3. Run `git_sync(board='<board>', mode='pre', mark_verified=True)` and "
+        "`git_sync(board='<board>', mode='post')`.\n"
+        "4. Save the unified skill below to `.agents/skills/bowthruster/SKILL.md` "
         "(substituting `<BOARD_NAME>` and `<TEST_CMD>`). Pass `section='full_readme'` for full docs.\n\n"
         + uni
     )
@@ -350,6 +351,16 @@ def call_lattice_tool(tool_name: Any = None, arguments: Any = None) -> dict[str,
         _cli.REPO_ROOT = active_root
         os.environ["BOWTHRUSTER_PROJECT_ROOT"] = str(active_root)
         try:
+            if name == "bootstrap":
+                from bowthruster.bootstrap import bootstrap_repository, format_bootstrap_report
+
+                graph, wb_json, wb_sqlite, _ = _load_board(board)
+                b_pay = bootstrap_repository(active_root, board, graph, component=args.get("component"))
+                _save_board(graph, wb_json, wb_sqlite)
+                resp, nbytes = _format_tool_result(b_pay, text=format_bootstrap_report(b_pay))
+                dur_ms = (time.perf_counter() - t0) * 1000.0
+                record_flight_event(board, name, dur_ms, "OK", decision=b_pay.get("status"), response_bytes=nbytes)
+                return resp
             if name in ("readme", "logs"):
                 return _tool_readme_or_logs(name, board, args, t0)
             if name == "atlas":

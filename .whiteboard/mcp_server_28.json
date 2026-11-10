@@ -4,7 +4,8 @@
     "global_defaults": "global_defaults",
     "mcp_protocol_verifier": "mcp_protocol_verifier",
     "mcp_server": "mcp_server",
-    "mcp_tool_call": "mcp_tool_call"
+    "mcp_tool_call": "mcp_tool_call",
+    "tests/test_git_lattice_sync.py": "mcp_server"
   },
   "ambient_notes": [
     {
@@ -110,29 +111,29 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+  "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
   "lattice_artifacts": [
     {
       "calls": [
-        "_format_tool_result#L105-L113",
-        "_hot_reload_if_changed#L388-L421",
-        "_resolve_project_root#L88-L102",
-        "_tool_atlas#L142-L164",
-        "_tool_git_sync_or_status#L279-L324",
-        "_tool_packets_or_turn#L223-L276",
-        "_tool_readme_or_logs#L116-L139",
-        "_tool_slice#L167-L220"
+        "_format_tool_result#L106-L114",
+        "_hot_reload_if_changed#L399-L432",
+        "_resolve_project_root#L89-L103",
+        "_tool_atlas#L143-L165",
+        "_tool_git_sync_or_status#L280-L325",
+        "_tool_packets_or_turn#L224-L277",
+        "_tool_readme_or_logs#L117-L140",
+        "_tool_slice#L168-L221"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L327-L377",
+        "file": "bowthruster/mcp_server.py#L328-L388",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L327-L377",
+      "file": "bowthruster/mcp_server.py#L328-L388",
       "id": "interface_mcp_server_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -150,23 +151,23 @@
       "stage": "28",
       "text": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
       "turn": 8,
-      "updated_turn": 15
+      "updated_turn": 16
     },
     {
       "calls": [
-        "_hot_reload_if_changed#L388-L421",
-        "_read_doc_resource#L58-L85"
+        "_hot_reload_if_changed#L399-L432",
+        "_read_doc_resource#L58-L86"
       ],
       "created_turn": 1,
       "dimensions": {
         "_from_table": true,
         "description": "Handles an incoming JSON-RPC 2.0 MCP request",
-        "file": "bowthruster/mcp_server.py#L424-L466",
+        "file": "bowthruster/mcp_server.py#L435-L477",
         "inputs": "request",
         "interface": "handle_mcp_request",
         "outputs": "McpJsonRpcResponse"
       },
-      "file": "bowthruster/mcp_server.py#L424-L466",
+      "file": "bowthruster/mcp_server.py#L435-L477",
       "id": "interface_mcp_server_handle_mcp_request",
       "inputs": [
         "request: McpJsonRpcRequest"
@@ -183,7 +184,7 @@
       "stage": "28",
       "text": "Handle JSON-RPC 2.0 MCP requests with self-describing tool schemas",
       "turn": 5,
-      "updated_turn": 15
+      "updated_turn": 16
     },
     {
       "calls": [],
@@ -263,7 +264,7 @@
       "stage": null,
       "text": "The McpJsonRpcRequest schema scoped to mcp_server has fields jsonrpc, id, method, and params in bowthruster/mcp_server.py and represents a JSON-RPC 2.0 MCP request envelope.",
       "turn": 1,
-      "updated_turn": 15
+      "updated_turn": 16
     },
     {
       "args": "is_verified: Bool, files_exist: Bool, within_max_lines: Bool",
@@ -395,7 +396,7 @@
         "updated_turn": 10,
         "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
       },
-      "build_status": "VERIFIED",
+      "build_status": "STALE",
       "build_tag": null,
       "children": [],
       "core_tag": null,
@@ -416,53 +417,66 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
       "outputs": [],
       "owner": "core",
       "parent": null,
       "role": "End-to-end JSON-RPC 2.0 MCP protocol roundtrip verifier",
       "rules": [],
       "stage": "28",
-      "status": "VERIFIED",
+      "status": "STALE",
       "tests": [
         "tests/test_git_lattice_sync.py"
       ],
-      "updated_turn": 15,
+      "updated_turn": 16,
       "verified_untested": false,
       "why": "Verifies stdio framing, tool schemas, error handling, and Bend 2 dispatch laws across all 8 MCP tools before release."
     },
     "mcp_server": {
       "_meta": {},
-      "aliases": [],
+      "_role_missing": false,
+      "_why_missing": false,
+      "aliases": [
+        "tests/test_git_lattice_sync.py"
+      ],
       "attributes": {
         "_table_depends_on": [],
         "_table_files": [
           "bowthruster/mcp_server.py",
-          "bowthruster/mcp_schemas.py"
+          "bowthruster/mcp_schemas.py",
+          "bowthruster/cli.py",
+          "bowthruster/cli_commands.py",
+          "bowthruster/bootstrap.py"
         ],
-        "_table_role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
+        "_table_role": "Stdio JSON-RPC 2.0 MCP Server & Tool Dispatcher",
         "depends_on": "",
         "description": "MCP tool call result payload",
         "fields": "content, isError, structuredContent",
         "file": "bowthruster/mcp_server.py",
         "file_hashes": {
-          "bowthruster/mcp_schemas.py": "417297c003bec099",
-          "bowthruster/mcp_server.py": "6766505f5c933b0b"
+          "bowthruster/bootstrap.py": "f0ab81745c1d0073",
+          "bowthruster/cli.py": "0ed4e3cf434b0be4",
+          "bowthruster/cli_commands.py": "454251daca271643",
+          "bowthruster/mcp_schemas.py": "a45e71d9e6817fb0",
+          "bowthruster/mcp_server.py": "157be635a612b301"
         },
         "files": [
           "bowthruster/mcp_server.py",
-          "bowthruster/mcp_schemas.py"
+          "bowthruster/mcp_schemas.py",
+          "bowthruster/cli.py",
+          "bowthruster/cli_commands.py",
+          "bowthruster/bootstrap.py"
         ],
         "lod1_synopsis": "The mcp_server component must route skills sections according to Spec 28.",
         "owner": "core",
-        "role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
+        "role": "Stdio JSON-RPC 2.0 MCP Server & Tool Dispatcher",
         "schema": "McpToolCallResult",
         "stage": 28,
         "tests": [
           "tests/test_git_lattice_sync.py"
         ],
-        "updated_turn": 10,
-        "why": "Gives AI coding agents direct <50ms access to architecture memory, focused AST code slices, living specs, and pre-commit verification over stdio JSON-RPC 2.0."
+        "updated_turn": 16,
+        "why": "Expose BowThruster tools and resources over Model Context Protocol stdio transport"
       },
       "build_status": "VERIFIED",
       "build_tag": null,
@@ -472,12 +486,18 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/mcp_schemas.py": "417297c003bec099",
-        "bowthruster/mcp_server.py": "6766505f5c933b0b"
+        "bowthruster/bootstrap.py": "f0ab81745c1d0073",
+        "bowthruster/cli.py": "0ed4e3cf434b0be4",
+        "bowthruster/cli_commands.py": "454251daca271643",
+        "bowthruster/mcp_schemas.py": "a45e71d9e6817fb0",
+        "bowthruster/mcp_server.py": "157be635a612b301"
       },
       "files": [
         "bowthruster/mcp_server.py",
-        "bowthruster/mcp_schemas.py"
+        "bowthruster/mcp_schemas.py",
+        "bowthruster/cli.py",
+        "bowthruster/cli_commands.py",
+        "bowthruster/bootstrap.py"
       ],
       "id": "mcp_server",
       "in_edges": [
@@ -485,15 +505,15 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
       "outputs": [],
       "owner": "core",
       "parent": null,
-      "role": "Stdio JSON-RPC 2.0 MCP server exposing Lattice tools",
+      "role": "Stdio JSON-RPC 2.0 MCP Server & Tool Dispatcher",
       "rules": [
         {
           "access_turns": [
-            15
+            16
           ],
           "bound_op": "<=",
           "bound_val": 28,
@@ -522,10 +542,10 @@
       ],
       "updated_turn": 1,
       "verified_untested": false,
-      "why": "Gives AI coding agents direct <50ms access to architecture memory, focused AST code slices, living specs, and pre-commit verification over stdio JSON-RPC 2.0."
+      "why": "Expose BowThruster tools and resources over Model Context Protocol stdio transport"
     }
   },
-  "turn": 15,
-  "turn_index": 15,
+  "turn": 16,
+  "turn_index": 16,
   "version": 1
 }

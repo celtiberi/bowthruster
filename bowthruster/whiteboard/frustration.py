@@ -12,19 +12,12 @@ MAX_ANCESTOR_HOPS = 16
 
 def _numeric_interval(op: str | None, val: float) -> tuple[float, bool, float, bool, set[float]]:
     """Maps `(bound_op, numeric_val)` to `(low, low_closed, high, high_closed, excluded_points)` (Spec 22B §2.1)."""
-    if op == "<=":
-        return (-math.inf, True, val, True, set())
-    if op == "<":
-        return (-math.inf, True, val, False, set())
-    if op == ">=":
-        return (val, True, math.inf, True, set())
-    if op == ">":
-        return (val, False, math.inf, True, set())
-    if op == "==":
-        return (val, True, val, True, set())
-    if op == "!=":
-        return (-math.inf, True, math.inf, True, {val})
-    return (-math.inf, True, math.inf, True, set())
+    table = {
+        "<=": (-math.inf, True, val, True, set()), "<": (-math.inf, True, val, False, set()),
+        ">=": (val, True, math.inf, True, set()), ">": (val, False, math.inf, True, set()),
+        "==": (val, True, val, True, set()), "!=": (-math.inf, True, math.inf, True, {val}),
+    }
+    return table.get(op or "", (-math.inf, True, math.inf, True, set()))
 
 def _intervals_satisfiable(op_a: str | None, va: float, op_b: str | None, vb: float) -> bool:
     """Returns `True` iff the intersection of numeric intervals `(op_a, va)` and `(op_b, vb)` is non-empty."""
@@ -322,6 +315,15 @@ def _check_component_proof_gaps(
         gaps.append({
             "kind": "MISSING_OWNER", "scope": sid, "description": f"Component '{sid}' has no assigned division owner.",
         })
+    if sc.get("_role_missing") or (sc.get("_bootstrapped") and not str(sc.get("role") or "").strip()):
+        gaps.append({"kind": "MISSING_ROLE", "scope": sid, "description": f"Component '{sid}' has no Role summary."})
+    if sc.get("_why_missing") or (sc.get("_bootstrapped") and not str(sc.get("why") or "").strip()):
+        gaps.append({"kind": "MISSING_WHY", "scope": sid, "description": f"Component '{sid}' has no Why rationale."})
+    for a in artifacts:
+        if (a.get("scope") or a.get("scope_id")) == sid and (a.get("dimensions") or {}).get("spec_missing"):
+            aname = str(a.get("name") or "")
+            gaps.append({"kind": "MISSING_SPEC", "scope": sid, "artifact": aname,
+                "description": f"{a.get('kind')} '{aname}' in '{sid}' has no Spec text."})
     has_law = (
         any(a.get("kind") in ("LAW", "INTERFACE", "SCHEMA") and a.get("scope") in family_sids for a in artifacts)
         or any(any(scopes.get(s, {}).get(k) for k in ("laws", "files", "rules"))
@@ -355,20 +357,23 @@ def evaluate_lattice_proof(graph: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(graph, dict):
         graph = {}
     normalize_board_graph(graph)
-    scopes = graph["scopes"]
-    raw_flows = graph["flows"]
-    flows = [f for f in raw_flows]
-    raw_arts = graph["lattice_artifacts"]
-    artifacts = [a for a in (raw_arts.values() if isinstance(raw_arts, dict) else raw_arts)]
+    scopes, raw_flows, raw_arts = graph["scopes"], graph["flows"], graph["lattice_artifacts"]
+    flows = list(raw_flows)
+    artifacts = list(raw_arts.values() if isinstance(raw_arts, dict) else raw_arts)
     hard_violations = detect_frustration(graph)
+    comp_keys = ("owner", "role", "depends_on", "children", "parent", "files", "_bootstrapped")
     owned_components = [sid for sid, sc in scopes.items()
         if sid != "global_defaults" and not str(sid).startswith("global_defaults::")
-        and any(sc.get(k) for k in ("owner", "role", "depends_on", "children", "parent"))]
+        and any(sc.get(k) for k in comp_keys)]
     open_gaps: list[dict[str, str]] = []
+    if graph.get("bootstrapped") and not str((graph.get("charter") or {}).get("summary") or "").strip():
+        open_gaps.append({"kind": "MISSING_CHARTER", "scope": "charter",
+            "description": "Board Charter has no Summary or Principles."})
     for sid in owned_components:
         open_gaps.extend(_check_component_proof_gaps(sid, scopes, flows, artifacts, len(owned_components)))
-    all_components_complete = not any(
-        g["kind"] in ("MISSING_OWNER", "MISSING_LAW", "MISSING_CONTRACT") for g in open_gaps)
+    comp_gap_kinds = ("MISSING_OWNER", "MISSING_LAW", "MISSING_CONTRACT", "MISSING_CHARTER",
+        "MISSING_ROLE", "MISSING_WHY", "MISSING_SPEC")
+    all_components_complete = not any(g["kind"] in comp_gap_kinds for g in open_gaps)
     all_flows_connected = not any(g["kind"] == "UNWIRED_COMPONENT" for g in open_gaps)
     status = classify_lattice_proof_status(
         bool(hard_violations), bool(owned_components), all_components_complete, all_flows_connected)

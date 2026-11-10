@@ -118,8 +118,9 @@ def upsert_lattice_artifact(graph: dict[str, Any], kind: str, name: str, *, scop
     sid = str(scope_id or "global_defaults").strip() or "global_defaults"
     _ensure_scope_node_nosync(graph, sid)
     artifacts = graph.setdefault("lattice_artifacts", [])
-    entry = next((a for a in artifacts if (a.get("kind"), a.get("scope_id"), str(a.get("name", "")).lower())
-        == (kind_clean, sid, name_clean.lower())), None)
+    entry = next((a for a in artifacts if (
+        a.get("kind"), a.get("scope_id") or a.get("scope"), str(a.get("name", "")).lower()
+    ) == (kind_clean, sid, name_clean.lower())), None)
     if entry is None:
         entry = ArtifactEntry({"id": f"{kind_clean.lower()}_{sid}_{name_clean.lower()}", "kind": kind_clean,
             "name": name_clean, "scope_id": sid, "scope": sid, "created_turn": current_turn})
@@ -130,7 +131,7 @@ def upsert_lattice_artifact(graph: dict[str, Any], kind: str, name: str, *, scop
     if spec_clean:
         entry["spec"] = spec_clean
     for key, lst in (("inputs", inputs), ("outputs", outputs)):
-        if lst is not None:
+        if lst is not None and (lst or not entry.get(key)):
             entry[key] = _clean_str_list(lst)
     for key, val in (("owner", owner), ("stage", stage)):
         if val is not None:

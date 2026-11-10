@@ -53,6 +53,7 @@
     "llm_called": "llm_called",
     "regiment": "regiment",
     "runtime_foundation": "runtime_foundation",
+    "tests/test_git_lattice_sync.py": "runtime_foundation",
     "the_executive": "the_executive",
     "the_table": "the_table",
     "whiteboard": "whiteboard"
@@ -603,7 +604,7 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+  "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
   "lattice_artifacts": [
     {
       "created_turn": 2,
@@ -628,7 +629,7 @@
       "stage": "Stages 15-18",
       "text": "Deterministic pipe-table and flow turn intake packet",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "created_turn": 2,
@@ -654,7 +655,7 @@
       "stage": "stage 22",
       "text": "Sliced nD Lattice context view",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [
@@ -793,29 +794,29 @@
       "stage": "Stages 15-18",
       "text": "Compile deterministic Markdown pipe-table rows and flows into an IntakePacket",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [
-        "_format_tool_result#L105-L113",
-        "_hot_reload_if_changed#L388-L421",
-        "_resolve_project_root#L88-L102",
-        "_tool_atlas#L142-L164",
-        "_tool_git_sync_or_status#L279-L324",
-        "_tool_packets_or_turn#L223-L276",
-        "_tool_readme_or_logs#L116-L139",
-        "_tool_slice#L167-L220"
+        "_format_tool_result#L106-L114",
+        "_hot_reload_if_changed#L399-L432",
+        "_resolve_project_root#L89-L103",
+        "_tool_atlas#L143-L165",
+        "_tool_git_sync_or_status#L280-L325",
+        "_tool_packets_or_turn#L224-L277",
+        "_tool_readme_or_logs#L117-L140",
+        "_tool_slice#L168-L221"
       ],
       "created_turn": 8,
       "dimensions": {
         "_from_table": true,
         "description": "Dispatches a validated MCP tool call to the Lattice engine",
-        "file": "bowthruster/mcp_server.py#L327-L377",
+        "file": "bowthruster/mcp_server.py#L328-L388",
         "inputs": "tool_name, arguments",
         "interface": "call_lattice_tool",
         "outputs": "McpToolCallResult"
       },
-      "file": "bowthruster/mcp_server.py#L327-L377",
+      "file": "bowthruster/mcp_server.py#L328-L388",
       "id": "interface_runtime_foundation_call_lattice_tool",
       "inputs": [
         "tool_name: str",
@@ -833,7 +834,7 @@
       "stage": "28",
       "text": "Dispatch MCP tool calls with multi-repo board auto-discovery, 1-shot mark_stale on lattice_slice, and mark_verified on lattice_git_sync",
       "turn": 28,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [],
@@ -860,7 +861,7 @@
       "stage": "stage 22",
       "text": "Emit AST-parseable Python stub with Spec docstrings on schemas, laws, and interfaces and # MUST CALL anchors",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [
@@ -890,7 +891,7 @@
       "stage": "stage 22",
       "text": "Compile wave-ordered WorkPackets with baseline_commit_sha and synchronized status and build_status",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [
@@ -992,17 +993,17 @@
     },
     {
       "calls": [
-        "_fuse_artifact_or_law_rows#L150-L210",
-        "_fuse_component_rows#L212-L282",
+        "_fuse_artifact_or_law_rows#L150-L217",
+        "_fuse_component_rows#L253-L336",
         "_fuse_flow_or_rule_rows#L88-L140",
         "_slugify_scope_id#L65-L75"
       ],
       "created_turn": 16,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/rewriter.py#L284-L324"
+        "file": "bowthruster/whiteboard/rewriter.py#L338-L378"
       },
-      "file": "bowthruster/whiteboard/rewriter.py#L284-L324",
+      "file": "bowthruster/whiteboard/rewriter.py#L338-L378",
       "id": "interface_whiteboard_fuse_table_attributes",
       "inputs": [
         "graph",
@@ -1020,7 +1021,7 @@
       "stage": "stage 22",
       "text": "Fuse Component, Flow, Interface, Law, Schema, and Rule Markdown pipe tables into the Whiteboard graph",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "created_turn": 17,
@@ -1069,7 +1070,7 @@
       "stage": "stage 22",
       "text": "Living nD system lattice graph container",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "created_turn": 17,
@@ -1145,7 +1146,7 @@
       "stage": "Stage 28",
       "text": "MCP JSON-RPC 2.0 request envelope",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [
@@ -1423,7 +1424,7 @@
       "stage": "stage 22",
       "text": "Ingest deterministic IntakePacket into the Whiteboard graph",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [
@@ -1455,7 +1456,7 @@
       "stage": "stage 22",
       "text": "Slice the nD Lattice graph with focused artifact filtering on exact AST symbol queries",
       "turn": 26,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [],
@@ -1482,16 +1483,16 @@
       "stage": "stage 22",
       "text": "Compile Bend 2 law theorems into LAWS.bend skeleton",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/whiteboard/mutations.py#L147-L179"
+        "file": "bowthruster/whiteboard/mutations.py#L148-L180"
       },
-      "file": "bowthruster/whiteboard/mutations.py#L147-L179",
+      "file": "bowthruster/whiteboard/mutations.py#L148-L180",
       "id": "interface_whiteboard_transition_component_build_status",
       "inputs": [
         "graph",
@@ -1510,22 +1511,22 @@
       "stage": "stage 22",
       "text": "Transition a component scope between lifecycle build statuses",
       "turn": 18,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [
-        "_classify_table_kind#L264-L287",
-        "_clean_cell_val#L125-L129",
-        "_norm_col_key#L119-L122",
+        "_classify_table_kind#L274-L297",
+        "_clean_cell_val#L124-L128",
+        "_norm_col_key#L118-L121",
         "_pick#L44-L48",
-        "_split_list_cell#L132-L143"
+        "_split_list_cell#L131-L153"
       ],
       "created_turn": 17,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/regiment/markdown_tables.py#L290-L336"
+        "file": "bowthruster/regiment/markdown_tables.py#L300-L346"
       },
-      "file": "bowthruster/regiment/markdown_tables.py#L290-L336",
+      "file": "bowthruster/regiment/markdown_tables.py#L300-L346",
       "id": "interface_regiment_extract_structured_table_rows",
       "inputs": [
         "doc_tables"
@@ -1542,7 +1543,7 @@
       "stage": "Stages 15-18",
       "text": "Extract normalized structured records from Markdown pipe tables",
       "turn": 17,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [
@@ -1665,7 +1666,7 @@
       "stage": "Stage 28",
       "text": "Transpile pure Python boolean decision function AST into a Bend 2 boolean expression",
       "turn": 31,
-      "updated_turn": 36
+      "updated_turn": 37
     },
     {
       "calls": [
@@ -1697,13 +1698,92 @@
       "stage": "Stage 28",
       "text": "Transpile staged Python % LAW functions to Bend 2 and verify LHS == RHS across all truth-table assignments and via bend",
       "turn": 31,
-      "updated_turn": 36
+      "updated_turn": 37
+    },
+    {
+      "calls": [
+        "_build_onboarding_packet#L294-L347",
+        "_discover_candidate_components#L77-L101",
+        "_extract_component_dependencies#L251-L273",
+        "_extract_component_symbols#L140-L188",
+        "_match_component_tests#L276-L291",
+        "_populate_bootstrapped_board#L350-L402"
+      ],
+      "created_turn": 37,
+      "dimensions": {
+        "_from_table": true,
+        "file": "bowthruster/bootstrap.py#L405-L446",
+        "inputs": [
+          "repo_root: Path",
+          "board: str",
+          "graph: dict[str, Any]",
+          "component: str"
+        ],
+        "outputs": [
+          "dict[str, Any]"
+        ],
+        "spec_missing": false
+      },
+      "file": "bowthruster/bootstrap.py#L405-L446",
+      "id": "interface_runtime_foundation_bootstrap_repository",
+      "inputs": [
+        "repo_root: Path",
+        "board: str",
+        "graph: dict[str, Any]",
+        "component: str"
+      ],
+      "kind": "INTERFACE",
+      "name": "bootstrap_repository",
+      "outputs": [
+        "dict[str, Any]"
+      ],
+      "owner": null,
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "Deterministically scan repo packages, files, public classes/functions, imports, and tests into draft board tables and per-component onboarding packets with open_gaps for Charter, Role, Why, and Spec",
+      "stage": null,
+      "text": "Deterministically scan repo packages, files, public classes/functions, imports, and tests into draft board tables and per-component onboarding packets with open_gaps for Charter, Role, Why, and Spec",
+      "turn": 37,
+      "updated_turn": 37
+    },
+    {
+      "calls": [],
+      "created_turn": 37,
+      "dimensions": {
+        "_from_table": true,
+        "file": "bowthruster/bootstrap.py#L449-L472",
+        "inputs": [
+          "payload: dict[str, Any]"
+        ],
+        "outputs": [
+          "str"
+        ],
+        "spec_missing": false
+      },
+      "file": "bowthruster/bootstrap.py#L449-L472",
+      "id": "interface_runtime_foundation_format_bootstrap_report",
+      "inputs": [
+        "payload: dict[str, Any]"
+      ],
+      "kind": "INTERFACE",
+      "name": "format_bootstrap_report",
+      "outputs": [
+        "str"
+      ],
+      "owner": null,
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "Render bounded human/agent-readable summary of a bootstrap_repository payload",
+      "stage": null,
+      "text": "Render bounded human/agent-readable summary of a bootstrap_repository payload",
+      "turn": 37,
+      "updated_turn": 37
     }
   ],
   "lattice_proof": {
     "bend_proof_source": "import Base\n\ntype LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\ndef is_lp_proven(s: LPStatus) -> Bool:\n  match s:\n    case LPBroken{}: False{}\n    case LPProven{}: True{}\n    case LPDraft{}: False{}\n\ndef classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n    case False{} True{} True{} True{}:\n      LPProven{}\n    case False{} True{} True{} False{}:\n      LPDraft{}\n    case False{} True{} False{} flow_ok:\n      LPDraft{}\n    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\nlaw lattice_proof_proven_iff_complete_and_conflict_free:\n  for +has_viol: Bool\n  for +has_comp: Bool\n  for +comp_ok: Bool\n  for +flow_ok: Bool\n  {is_lp_proven(classify_lattice_proof_status(has_viol, has_comp, comp_ok, flow_ok)) == Bool.and(Bool.not(has_viol), Bool.and(has_comp, Bool.and(comp_ok, flow_ok))) : Bool}\n\ndef lattice_proof_proven_iff_complete_and_conflict_free(has_viol, has_comp, comp_ok, flow_ok):\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok: {==}\n    case False{} True{} True{} True{}: {==}\n    case False{} True{} True{} False{}: {==}\n    case False{} True{} False{} flow_ok: {==}\n    case False{} False{} comp_ok flow_ok: {==}\n\ndef board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status(False{}, True{}, True{}, True{})\n",
     "component_count": 7,
-    "contract_count": 35,
+    "contract_count": 37,
     "flow_count": 8,
     "hard_violations": [],
     "is_proven": true,
@@ -1784,7 +1864,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -1976,7 +2056,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2009,7 +2089,7 @@
         "file_hashes": {
           "bowthruster/regiment/__init__.py": "0ecfcf900348cc9f",
           "bowthruster/regiment/intake_packet.py": "554801f546530499",
-          "bowthruster/regiment/markdown_tables.py": "bf136cb86da848d8"
+          "bowthruster/regiment/markdown_tables.py": "177a13ea811a96df"
         },
         "files": [
           "bowthruster/regiment/__init__.py",
@@ -2026,7 +2106,7 @@
         "updated_turn": 30,
         "why": "Compiles structured Markdown pipe tables (Charter, Component, Flow, Interface, Law, Schema, Rule) into grounded MCUs in <5ms without LLM variance."
       },
-      "build_status": "VERIFIED",
+      "build_status": "STALE",
       "build_tag": "s18c-eng3-compiler-3",
       "children": [],
       "core_tag": "s18c-core-compiler-3",
@@ -2036,7 +2116,7 @@
       "file_hashes": {
         "bowthruster/regiment/__init__.py": "0ecfcf900348cc9f",
         "bowthruster/regiment/intake_packet.py": "554801f546530499",
-        "bowthruster/regiment/markdown_tables.py": "bf136cb86da848d8"
+        "bowthruster/regiment/markdown_tables.py": "177a13ea811a96df"
       },
       "files": [
         "bowthruster/regiment/__init__.py",
@@ -2050,26 +2130,30 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
       "outputs": [],
       "owner": "core",
       "parent": null,
       "role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
       "rules": [],
       "stage": "Stages 15-18",
-      "status": "VERIFIED",
+      "status": "STALE",
       "tests": [
         "tests/core/circuit/test_whiteboard_22a.py",
         "tests/core/circuit/test_executive_23a.py"
       ],
-      "updated_turn": 36,
+      "updated_turn": 37,
       "verified_untested": false,
       "why": "Compiles structured Markdown pipe tables (Charter, Component, Flow, Interface, Law, Schema, Rule) into grounded MCUs in <5ms without LLM variance."
     },
     "runtime_foundation": {
       "_meta": {},
+      "_role_missing": false,
+      "_why_missing": false,
       "active_ticket_id": null,
-      "aliases": [],
+      "aliases": [
+        "tests/test_git_lattice_sync.py"
+      ],
       "attributes": {
         "_table_depends_on": [],
         "_table_files": [
@@ -2080,17 +2164,20 @@
           "bowthruster/mcp_server.py",
           "bowthruster/mcp_verifier.py",
           "bowthruster/git_manifest.py",
-          "bowthruster/mcp_schemas.py"
+          "bowthruster/mcp_schemas.py",
+          "bowthruster/cli_commands.py",
+          "bowthruster/bootstrap.py"
         ],
-        "_table_role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
+        "_table_role": "Pure-Stdlib Types, String/Token Helpers, CLI, MCP Entrypoints, & Repository Bootstrapper",
         "depends_on": "",
         "file_hashes": {
           "bowthruster/__init__.py": "7562c6f2ae448868",
-          "bowthruster/cli.py": "f44503916d220054",
-          "bowthruster/cli_commands.py": "d8116a5fe4be6738",
+          "bowthruster/bootstrap.py": "f0ab81745c1d0073",
+          "bowthruster/cli.py": "0ed4e3cf434b0be4",
+          "bowthruster/cli_commands.py": "454251daca271643",
           "bowthruster/git_manifest.py": "2bb53452b0e9f3aa",
-          "bowthruster/mcp_schemas.py": "417297c003bec099",
-          "bowthruster/mcp_server.py": "6766505f5c933b0b",
+          "bowthruster/mcp_schemas.py": "a45e71d9e6817fb0",
+          "bowthruster/mcp_server.py": "157be635a612b301",
           "bowthruster/mcp_verifier.py": "db0c05b9078bd0da",
           "bowthruster/nlp.py": "ea0d6364592ce90d",
           "bowthruster/types.py": "2af24d52165bfc92"
@@ -2103,17 +2190,18 @@
           "bowthruster/mcp_server.py",
           "bowthruster/mcp_verifier.py",
           "bowthruster/git_manifest.py",
-          "bowthruster/mcp_schemas.py"
+          "bowthruster/mcp_schemas.py",
+          "bowthruster/cli_commands.py",
+          "bowthruster/bootstrap.py"
         ],
         "owner": "architect",
-        "role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
+        "role": "Pure-Stdlib Types, String/Token Helpers, CLI, MCP Entrypoints, & Repository Bootstrapper",
         "stage": "Stage 15",
         "tests": [
-          "tests/test_skeleton_coding_27.py",
           "tests/test_git_lattice_sync.py"
         ],
-        "updated_turn": 30,
-        "why": "Eliminates heavy NLP/ML dependencies so the CLI and MCP server start instantly using only the Python 3.11+ standard library."
+        "updated_turn": 37,
+        "why": "Eliminates heavy NLP/ML dependencies so the CLI, MCP server, and zero-LLM bootstrapper start instantly using only the Python 3.11+ standard library."
       },
       "build_status": "VERIFIED",
       "build_tag": null,
@@ -2124,11 +2212,12 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/__init__.py": "7562c6f2ae448868",
-        "bowthruster/cli.py": "f44503916d220054",
-        "bowthruster/cli_commands.py": "d8116a5fe4be6738",
+        "bowthruster/bootstrap.py": "f0ab81745c1d0073",
+        "bowthruster/cli.py": "0ed4e3cf434b0be4",
+        "bowthruster/cli_commands.py": "454251daca271643",
         "bowthruster/git_manifest.py": "2bb53452b0e9f3aa",
-        "bowthruster/mcp_schemas.py": "417297c003bec099",
-        "bowthruster/mcp_server.py": "6766505f5c933b0b",
+        "bowthruster/mcp_schemas.py": "a45e71d9e6817fb0",
+        "bowthruster/mcp_server.py": "157be635a612b301",
         "bowthruster/mcp_verifier.py": "db0c05b9078bd0da",
         "bowthruster/nlp.py": "ea0d6364592ce90d",
         "bowthruster/types.py": "2af24d52165bfc92"
@@ -2142,7 +2231,8 @@
         "bowthruster/mcp_verifier.py",
         "bowthruster/git_manifest.py",
         "bowthruster/mcp_schemas.py",
-        "bowthruster/cli_commands.py"
+        "bowthruster/cli_commands.py",
+        "bowthruster/bootstrap.py"
       ],
       "id": "runtime_foundation",
       "in_edges": [
@@ -2150,21 +2240,20 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
       "outputs": [],
-      "owner": "architect",
+      "owner": "core",
       "parent": null,
-      "role": "Pure-Stdlib Types, String/Token Helpers, CLI, & MCP Entrypoints",
+      "role": "Pure-Stdlib Types, String/Token Helpers, CLI, MCP Entrypoints, & Repository Bootstrapper",
       "rules": [],
       "stage": "Stage 15",
       "status": "VERIFIED",
       "tests": [
-        "tests/test_skeleton_coding_27.py",
         "tests/test_git_lattice_sync.py"
       ],
       "updated_turn": 1,
       "verified_untested": false,
-      "why": "Eliminates heavy NLP/ML dependencies so the CLI and MCP server start instantly using only the Python 3.11+ standard library."
+      "why": "Eliminates heavy NLP/ML dependencies so the CLI, MCP server, and zero-LLM bootstrapper start instantly using only the Python 3.11+ standard library."
     },
     "the_executive": {
       "_meta": {},
@@ -2214,7 +2303,7 @@
         "updated_turn": 30,
         "why": "Enforces verified-scope edit guards, AST contract/signature parity, call-graph % LAW wiring, and automatic post-commit STALE cascades across downstream dependents."
       },
-      "build_status": "VERIFIED",
+      "build_status": "STALE",
       "build_tag": "s25b-eng2-table-1",
       "children": [],
       "core_tag": "s25-core-table-1",
@@ -2250,21 +2339,21 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
       "outputs": [],
       "owner": "core",
       "parent": null,
       "role": "Preflight Routing, Pre-Commit Gate, Post-Commit Cascade & Voice",
       "rules": [],
       "stage": "stage 23",
-      "status": "VERIFIED",
+      "status": "STALE",
       "tests": [
         "tests/core/circuit/test_executive_23a.py",
         "tests/core/circuit/test_executive_23b.py",
         "tests/core/circuit/test_executive_23c.py",
         "tests/test_git_lattice_sync.py"
       ],
-      "updated_turn": 36,
+      "updated_turn": 37,
       "verified_untested": false,
       "why": "Enforces verified-scope edit guards, AST contract/signature parity, call-graph % LAW wiring, and automatic post-commit STALE cascades across downstream dependents."
     },
@@ -2311,7 +2400,7 @@
         "updated_turn": 30,
         "why": "Bounds active working memory to <=16 slots / <=1200 tokens with pinned-slot immunity and compiles boards into LOD_0 Atlases and full Markdown specifications."
       },
-      "build_status": "VERIFIED",
+      "build_status": "STALE",
       "build_tag": "s25a-eng1-table-1",
       "children": [],
       "core_tag": "s25-core-table-1",
@@ -2343,18 +2432,18 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
       "outputs": [],
       "owner": "core",
       "parent": null,
       "role": "Bounded Working Surface, LOD_0 Atlas & Living Spec Renderer",
       "rules": [],
       "stage": "stage 25",
-      "status": "VERIFIED",
+      "status": "STALE",
       "tests": [
         "tests/test_the_table.py"
       ],
-      "updated_turn": 36,
+      "updated_turn": 37,
       "verified_untested": false,
       "why": "Bounds active working memory to <=16 slots / <=1200 tokens with pinned-slot immunity and compiles boards into LOD_0 Atlases and full Markdown specifications."
     },
@@ -2381,12 +2470,12 @@
         "depends_on": "graph_core, regiment",
         "file_hashes": {
           "bowthruster/whiteboard/__init__.py": "d7b185caa08144e2",
-          "bowthruster/whiteboard/frustration.py": "8d246a164d64fdd2",
+          "bowthruster/whiteboard/frustration.py": "0399ce10a740db68",
           "bowthruster/whiteboard/ingest.py": "d0acb18c57eb77f5",
-          "bowthruster/whiteboard/linker.py": "9a8c59a501bc2108",
-          "bowthruster/whiteboard/mutations.py": "4e26d642997878d3",
+          "bowthruster/whiteboard/linker.py": "841e76d6a054e47f",
+          "bowthruster/whiteboard/mutations.py": "b6f163ac11dc1a14",
           "bowthruster/whiteboard/read_engine.py": "ce96c33b1c88516b",
-          "bowthruster/whiteboard/rewriter.py": "e8a86668e859b4b9",
+          "bowthruster/whiteboard/rewriter.py": "958c31dcce1cc4e2",
           "bowthruster/whiteboard/schema.py": "e8900cea62a360c8",
           "bowthruster/whiteboard/table_helpers.py": "bbab69ae89fddd63"
         },
@@ -2411,7 +2500,7 @@
         "updated_turn": 30,
         "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
       },
-      "build_status": "VERIFIED",
+      "build_status": "STALE",
       "build_tag": "s22c-eng2-compiler-1",
       "children": [],
       "core_tag": "s22c-core-compiler-1",
@@ -2423,12 +2512,12 @@
       "failure_diagnostic": null,
       "file_hashes": {
         "bowthruster/whiteboard/__init__.py": "d7b185caa08144e2",
-        "bowthruster/whiteboard/frustration.py": "8d246a164d64fdd2",
+        "bowthruster/whiteboard/frustration.py": "0399ce10a740db68",
         "bowthruster/whiteboard/ingest.py": "d0acb18c57eb77f5",
-        "bowthruster/whiteboard/linker.py": "9a8c59a501bc2108",
-        "bowthruster/whiteboard/mutations.py": "4e26d642997878d3",
+        "bowthruster/whiteboard/linker.py": "841e76d6a054e47f",
+        "bowthruster/whiteboard/mutations.py": "b6f163ac11dc1a14",
         "bowthruster/whiteboard/read_engine.py": "ce96c33b1c88516b",
-        "bowthruster/whiteboard/rewriter.py": "e8a86668e859b4b9",
+        "bowthruster/whiteboard/rewriter.py": "958c31dcce1cc4e2",
         "bowthruster/whiteboard/schema.py": "e8900cea62a360c8",
         "bowthruster/whiteboard/table_helpers.py": "bbab69ae89fddd63"
       },
@@ -2451,25 +2540,25 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "babc85df24655a09a52b10cf83811a6a25d6f90f",
+      "last_commit_sha": "dcba9a9bc29105ab6b96c6e280e3fca5d8ff57aa",
       "outputs": [],
       "owner": "core",
       "parent": null,
       "role": "Living nD System Lattice, Hyperplane Slicer & WorkPacket Compiler",
       "rules": [],
       "stage": "stage 22",
-      "status": "VERIFIED",
+      "status": "STALE",
       "tests": [
         "tests/core/circuit/test_whiteboard_22a.py",
         "tests/core/circuit/test_whiteboard_22b.py",
         "tests/core/circuit/test_whiteboard_22c.py"
       ],
-      "updated_turn": 36,
+      "updated_turn": 37,
       "verified_untested": false,
       "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },
-  "turn": 36,
-  "turn_index": 36,
+  "turn": 37,
+  "turn_index": 37,
   "version": 1
 }
