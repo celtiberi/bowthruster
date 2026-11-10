@@ -112,17 +112,17 @@ Pass canonical Markdown pipe tables (`Charter`, `Component`, `Flow`, `Interface`
 
 | Interface | Component | Inputs | Outputs | Owner | Stage | File | Spec |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| verify_token | auth_service | raw_token: str | AuthToken | backend | 1 | src/auth.py:L20-L60 | Spec 1 |
-| route_request | api_gateway | request: dict | HttpResponse | backend | 1 | src/gateway.py:L30-L90 | Spec 1 |
+| verify_token | auth_service | raw_token: str | AuthToken | backend | 1 | src/auth.py:L20-L60 | Decode JWT header and payload; verify HMAC-SHA256 signature; check expires_at > now via is_token_valid; return AuthToken |
+| route_request | api_gateway | request: dict | HttpResponse | backend | 1 | src/gateway.py:L30-L90 | Extract bearer token; call verify_token; verify target route exists via can_route; dispatch to upstream handler |
 
 | Law | Component | Owner | Stage | Bend_Dir | Args | LHS | RHS | Spec |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| token_valid_law | auth_service | backend | 1 | laws | has_sig: Bool, not_expired: Bool | MOD.is_token_valid(has_sig, not_expired) | Bool.and(has_sig, not_expired) | Spec 1 |
-| route_allow_law | api_gateway | backend | 1 | laws | token_ok: Bool, route_exists: Bool | MOD.can_route(token_ok, route_exists) | Bool.and(token_ok, route_exists) | Spec 1 |
+| token_valid_law | auth_service | backend | 1 | laws | has_sig: Bool, not_expired: Bool | MOD.is_token_valid(has_sig, not_expired) | Bool.and(has_sig, not_expired) | Token is valid iff signature matches and expiration timestamp has not passed |
+| route_allow_law | api_gateway | backend | 1 | laws | token_ok: Bool, route_exists: Bool | MOD.can_route(token_ok, route_exists) | Bool.and(token_ok, route_exists) | Request can be routed iff token is valid and route exists |
 
 | Schema | Component | Fields | Owner | Stage | File | Spec |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| AuthToken | auth_service | user_id: str, expires_at: int | backend | 1 | src/auth.py:L10-L18 | Spec 1 |
+| AuthToken | auth_service | user_id: str, expires_at: int | backend | 1 | src/auth.py:L10-L18 | Verified identity claims extracted from a signed JWT |
 
 | Rule | Component | Type | Property | Op | Value | Condition |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |

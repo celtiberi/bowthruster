@@ -27,7 +27,7 @@ flowchart LR
    ```markdown
    | Schema | Component | Fields | Owner | Stage | File | Spec |
    | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-   | AuthToken | auth_service | user_id: str, tenant_id: str, expires_at: int | backend | 1 | src/auth.py | Spec 1 |
+   | AuthToken | auth_service | user_id: str, tenant_id: str, expires_at: int | backend | 1 | src/auth.py | Verified identity and tenant claims extracted from a signed JWT |
 
    | Flow | Source | Target | Payload | Condition |
    | :--- | :--- | :--- | :--- | :--- |
