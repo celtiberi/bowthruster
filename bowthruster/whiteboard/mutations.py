@@ -283,6 +283,7 @@ def markovian_overwrite_rule(
 def prune_dysfluency_and_upsert_rule(graph: dict[str, Any], scope_id: str, rule_data: dict[str, Any]) -> dict[str, Any]:
     """Upserts a clean rule into `scopes[scope_id]`, enforcing `_meta` caps, bidirectional `refs`, and SQLite sync (Spec 22A §2.2)."""
     scope, all_sc = _ensure_scope_node_nosync(graph, scope_id), (graph.get("scopes", {}) if isinstance(graph.get("scopes"), dict) else {})
+    conds = list(rule_data.get("conditions") or [])
     if not rule_data.get("id") and (tp := rule_data.get("target_prop")) is not None and not rule_data.get("is_exception") and (m := next(
         (
             (s, r["id"])

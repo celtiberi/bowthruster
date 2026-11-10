@@ -76,12 +76,12 @@ def _import_exec_23b() -> tuple[Any, Any, Any]:
                 pkg = importlib.util.module_from_spec(spec)
                 sys.modules["core.circuit.the_executive"] = pkg
                 spec.loader.exec_module(pkg)
-                import lattice.the_executive.gate as gate
-                import lattice.the_executive.preflight as preflight
+                import bowthruster.the_executive.gate as gate
+                import bowthruster.the_executive.preflight as preflight
                 return pkg, gate, preflight
-    import lattice.the_executive as pkg
-    import lattice.the_executive.gate as gate
-    import lattice.the_executive.preflight as preflight
+    import bowthruster.the_executive as pkg
+    import bowthruster.the_executive.gate as gate
+    import bowthruster.the_executive.preflight as preflight
 
     return pkg, gate, preflight
 
@@ -217,7 +217,7 @@ console.log(JSON.stringify({{main: m.main().$, rows}}));
 
     def test_execute_gate_decision_clean_commit_and_sqlite_persistence(self) -> None:
         exec_pkg, gate, preflight = _import_exec_23b()
-        from lattice import whiteboard as WB
+        from bowthruster import whiteboard as WB
 
         self.assertTrue(set(exec_pkg.__all__).issuperset({
             "DECISION_COMMIT_TO_WHITEBOARD", "DECISION_SEND_BACK_TO_USER",
@@ -277,7 +277,7 @@ console.log(JSON.stringify({{main: m.main().$, rows}}));
 
     def test_execute_gate_decision_bounce_invariance_across_all_three_bounce_reasons(self) -> None:
         _, gate, preflight = _import_exec_23b()
-        from lattice import whiteboard as WB
+        from bowthruster import whiteboard as WB
 
         with tempfile.TemporaryDirectory(prefix="qa_exec23b_bounce_") as tmp:
             db_path = Path(tmp) / "bounce_gate.sqlite"

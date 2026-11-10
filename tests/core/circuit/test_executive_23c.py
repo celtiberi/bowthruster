@@ -109,7 +109,7 @@ def _import_exec_23c() -> tuple[Any, Any, Any, Any, Any]:
     sys.modules[pkg_name] = pkg
     init_spec.loader.exec_module(pkg)
 
-    from lattice.the_executive import gate, orchestrator, preflight, voice
+    from bowthruster.the_executive import gate, orchestrator, preflight, voice
     return pkg, voice, orchestrator, gate, preflight
 
 
@@ -252,7 +252,7 @@ console.log(JSON.stringify(rows));
 
     def test_verify_executive_reply_fail_closed_guard(self) -> None:
         _, voice, _, gate, preflight = _import_exec_23c()
-        from lattice import whiteboard as WB
+        from bowthruster import whiteboard as WB
 
         wb = WB.create_empty_context_graph()
         WB.ingest_intake_packet(wb, {
@@ -366,7 +366,7 @@ console.log(JSON.stringify(rows));
 
     def test_run_executive_turn_end_to_end_multi_turn_progression_and_bounce_invariance(self) -> None:
         pkg, _, orchestrator, gate, _ = _import_exec_23c()
-        from lattice import whiteboard as WB
+        from bowthruster import whiteboard as WB
 
         with tempfile.TemporaryDirectory(prefix="qa_exec23c_e2e_") as tmp:
             db_path = Path(tmp) / "exec_e2e.sqlite"
@@ -426,7 +426,7 @@ console.log(JSON.stringify(rows));
                 self.assertEqual({k: v for k, v in live_wb.items() if k != "_sqlite_store"}, snapshot_after_t1)
                 self.assertEqual(db_path.read_bytes(), db_bytes_after_t1)
 
-            from lattice import regiment as REG
+            from bowthruster import regiment as REG
             raw_order = (
                 "| Scope | Rule | Target_Prop | Op | Value | Facet |\n"
                 "|---|---|---|---|---|---|\n"

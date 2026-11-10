@@ -29,7 +29,7 @@ import tempfile
 import unittest
 from typing import Any
 
-from lattice.graph_core import SQLiteGraphStore
+from bowthruster.graph_core import SQLiteGraphStore
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 BEND_GATE = REPO_ROOT / "scripts" / "bend_gate.py"

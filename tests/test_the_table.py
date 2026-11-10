@@ -40,32 +40,10 @@ def _find_path(*rel_candidates: str) -> Path:
 
 
 def _load_the_table_modules():
-    search_dirs: list[str] = []
-    for rel in ("eng2/the_table", "eng1/the_table", "bowthruster/the_table", "lattice/the_table"):
-        for root in _resolve_roots():
-            d = root / rel
-            if d.is_dir() and str(d) not in search_dirs:
-                search_dirs.append(str(d))
-    if not search_dirs:
-        raise RuntimeError("Could not locate the_table package in QA or workspace roots.")
-
-    init_py = next((Path(d) / "__init__.py" for d in search_dirs if (Path(d) / "__init__.py").is_file()), None)
-    assert init_py is not None
-    target_mod = "core.circuit.the_table"
-    for mod_name in list(sys.modules):
-        if mod_name == target_mod or mod_name.startswith(target_mod + "."):
-            del sys.modules[mod_name]
-
-    spec = importlib.util.spec_from_file_location(target_mod, str(init_py), submodule_search_locations=search_dirs)
-    assert spec is not None and spec.loader is not None
-    pkg = importlib.util.module_from_spec(spec)
-    sys.modules[target_mod] = pkg
-    sys.modules["the_table"] = pkg
-    spec.loader.exec_module(pkg)
-
+    pkg = importlib.import_module("bowthruster.the_table")
     submods = {}
     for sub_name in ("schema", "surface", "renderer", "workspace_sync"):
-        sub_mod = importlib.import_module(f"{target_mod}.{sub_name}")
+        sub_mod = importlib.import_module(f"bowthruster.the_table.{sub_name}")
         submods[sub_name] = sub_mod
         for attr in dir(sub_mod):
             if not attr.startswith("__") and not hasattr(pkg, attr):
@@ -384,7 +362,7 @@ console.log(JSON.stringify({{ admit, evictImm, evictOrd, atlasIso, lodEsc, forag
 
     def test_s25b_executive_two_stage_cognitive_loop_and_hippocampal_ignition(self) -> None:
         """Verifies run_executive_turn Two-Stage Cognitive Loop: 0 foraging steps on clean turn vs Stage 2 foraging on conflict/directive."""
-        from lattice import the_executive as EXEC, whiteboard as WB
+        from bowthruster import the_executive as EXEC, whiteboard as WB
 
         with tempfile.TemporaryDirectory() as tmp:
             db_path = Path(tmp) / "ignition.sqlite"

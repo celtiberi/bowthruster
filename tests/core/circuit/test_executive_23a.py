@@ -88,10 +88,10 @@ def _import_exec_23a() -> tuple[Any, Any]:
             cand_dir = Path(p) / "eng1" / "the_executive"
             if (cand_dir / "preflight.py").is_file():
                 pkg = _load_pkg_from_dir("core.circuit.the_executive", cand_dir)
-                import lattice.the_executive.preflight as preflight
+                import bowthruster.the_executive.preflight as preflight
                 return pkg, preflight
-    import lattice.the_executive as pkg
-    import lattice.the_executive.preflight as preflight
+    import bowthruster.the_executive as pkg
+    import bowthruster.the_executive.preflight as preflight
 
     return pkg, preflight
 
@@ -210,8 +210,8 @@ console.log(JSON.stringify({{main: m.main(), mcuRows, cleanRows}}));
 
     def test_clone_whiteboard_for_trial_and_normalize_intake_packet_fail_closed(self) -> None:
         exec_pkg, preflight = _import_exec_23a()
-        from lattice import whiteboard as WB
-        from lattice.regiment.intake_packet import compile_intake_packet
+        from bowthruster import whiteboard as WB
+        from bowthruster.regiment.intake_packet import compile_intake_packet
 
         self.assertTrue(set(exec_pkg.__all__).issuperset({
             "ExecutivePreflightError", "McuPreflightStatus", "classify_mcu_status",
@@ -302,7 +302,7 @@ console.log(JSON.stringify({{main: m.main(), mcuRows, cleanRows}}));
 
     def test_inspect_turn_preflight_rule_conflict_frustration_and_standing_clashes(self) -> None:
         _, preflight = _import_exec_23a()
-        from lattice import whiteboard as WB
+        from bowthruster import whiteboard as WB
 
         # 1. Intra-turn Spin-Glass Frustration between two new rules in the same turn
         intra_rep = preflight.inspect_turn_preflight({
@@ -392,7 +392,7 @@ console.log(JSON.stringify({{main: m.main(), mcuRows, cleanRows}}));
 
     def test_inspect_turn_preflight_flawed_idea_all_three_kinds_and_ambiguity_questions(self) -> None:
         _, preflight = _import_exec_23a()
-        from lattice import whiteboard as WB
+        from bowthruster import whiteboard as WB
 
         wb = WB.create_empty_context_graph()
         WB.ingest_intake_packet(wb, {

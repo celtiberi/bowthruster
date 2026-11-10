@@ -25,44 +25,11 @@ def _resolve_roots() -> list[Path]:
 
 
 def _load_ai_memory_module():
-    qa_roots = _resolve_roots()
-    for eng_pkg in ("eng3/graph_core", "bowthruster/graph_core", "lattice/graph_core"):
-        for root in qa_roots:
-            gc_dir = root / eng_pkg
-            if (gc_dir / "__init__.py").is_file():
-                spec = importlib.util.spec_from_file_location(
-                    "core.circuit.graph_core", str(gc_dir / "__init__.py"), submodule_search_locations=[str(gc_dir)]
-                )
-                if spec and spec.loader and "core.circuit.graph_core" not in sys.modules:
-                    mod = importlib.util.module_from_spec(spec)
-                    sys.modules["core.circuit.graph_core"] = mod
-                    spec.loader.exec_module(mod)
-                break
-
-    search_dirs: list[str] = []
-    for rel in ("eng3/ai_memory", "eng0/ai_memory", "bowthruster/ai_memory", "lattice/ai_memory"):
-        for root in qa_roots:
-            d = root / rel
-            if d.is_dir() and str(d) not in search_dirs:
-                search_dirs.append(str(d))
-    if not search_dirs:
-        raise RuntimeError("Could not locate ai_memory package in QA or workspace roots.")
-
-    init_py = next((Path(d) / "__init__.py" for d in search_dirs if (Path(d) / "__init__.py").is_file()), None)
-    assert init_py is not None
-    target_mod = "core.circuit.ai_memory"
-    for mod_name in list(sys.modules):
-        if mod_name == target_mod or mod_name.startswith(target_mod + "."):
-            del sys.modules[mod_name]
-
-    spec = importlib.util.spec_from_file_location(target_mod, str(init_py), submodule_search_locations=search_dirs)
-    assert spec is not None and spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[target_mod] = mod
-    sys.modules["ai_memory"] = mod
-    spec.loader.exec_module(mod)
+    if str(_WORKSPACE_MC) not in sys.path:
+        sys.path.insert(0, str(_WORKSPACE_MC))
+    mod = importlib.import_module("bowthruster.ai_memory")
     for sub_name in ("schema", "cue_extractor", "uri_resolver", "hippocampal_index"):
-        sub_mod = importlib.import_module(f"{target_mod}.{sub_name}")
+        sub_mod = importlib.import_module(f"bowthruster.ai_memory.{sub_name}")
         for attr in dir(sub_mod):
             if not attr.startswith("__") and not hasattr(mod, attr):
                 setattr(mod, attr, getattr(sub_mod, attr))
