@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+import os
+from pathlib import Path
 import re
 from typing import Any
 
@@ -65,4 +68,36 @@ def _extract_generic_source_symbols(fp: Any) -> tuple[dict[str, tuple[int, int]]
     return syms, calls
 
 
-__all__ = ["__version__", "_extract_generic_source_symbols"]
+@contextmanager
+def open_board_session(board: str, project_root: Any = None, save_on_exit: bool = False) -> Any:
+    """Acquire cross-process board lock, load ContextGraph for `board`, and optionally persist on exit."""
+    import bowthruster.cli as _cli
+    from bowthruster.mcp_server import _resolve_project_root
+
+    if project_root and str(project_root).strip():
+        active_root = Path(str(project_root).strip()).expanduser().resolve()
+    elif os.environ.get("BOWTHRUSTER_PROJECT_ROOT"):
+        active_root = Path(os.environ["BOWTHRUSTER_PROJECT_ROOT"]).expanduser().resolve()
+    elif (Path.cwd() / ".whiteboard").is_dir():
+        active_root = Path.cwd().resolve()
+    else:
+        active_root = _resolve_project_root(board, None, None)
+
+    with _cli._board_lock(board):
+        prev_root, prev_env = _cli.REPO_ROOT, os.environ.get("BOWTHRUSTER_PROJECT_ROOT")
+        _cli.REPO_ROOT = active_root
+        os.environ["BOWTHRUSTER_PROJECT_ROOT"] = str(active_root)
+        try:
+            graph, wb_json, wb_sqlite, _ = _cli._load_board(board)
+            yield graph, active_root
+            if save_on_exit:
+                _cli._save_board(graph, wb_json, wb_sqlite)
+        finally:
+            _cli.REPO_ROOT = prev_root
+            if prev_env is None:
+                os.environ.pop("BOWTHRUSTER_PROJECT_ROOT", None)
+            else:
+                os.environ["BOWTHRUSTER_PROJECT_ROOT"] = prev_env
+
+
+__all__ = ["__version__", "_extract_generic_source_symbols", "open_board_session"]

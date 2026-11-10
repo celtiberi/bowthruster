@@ -23,6 +23,7 @@ from .intake_packet import (
     extract_flow_sentences,
     extract_markdown_tables,
     extract_structured_table_rows,
+    parse_cond_atoms,
 )
 
 THETA = 0.5
@@ -148,6 +149,7 @@ __all__ = [
     "extract_flow_sentences",
     "extract_markdown_tables",
     "extract_structured_table_rows",
+    "parse_cond_atoms",
     "run_phase0",
     "run_phase1",
     "run_phase2",

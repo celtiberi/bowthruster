@@ -604,15 +604,15 @@
     }
   ],
   "k_cap": 5,
-  "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
+  "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
   "lattice_artifacts": [
     {
       "created_turn": 2,
       "dimensions": {
         "_from_table": true,
-        "file": "bowthruster/regiment/intake_packet.py#L154-L166"
+        "file": "bowthruster/regiment/intake_packet.py#L157-L169"
       },
-      "file": "bowthruster/regiment/intake_packet.py#L154-L166",
+      "file": "bowthruster/regiment/intake_packet.py#L157-L169",
       "id": "schema_regiment_intakepacket",
       "inputs": [
         "turn_index",
@@ -629,7 +629,7 @@
       "stage": "Stages 15-18",
       "text": "Deterministic pipe-table and flow turn intake packet",
       "turn": 17,
-      "updated_turn": 37
+      "updated_turn": 40
     },
     {
       "created_turn": 2,
@@ -768,7 +768,7 @@
       "dimensions": {
         "_from_table": true,
         "component": "regiment",
-        "file": "bowthruster/regiment/intake_packet.py#L270-L326",
+        "file": "bowthruster/regiment/intake_packet.py#L273-L329",
         "inputs": "phase3_result",
         "interface": "compile_intake_packet",
         "outputs": "IntakePacket",
@@ -776,7 +776,7 @@
         "spec": "Compiles Phase 3 output into IntakePacket for the_executive and whiteboard",
         "stage": "18"
       },
-      "file": "bowthruster/regiment/intake_packet.py#L270-L326",
+      "file": "bowthruster/regiment/intake_packet.py#L273-L329",
       "id": "interface_regiment_compile_intake_packet",
       "inputs": [
         "phase3_result",
@@ -794,7 +794,7 @@
       "stage": "Stages 15-18",
       "text": "Compile deterministic Markdown pipe-table rows and flows into an IntakePacket",
       "turn": 17,
-      "updated_turn": 37
+      "updated_turn": 40
     },
     {
       "calls": [
@@ -840,7 +840,7 @@
       "stage": "28",
       "text": "Dispatch MCP tool calls with atomic multi-agent component claims across status, packets, and slice",
       "turn": 39,
-      "updated_turn": 39
+      "updated_turn": 40
     },
     {
       "calls": [],
@@ -1161,7 +1161,7 @@
       "stage": "Stage 28",
       "text": "MCP JSON-RPC 2.0 request envelope",
       "turn": 17,
-      "updated_turn": 39
+      "updated_turn": 40
     },
     {
       "calls": [
@@ -1574,7 +1574,7 @@
       "stage": "Stages 15-18",
       "text": "Extract normalized structured records from Markdown pipe tables",
       "turn": 17,
-      "updated_turn": 37
+      "updated_turn": 40
     },
     {
       "calls": [
@@ -1697,7 +1697,7 @@
       "stage": "Stage 28",
       "text": "Transpile pure Python boolean decision function AST into a Bend 2 boolean expression",
       "turn": 31,
-      "updated_turn": 39
+      "updated_turn": 40
     },
     {
       "calls": [
@@ -1729,7 +1729,7 @@
       "stage": "Stage 28",
       "text": "Transpile staged Python % LAW functions to Bend 2 and verify LHS == RHS across all truth-table assignments and via bend",
       "turn": 31,
-      "updated_turn": 39
+      "updated_turn": 40
     },
     {
       "calls": [
@@ -1775,7 +1775,7 @@
       "stage": null,
       "text": "Deterministically scan repo packages, files, public classes/functions, imports, and tests into draft board tables and per-component onboarding packets with open_gaps for Charter, Role, Why, and Spec",
       "turn": 37,
-      "updated_turn": 39
+      "updated_turn": 40
     },
     {
       "calls": [],
@@ -1808,7 +1808,7 @@
       "stage": null,
       "text": "Render bounded human/agent-readable summary of a bootstrap_repository payload",
       "turn": 37,
-      "updated_turn": 39
+      "updated_turn": 40
     },
     {
       "calls": [
@@ -1848,12 +1848,82 @@
       "text": "Atomically claim or release a non-VERIFIED component scope for multi-agent work, rejecting conflicting claims unless forced and clearing claims automatically on VERIFIED",
       "turn": 39,
       "updated_turn": 39
+    },
+    {
+      "calls": [],
+      "created_turn": 40,
+      "dimensions": {
+        "_from_table": true,
+        "file": "bowthruster/__init__.py#L72-L100",
+        "inputs": [
+          "board: str",
+          "project_root: Any",
+          "save_on_exit: bool"
+        ],
+        "outputs": [
+          "Any"
+        ],
+        "spec_missing": false
+      },
+      "file": "bowthruster/__init__.py#L72-L100",
+      "id": "interface_runtime_foundation_open_board_session",
+      "inputs": [
+        "board: str",
+        "project_root: Any",
+        "save_on_exit: bool"
+      ],
+      "kind": "INTERFACE",
+      "name": "open_board_session",
+      "outputs": [
+        "Any"
+      ],
+      "owner": "core",
+      "scope": "runtime_foundation",
+      "scope_id": "runtime_foundation",
+      "spec": "Acquire cross-process board lock, resolve project_root, load ContextGraph, yield (graph, active_root), and atomically persist SQLite + JSON on exit when save_on_exit=True",
+      "stage": "Stage 28",
+      "text": "Acquire cross-process board lock, resolve project_root, load ContextGraph, yield (graph, active_root), and atomically persist SQLite + JSON on exit when save_on_exit=True",
+      "turn": 40,
+      "updated_turn": 40
+    },
+    {
+      "calls": [],
+      "created_turn": 40,
+      "dimensions": {
+        "_from_table": true,
+        "file": "bowthruster/regiment/intake_packet.py#L60-L91",
+        "inputs": [
+          "conds: Any"
+        ],
+        "outputs": [
+          "tuple[dict[str, list[tuple[str, Any]]], set[str]]"
+        ],
+        "spec_missing": false
+      },
+      "file": "bowthruster/regiment/intake_packet.py#L60-L91",
+      "id": "interface_regiment_parse_cond_atoms",
+      "inputs": [
+        "conds: Any"
+      ],
+      "kind": "INTERFACE",
+      "name": "parse_cond_atoms",
+      "outputs": [
+        "tuple[dict[str, list[tuple[str, Any]]], set[str]]"
+      ],
+      "owner": "core",
+      "scope": "regiment",
+      "scope_id": "regiment",
+      "spec": "Parse condition strings into (var -> [(op, val)], unparsed_raw_atoms) without regexes",
+      "stage": "Stages 15-18",
+      "text": "Parse condition strings into (var -> [(op, val)], unparsed_raw_atoms) without regexes",
+      "turn": 40,
+      "updated_turn": 40
     }
   ],
   "lattice_proof": {
     "bend_proof_source": "import Base\n\ntype LPStatus is Data:\n  LPBroken{}\n  LPProven{}\n  LPDraft{}\n\ndef is_lp_proven(s: LPStatus) -> Bool:\n  match s:\n    case LPBroken{}: False{}\n    case LPProven{}: True{}\n    case LPDraft{}: False{}\n\ndef classify_lattice_proof_status(has_viol: Bool, has_comp: Bool, comp_ok: Bool, flow_ok: Bool) -> LPStatus:\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok:\n      LPBroken{}\n    case False{} True{} True{} True{}:\n      LPProven{}\n    case False{} True{} True{} False{}:\n      LPDraft{}\n    case False{} True{} False{} flow_ok:\n      LPDraft{}\n    case False{} False{} comp_ok flow_ok:\n      LPDraft{}\n\nlaw lattice_proof_proven_iff_complete_and_conflict_free:\n  for +has_viol: Bool\n  for +has_comp: Bool\n  for +comp_ok: Bool\n  for +flow_ok: Bool\n  {is_lp_proven(classify_lattice_proof_status(has_viol, has_comp, comp_ok, flow_ok)) == Bool.and(Bool.not(has_viol), Bool.and(has_comp, Bool.and(comp_ok, flow_ok))) : Bool}\n\ndef lattice_proof_proven_iff_complete_and_conflict_free(has_viol, has_comp, comp_ok, flow_ok):\n  match has_viol has_comp comp_ok flow_ok:\n    case True{} has_comp comp_ok flow_ok: {==}\n    case False{} True{} True{} True{}: {==}\n    case False{} True{} True{} False{}: {==}\n    case False{} True{} False{} flow_ok: {==}\n    case False{} False{} comp_ok flow_ok: {==}\n\ndef board_proof_verdict() -> LPStatus:\n  classify_lattice_proof_status(False{}, True{}, True{}, True{})\n",
     "component_count": 7,
-    "contract_count": 39,
+    "contract_count": 40,
     "flow_count": 8,
     "hard_violations": [],
     "is_proven": true,
@@ -1936,7 +2006,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
+      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2132,7 +2202,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
+      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2163,8 +2233,8 @@
         "_table_role": "Deterministic Markdown Pipe-Table & Flow-Sentence Compiler",
         "depends_on": "",
         "file_hashes": {
-          "bowthruster/regiment/__init__.py": "0ecfcf900348cc9f",
-          "bowthruster/regiment/intake_packet.py": "554801f546530499",
+          "bowthruster/regiment/__init__.py": "7da3f8660989f11b",
+          "bowthruster/regiment/intake_packet.py": "c76ee98c6b0698ba",
           "bowthruster/regiment/markdown_tables.py": "177a13ea811a96df"
         },
         "files": [
@@ -2192,8 +2262,8 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/regiment/__init__.py": "0ecfcf900348cc9f",
-        "bowthruster/regiment/intake_packet.py": "554801f546530499",
+        "bowthruster/regiment/__init__.py": "7da3f8660989f11b",
+        "bowthruster/regiment/intake_packet.py": "c76ee98c6b0698ba",
         "bowthruster/regiment/markdown_tables.py": "177a13ea811a96df"
       },
       "files": [
@@ -2208,7 +2278,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
+      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2249,7 +2319,7 @@
         "_table_role": "Pure-Stdlib Types, String/Token Helpers, CLI, MCP Entrypoints, & Repository Bootstrapper",
         "depends_on": "",
         "file_hashes": {
-          "bowthruster/__init__.py": "7562c6f2ae448868",
+          "bowthruster/__init__.py": "3a04d76df1049b7f",
           "bowthruster/bootstrap.py": "f0ab81745c1d0073",
           "bowthruster/cli.py": "d0450267904a8224",
           "bowthruster/cli_commands.py": "953ab4e7ebeb9b57",
@@ -2291,7 +2361,7 @@
       "depends_on": [],
       "failure_diagnostic": null,
       "file_hashes": {
-        "bowthruster/__init__.py": "7562c6f2ae448868",
+        "bowthruster/__init__.py": "3a04d76df1049b7f",
         "bowthruster/bootstrap.py": "f0ab81745c1d0073",
         "bowthruster/cli.py": "d0450267904a8224",
         "bowthruster/cli_commands.py": "953ab4e7ebeb9b57",
@@ -2320,7 +2390,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
+      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2421,7 +2491,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
+      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2516,7 +2586,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
+      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2626,7 +2696,7 @@
       ],
       "inputs": [],
       "kind": "COMPONENT",
-      "last_commit_sha": "3801becdca9a57a6f247cc3b7561e60c18657fb8",
+      "last_commit_sha": "ae5766fb6c8752746f6dc107be3b8901bfa79a6e",
       "outputs": [],
       "owner": "core",
       "parent": null,
@@ -2644,7 +2714,7 @@
       "why": "Maintains the canonical system architecture graph, detects rule/contract frustration, serves compact 1-hop slices with inline AST code, and compiles self-contained WorkPackets."
     }
   },
-  "turn": 39,
-  "turn_index": 39,
+  "turn": 40,
+  "turn_index": 40,
   "version": 1
 }

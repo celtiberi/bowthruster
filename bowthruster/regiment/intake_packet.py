@@ -57,7 +57,7 @@ def _interval_subsumes(op_a: str | None, va: float, op_b: str | None, vb: float)
     return True
 
 
-def _parse_cond_atoms(conds: Any) -> tuple[dict[str, list[tuple[str, Any]]], set[str]]:
+def parse_cond_atoms(conds: Any) -> tuple[dict[str, list[tuple[str, Any]]], set[str]]:
     """Parses condition strings into `(var -> [(op, val)], unparsed_raw_atoms)` without `re`."""
     atoms: dict[str, list[tuple[str, Any]]] = {}
     raw: set[str] = set()
@@ -89,6 +89,9 @@ def _parse_cond_atoms(conds: Any) -> tuple[dict[str, list[tuple[str, Any]]], set
             if not matched:
                 raw.add(cl.lower())
     return atoms, raw
+
+
+_parse_cond_atoms = parse_cond_atoms
 
 
 def _conditions_satisfiable(conds_a: Any, conds_b: Any) -> bool:
@@ -350,4 +353,5 @@ __all__ = [
     "extract_flow_sentences",
     "extract_markdown_tables",
     "extract_structured_table_rows",
+    "parse_cond_atoms",
 ]
