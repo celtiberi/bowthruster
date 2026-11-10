@@ -335,19 +335,35 @@ def run_delta_tests(
 
 def install_git_precommit_hook(
     repo_root: Path, board: str = "lattice_core",
-    *, overwrite: bool = False
+    *, overwrite: bool = True
 ) -> Path | None:
-    """Installs a `.git/hooks/pre-commit` script invoking `bowthruster.cli git-sync --pre-commit`."""
+    """Installs an optional `.git/hooks/pre-commit` script that fails open if `bowthruster` is not importable."""
     hooks_dir = repo_root / ".git" / "hooks"
     if not hooks_dir.is_dir():
         return None
     hook_path = hooks_dir / "pre-commit"
     if hook_path.exists() and not overwrite:
         return hook_path
+    py_cands = (
+        repo_root / ".venv" / "bin" / "python",
+        BOWTHRUSTER_HOME / ".venv" / "bin" / "python",
+        BOWTHRUSTER_HOME.parent / ".venv" / "bin" / "python",
+    )
+    venv_py = next((str(p) for p in py_cands if p.is_file() and os.access(p, os.X_OK)), sys.executable)
     script = (
         "#!/usr/bin/env sh\n"
         f"# BowThruster pre-commit verification gate (board: {board})\n"
-        f'"{sys.executable}" -m bowthruster.cli --board "{board}" git-sync --pre-commit\n'
+        f'PY_BIN="{venv_py}"\n'
+        'if [ -x ".venv/bin/python" ]; then\n'
+        '  PY_BIN=".venv/bin/python"\n'
+        'elif ! command -v "$PY_BIN" >/dev/null 2>&1; then\n'
+        '  PY_BIN="python3"\n'
+        'fi\n'
+        'if ! "$PY_BIN" -c "import bowthruster.cli" >/dev/null 2>&1; then\n'
+        '  echo "[BowThruster] pre-commit hook skipped: module \'bowthruster\' is not installed in $PY_BIN (failing open)." >&2\n'
+        '  exit 0\n'
+        'fi\n'
+        f'exec "$PY_BIN" -m bowthruster.cli --board "{board}" git-sync --pre-commit\n'
     )
     hook_path.write_text(script, encoding="utf-8")
     hook_path.chmod(0o755)

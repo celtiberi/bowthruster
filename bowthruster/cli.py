@@ -358,7 +358,6 @@ def execute_git_sync(
     from bowthruster.the_executive.gate import evaluate_git_commit_gate
 
     eff_root = active_root or REPO_ROOT
-    install_git_precommit_hook(eff_root, board)
     if mode == "install_hook":
         hp = install_git_precommit_hook(eff_root, board, overwrite=True)
         res = {"board": board, "hook_installed": hp is not None, "hook_path": str(hp) if hp else None}

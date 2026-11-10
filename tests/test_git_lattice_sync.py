@@ -574,19 +574,27 @@ class TestGitLatticeSyncStage26(unittest.TestCase):
             self.assertIn("def add_vals", sl)
 
     def test_s26_helper_line_anchors_refreshed_and_git_hook_installed(self) -> None:
-        """Verifies stale helper calls are purged on disk refresh and install_git_precommit_hook writes pre-commit hook."""
-        from bowthruster.git_manifest import install_git_precommit_hook
+        """Verifies stale helper calls are purged, git_sync does not auto-install hooks, and install_hook fails open when missing."""
+        import os
         from bowthruster.mcp_server import call_lattice_tool
         sl_txt = call_lattice_tool("slice", {"board": "lattice_core", "component": "the_executive", "query": "evaluate_git_commit_gate"})["content"][0]["text"]
         self.assertNotIn("_paths_match#L93-L96", sl_txt)
         with tempfile.TemporaryDirectory(prefix="qa_s26_hook_") as tmp:
             repo = Path(tmp)
             subprocess.run(["git", "init"], cwd=str(repo), capture_output=True, check=True)
-            hook_file = install_git_precommit_hook(repo, "lattice_core")
-            self.assertIsNotNone(hook_file)
-            assert hook_file is not None
+            (repo / ".whiteboard").mkdir(parents=True, exist_ok=True)
+            (repo / ".whiteboard" / "scratch_b.json").write_text(json.dumps(WB.create_empty_graph()), encoding="utf-8")
+            call_lattice_tool("git_sync", {"board": "scratch_b", "project_root": str(repo), "mode": "drift"})
+            self.assertFalse((repo / ".git" / "hooks" / "pre-commit").exists())
+            call_lattice_tool("git_sync", {"board": "scratch_b", "project_root": str(repo), "mode": "install_hook"})
+            hook_file = repo / ".git" / "hooks" / "pre-commit"
             self.assertTrue(hook_file.is_file())
-            self.assertIn("git-sync --pre-commit", hook_file.read_text(encoding="utf-8"))
+            self.assertIn('--board "scratch_b"', hook_file.read_text(encoding="utf-8"))
+            call_lattice_tool("git_sync", {"board": "lattice_core", "project_root": str(repo), "mode": "install_hook"})
+            self.assertIn('--board "lattice_core"', hook_file.read_text(encoding="utf-8"))
+            proc = subprocess.run([str(hook_file)], cwd=str(repo), env={"PATH": os.environ.get("PATH", "")}, text=True, capture_output=True)
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("failing open", proc.stderr)
 
     def test_s26_standing_rule_49_no_regex_and_line_budget(self) -> None:
         """Verifies zero `import re` and <= 500 lines across Stage 26 implementation and test files."""
